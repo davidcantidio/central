@@ -33,9 +33,3 @@ def get_filtered_instagram_ids(spreadsheet):
     filtered_data = [record['IDInstagram'] for record in all_values if record.get('IDInstagram') and record.get('Ativo') and record.get('permissoes') and record.get('redesSociais')]
 
     return filtered_data
-
-google_config = get_google_sheets_config_data()
-auth_client = authenticate_google_sheets(google_config=google_config)
-spreadsheet = open_spreadsheet(auth_client=auth_client, google_config=google_config)
-filtered_instagram_ids = get_filtered_instagram_ids(spreadsheet=spreadsheet)
-print(filtered_instagram_ids)

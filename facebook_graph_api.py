@@ -2,9 +2,6 @@ import requests
 import time
 import json
 
-import json
-import requests
-
 def refresh_access_token(app_id, app_secret, current_token):
     url = f"https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id={app_id}&client_secret={app_secret}&fb_exchange_token={current_token}"
     response = requests.get(url).json()
@@ -21,11 +18,9 @@ def refresh_access_token(app_id, app_secret, current_token):
     
     return new_token
 
-
 def check_and_refresh_token(app_id, app_secret, current_token):
     url = f"https://graph.facebook.com/debug_token?input_token={current_token}&access_token={current_token}"
     response = requests.get(url).json()
-    print(response)
     expire_time = response["data"]["expires_at"]
     if (expire_time - time.time()) < (3 * 24 * 60 * 60):
         return refresh_access_token(app_id, app_secret, current_token)
