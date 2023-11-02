@@ -1,0 +1,47 @@
+Metadata-Version: 2.1
+Name: ooba
+Version: 0.0.21
+Summary: Run language models on consumer hardware.
+License: AGPL
+Author: Killian Lucas
+Author-email: killian@openinterpreter.com
+Requires-Python: >=3.9,<4.0
+Classifier: License :: Other/Proprietary License
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Programming Language :: Python :: 3.10
+Classifier: Programming Language :: Python :: 3.11
+Requires-Dist: appdirs (>=1.4.4,<2.0.0)
+Requires-Dist: huggingface-hub (>=0.17.3,<0.18.0)
+Requires-Dist: websockets (>=11.0.3,<12.0.0)
+Description-Content-Type: text/markdown
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1EsiOIQ7IQEui1gYEcHjLZPQxP9pVIlt_?usp=sharing)
+
+A headless [**Oobabooga**](https://github.com/oobabooga/text-generation-webui) wrapper.
+
+<br>
+
+```shell
+pip install ooba
+```
+
+```python
+import ooba
+
+path = ooba.download("https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.1-GGUF")
+
+llm = ooba.llm(path)
+```
+
+```python
+messages = [{"role": "user", "content": "Hi Mistral."}]
+
+for token in llm.chat(messages):
+    print(token)
+```
+
+<br>
+
+https://github.com/KillianLucas/ooba/assets/63927363/b741f4ee-9dca-4c50-9405-dd99550b2dc8
+
