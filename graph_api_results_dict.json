@@ -1,0 +1,62 @@
+{
+    "OUTCOME_AWARENESS": {
+        "AD_RECALL_LIFT": "ad_recall_lift",
+        "REACH": "reach",
+        "IMPRESSIONS": "impressions"
+    },
+    "OUTCOME_TRAFFIC": {
+        "LINK_CLICKS": "outbound_clicks",
+        "LANDING_PAGE_VIEWS": "landing_page_views"
+    },
+    "LINK_CLICKS": {
+        "APPLICATION_ID": "app_clicks",
+        "OBJECT_STORE_URL": "store_clicks",
+        "LANDING_PAGE_VIEWS": "landing_page_view"
+    },
+    "OUTCOME_ENGAGEMENT": {
+        "POST_ENGAGEMENT": "post_engagement",
+        "PAGE_LIKES": "page_likes",
+        "EVENT_RESPONSES": "event_responses"
+    },
+    "QUALITY_CALL": {
+        "LINK_CLICKS": "call_to_action_clicks"
+    },
+    "MESSAGES": {
+        "CONVERSATIONS": "messaging_conversations_started",
+        "LINK_CLICKS": "link_clicks"
+    },
+    "LEAD_GENERATION": {
+        "LEAD_GENERATION": "leadgen_grouped",
+        "QUALITY_LEAD": "quality_lead",
+        "LEAD_FROM_MESSENGER": "messenger_leads",
+        "LEAD_FROM_IG_DIRECT": "ig_direct_leads"
+    },
+    "OUTCOME_SALES": {
+        "OFFSITE_CONVERSIONS": "omni_purchase",
+        "CONVERSATIONS": "messaging_conversations_started",
+        "QUALITY_CALL": "call_to_action_clicks"
+    },
+    "WEBSITE": {
+        "LINK_CLICKS": "website_clicks"
+    },
+    "OUTCOME_APP_PROMOTION": {
+        "LINK_CLICKS": "app_installs",
+        "OFFSITE_CONVERSIONS": "app_custom_event",
+        "APP_INSTALLS": "app_installs"
+    },
+    "OUTCOME_LEADS": {
+        "OFFSITE_CONVERSIONS": "lead",
+        "LINK_CLICKS": "link_clicks"
+    },
+    "PHONE_CALL": {
+        "LINK_CLICKS": "phone_call_clicks"
+    },
+    "PRODUCT_CATALOG_SALES": {
+        "LINK_CLICKS": "catalog_sales"
+    },
+    "STORE_VISITS": {
+        "REACH": "store_visit_reach"
+    }
+}
+
+
