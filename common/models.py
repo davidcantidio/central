@@ -1,10 +1,12 @@
-#models.py:
 from .database import Base, init_db
 from sqlalchemy import create_engine, DateTime, Column, DECIMAL, Integer, String, Boolean, ForeignKey, Enum, TIMESTAMP, Numeric, CheckConstraint, JSON, Date, DECIMAL, Text, Float
 from sqlalchemy.ext.declarative import declared_attr
 from datetime import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy import Table, Index, event
+from enum import Enum
+from sqlalchemy.types import Enum as SQLAlchemyEnum
+
 
 # Tabela associativa para a relação many-to-many entre Role e Department
 role_department_association = Table(
@@ -115,28 +117,27 @@ class Department(Base):
  
     def __repr__(self):
         return f"<Department(id={self.id}, name='{self.name}')>"
-    
+
 class EmployeeContract(Base):
-    """Represents an employment contract within the organization."""
-    __tablename__ = 'employee_contracts'
-    id = Column(Integer, primary_key=True)  # Unique identifier for the contract
-    active = Column(Boolean, default=True)  # Indicates whether the contract is currently active
-    user_id = Column(Integer, ForeignKey('users.id'), nullable=False)  # Links contract to a specific user
-    type = Column(Enum('Por job', 'Por mês', 'Por jornada', name='contract_types'), nullable=False)  # Type of the contract
-    salary = Column(DECIMAL, CheckConstraint('salary > 0'), nullable=False)  # Salary associated with the contract
-    date_joined = Column(TIMESTAMP, default=datetime.now, nullable=False)  # Start date of the contract
+    __tablename__ = 'employee_contract'
+
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey('users.id'))
+    type = Column(SQLAlchemyEnum('Por job', 'Por mês', 'Por jornada', name='contract_types'), nullable=False)  # Type of the contract
+    start_date = Column(Date, nullable=False)
+    end_date = Column(Date)
+    active = Column(Boolean, default=True)
 
     # Relationship back to the User
-    employee = relationship("Users", back_populates="employee_contracts", foreign_keys=[user_id])
+    employee = relationship("Users", back_populates="employee_contracts")
+
+    def __repr__(self):
+        return f"<EmployeeContract(id={self.id}, type='{self.type}', active={self.active}, employee_id={self.employee_id})>"
+
 
     def __repr__(self):
         return f"<EmployeeContract(id={self.id}, type='{self.type}', active={self.active}, user_id={self.user_id})>"
-     
 class Users(Base):
-    """
-    Represents a user within the organization. This class includes personal information,
-    contact details, and professional attributes such as department and role.
-    """
     __tablename__ = 'users'
 
     # Personal information
@@ -150,7 +151,7 @@ class Users(Base):
     aliases = Column(JSON)
     cpf = Column(String(11), unique=True)  # User's CPF number (specific to Brazilian users)
     created_at = Column(TIMESTAMP, default=datetime.now)  # Timestamp when the user was created
-    updated_at = Column(TIMESTAMP, default=datetime.now)  # Timestamp when the user was updated
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)  # Timestamp when the user was updated
     
     department_id = Column(Integer, ForeignKey('departments.id'))  # Department ID the user belongs to
     email = Column(String(255), unique=True, nullable=False)  # User's email address
@@ -180,8 +181,7 @@ class Users(Base):
     created_plans_trafego_pago = relationship("PlanTrafegoPago", back_populates="author")
 
     def __repr__(self):
-        return f"<User(id={self.id}, name='{self.first_name} {self.last_name}')>"
-
+        return f"<Users(id={self.id}, name='{self.first_name} {self.last_name}')>"
 class Liaison(Base):
     __tablename__ = 'liaisons'
     id = Column(Integer, primary_key=True)
@@ -199,7 +199,7 @@ class Liaison(Base):
     phone = Column(String(20))
     email = Column(String(255))
     position = Column(String(255))  # legal_representative_position
-    title = Column(Enum('Legal Representative', 'Financial Representative', 'Other', name='liaison_titles'))
+    title = Column(SQLAlchemyEnum('Legal Representative', 'Financial Representative', 'Other', name='liaison_titles', nullable=False))  # Type of the contract
     legal_representative = Column(Boolean)
     finances_representative = Column(Boolean)
     
@@ -211,7 +211,7 @@ class Client(Base):
     __table_args__ = {'extend_existing': True}
 
     id = Column(Integer, primary_key=True)
-    business_type = Column(Enum('Imob', 'Academia', 'Clínica', 'Político'), index=True)
+    business_type = Column(SQLAlchemyEnum('Imob', 'Academia', 'Clínica', 'Político'), index=True)
     cnpj = Column(String(18), unique=True)
     cpf = Column(String(11), unique=True)
     is_instagram_connected_facebook_page = Column(Boolean, default=False)
@@ -229,10 +229,22 @@ class Client(Base):
     logo_url = Column(String(255))
     n_monthly_contracted_creative_mandalecas = Column(Float, default=0)
     n_monthly_contracted_format_adaptation_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_content_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_content_production_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_stories_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_feed_linkedin_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_feed_tiktok_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_stories_repost_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_reels_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_cards_mandalecas = Column(Float, default=0)
     accumulated_creative_mandalecas = Column(Float, default=0)
     accumulated_format_adaptation_mandalecas = Column(Float, default=0)
     accumulated_content_mandalecas = Column(Float, default=0)
+    accomulated_feed_linkedin_mandalecas = Column(Float, default=0)
+    accumulated_feed_tiktok_mandalecas = Column(Float, default=0)
+    accumulated_stories_mandalecas = Column(Float, default=0)
+    accumulated_stories_repost_mandalecas = Column(Float, default=0)
+    accumulated_reels_mandalecas = Column(Float, default=0)
+    accumulated_cards_mandalecas = Column(Float, default=0)
     name = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.now)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
@@ -376,7 +388,7 @@ class InstagramInsights(Base):
     id = Column(Integer, primary_key=True)  # Unique identifier for the insight record
     instagram_profile_id = Column(String(60), ForeignKey('instagram_profiles.id'), nullable=False)  # Links to associated Instagram profile
     insights_data = Column(JSON)  # Stores the detailed insights data in JSON format
-    insight_type = Column(Enum('BusiestHours', 'Demographic', 'Media', 'User'), nullable=False)  # Type of insight
+    insight_type = Column(SQLAlchemyEnum('BusiestHours', 'Demographic', 'Media', 'User'), nullable=False)  # Type of insight
     start_date = Column(Date, nullable=False)  # The start date for the collected insights
     end_date = Column(Date, nullable=False)  # The end date for the collected insights
     updated_at = Column(TIMESTAMP, default=datetime.now)  # Timestamp of the last update to the insights
@@ -599,7 +611,7 @@ class Report(Base):
     id = Column(Integer, primary_key=True)
     date_start = Column(Date)
     date_end = Column(Date)
-    title = Column(Enum('Assessoria de Marketing', 'Redes Sociais', 'Tráfego Pago', 'Criação', name='report_titles'))
+    title = Column(SQLAlchemyEnum('Assessoria de Marketing', 'Redes Sociais', 'Tráfego Pago', 'Criação', name='report_titles'))
     analysis = Column(Text)
     details = Column(JSON)  # Detalhes específicos do relatório, como número de seguidores, posts, etc.
     client_id = Column(Integer, ForeignKey('clients.id'))
@@ -632,7 +644,7 @@ class BriefingRedesSociais(Base):
     main_content_type_social_media = Column(Text)  # Types of content to focus on in social media.
     how_followers_should_view_company = Column(Text)  # Desired company image on social media.
     brand_personality = Column(Text)  # Brand personality traits to emphasize.
-    language_tone = Column(Enum('Formal', 'Técnica', 'Informal', 'Descolada', 'Gíria/Regionalismo', 'Pessoal', 'Impessoal', name='language_tones'))  # Preferred language tone.
+    language_tone = Column(SQLAlchemyEnum('Formal', 'Técnica', 'Informal', 'Descolada', 'Gíria/Regionalismo', 'Pessoal', 'Impessoal', name='language_tones'))  # Preferred language tone.
     social_media_references = Column(Text)  # Examples and references for social media content.
     suggested_research_sources = Column(Text)  # Sources for content and strategy research.
     instagram_login = Column(Text)  # Instagram login details (handle securely).
@@ -674,7 +686,7 @@ class Product(Base):
     """
     __tablename__ = 'products'
     id = Column(Integer, primary_key=True)  # Unique identifier for each product.
-    type = Column(Enum('Imob', 'Infoproduto', 'Academia', 'Clínica', 'Varejo', 'E-commerce', name='product_types'))  # Product category.
+    type = Column(SQLAlchemyEnum('Imob', 'Infoproduto', 'Academia', 'Clínica', 'Varejo', 'E-commerce', name='product_types'))  # Product category.
     product_name = Column(String(255))  # Name of the product.
     description = Column(Text)  # Detailed description of the product.
     target_audience = Column(Text)  # Primary target audience for the product.
@@ -699,7 +711,7 @@ class Product(Base):
     product_images_urls = Column(JSON)  # URLs to images of the product.
     product_logo_url = Column(String(255))  # URL to the product's logo.
     email_leads_recipients = Column(JSON)  # Email addresses to receive leads generated by the product.
-    lead_recipient_channel = Column(Enum('Whatsapp', 'Email', 'CRM', 'Phone', name='lead_channels_options'))  # Preferred channel for receiving leads.
+    lead_recipient_channel = Column(SQLAlchemyEnum('Whatsapp', 'Email', 'CRM', 'Phone', name='lead_channels_options'))  # Preferred channel for receiving leads.
     lead_recipient_details = Column(JSON)  # Details about the lead reception channel.
     amenities = Column(JSON)  # Amenities included with the property.
     author_id = Column(Integer, ForeignKey('users.id'))  # Isso associa um produto a um usuário (autor).
@@ -735,8 +747,8 @@ class RealEstateProduct(Product):
     """
     __mapper_args__ = {'polymorphic_identity': 'Imob'}  # SQLAlchemy inheritance configuration.
 
-    status = Column(Enum('Pronto para morar', 'Na planta', 'Lançamento Breve', 'Em Construção', name='product_status_options'))  # Status of the real estate product.
-    home_type = Column(Enum('Vertical', 'Casa', 'Condomínio Horizontal', name='home_types_options'))  # Type of home (apartment, house, etc.).
+    status = Column(SQLAlchemyEnum('Pronto para morar', 'Na planta', 'Lançamento Breve', 'Em Construção', name='product_status_options'))  # Status of the real estate product.
+    home_type = Column(SQLAlchemyEnum('Vertical', 'Casa', 'Condomínio Horizontal', name='home_types_options'))  # Type of home (apartment, house, etc.).
     number_bedrooms = Column(Integer)  # Number of bedrooms.
     area = Column(DECIMAL(10,2))  # Total area of the property in square meters.
     street_name = Column(String(255))  # Street name of the property's location.
@@ -764,10 +776,10 @@ class Infoproduct(Product):
     """
     __mapper_args__ = {'polymorphic_identity': 'Infoproduto'}  # SQLAlchemy inheritance configuration.
 
-    infoproduct_host = Column(Enum('Hotmart', 'Eduzz', 'Monetizze', 'Udemy', 'Kajabi', name='infoproduct_hosts'), comment='Platform for hosting and selling the infoproduct.')  # Hosting platform for the infoproduct.
-    market_niche = Column(Enum('Desenvolvimento Pessoal', 'Marketing Digital', 'Saúde e Bem-Estar', 'Negócios e Investimentos', 'Educação e Ensino', 'Relacionamentos', 'Artes e Entretenimento', 'Tecnologia e Programação', 'Moda e Beleza', 'Gastronomia e Culinária', name='market_niches'), comment='Target market or niche of the infoproduct.')  # Market niche for the infoproduct.
-    access_type = Column(Enum('Vitalício', 'Limitado', 'Mensal', 'Anual', name='access_types'), comment='Type of access provided to the product (e.g., lifetime, limited).')  # Type of access for the infoproduct.
-    course_level = Column(Enum('Iniciante', 'Intermediário', 'Avançado', name='course_levels'), comment='Intended level of audience (beginner, intermediate, advanced).')  # Level of the course offered.
+    infoproduct_host = Column(SQLAlchemyEnum('Hotmart', 'Eduzz', 'Monetizze', 'Udemy', 'Kajabi', name='infoproduct_hosts'), comment='Platform for hosting and selling the infoproduct.')  # Hosting platform for the infoproduct.
+    market_niche = Column(SQLAlchemyEnum('Desenvolvimento Pessoal', 'Marketing Digital', 'Saúde e Bem-Estar', 'Negócios e Investimentos', 'Educação e Ensino', 'Relacionamentos', 'Artes e Entretenimento', 'Tecnologia e Programação', 'Moda e Beleza', 'Gastronomia e Culinária', name='market_niches'), comment='Target market or niche of the infoproduct.')  # Market niche for the infoproduct.
+    access_type = Column(SQLAlchemyEnum('Vitalício', 'Limitado', 'Mensal', 'Anual', name='access_types'), comment='Type of access provided to the product (e.g., lifetime, limited).')  # Type of access for the infoproduct.
+    course_level = Column(SQLAlchemyEnum('Iniciante', 'Intermediário', 'Avançado', name='course_levels'), comment='Intended level of audience (beginner, intermediate, advanced).')  # Level of the course offered.
 
     def __repr__(self):
         return f"<Infoproduct(id={self.id}, name='{self.product_name}', host='{self.infoproduct_host}', niche='{self.market_niche}')>"
@@ -997,22 +1009,20 @@ class ActionPlanAssessoria(Base):
     why = Column(Text)
     how = Column(Text)
     notes = Column(Text)
-    status = Column(Enum("Aguardando início", "Em Andamento", "Em Criação", "Em Orçamento", "Em Aprovação", "Reprovado", "Aprovado", "Em Execução", "Concluído", "Cancelado", "Stand By", name="action_plan_assessoria_status"))
+    status = Column(SQLAlchemyEnum("Aguardando início", "Em Andamento", "Em Criação", "Em Orçamento", "Em Aprovação", "Reprovado", "Aprovado", "Em Execução", "Concluído", "Cancelado", "Stand By", name="action_plan_assessoria_status"))
     responsible_id = Column(Integer)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
 
     def __repr__(self):
         return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
 
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from .database import Base  # Ajuste a importação conforme a estrutura do seu projeto
-
-from sqlalchemy import Column, Integer, String, Date, DateTime, ForeignKey
-from sqlalchemy.orm import relationship
-from datetime import datetime
-from .database import Base  # Ajuste a importação conforme a estrutura do seu projeto
+class CategoryEnum(str, Enum):
+    CRIACAO = 'Criação'
+    ADAPTACAO = 'Adaptação'
+    REELS = 'Reels'
+    STORIES = 'Stories'
+    CARD = 'Card'
+    STORIES_REPOST = 'Stories Repost'
 
 class DeliveryControlCreative(Base):
     __tablename__ = 'delivery_control_creative'
@@ -1025,7 +1035,7 @@ class DeliveryControlCreative(Base):
     client = relationship("Client", back_populates="delivery_control_creative")
     job_link = Column(String)
     project = Column(String)
-    category=Column(String)
+    category= Column(SQLAlchemyEnum(CategoryEnum))
     job_title = Column(String)
     used_creative_mandalecas = Column(Integer, default=0)
     used_format_adaptation_mandalecas = Column(Integer, default=0)
@@ -1044,8 +1054,7 @@ Users.user_in_charge_jobs = relationship("DeliveryControlCreative", foreign_keys
 Users.requested_jobs = relationship("DeliveryControlCreative", foreign_keys=[DeliveryControlCreative.requested_by_id], back_populates="requested_by")
 
 def __repr__(self):
-        return f"<DeliveryControlCreative(id={self.id}, job_title={self.job_title}, client_id={self.client_id})>"
-
+    return f"<Client(id={self.client}, job='{self.job_title}', category='{self.category}')>"
 
 class DeliveryControlAssessoria(Base):
     __tablename__ = 'delivery_control_assessoria'

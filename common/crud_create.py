@@ -218,27 +218,33 @@ def create_client(data):
             client.id_instagram = data.get('id_instagram')
             client.hashtag_padrao = data.get('hashtag_padrao')
             client.id_linkedin = data.get('id_linkedin')
-            client.n_pecas_contrato = data.get('n_pecas_contrato')
-            client.n_producao_de_conteudo = data.get('n_producao_de_conteudo')
-            client.n_finalizacoes_contrato = data.get('n_finalizacoes_contrato')
+            client. n_monthly_contracted_creative_mandalecas = data.get(' n_monthly_contracted_creative_mandalecas')
+            client.n_monthly_contracted_content_production_mandalecas = data.get('n_monthly_contracted_producao_conteudo_mandalecas')
+            client.n_monthly_contracted_format_adaptation_mandalecas = data.get('n_monthly_contracted_adaptacao_mandalecas')
+            client.n_monthly_contracted_stories_mandalecas = data.get('n_monthly_contracted_stories_mandalecas')
+            client.n_monthly_contracted_reels_mandalecas = data.get('n_monthly_contracted_reels_mandalecas')
+            client.n_monthly_contracted_stories_repost_mandalecas = data.get('n_monthly_contracted_stories_repost_mandalecas')
+            client.n_monthly_contracted_cards_mandalecas = data.get('n_monthly_contracted_cards_mandalecas')
+            client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_monthly_contracted_feed_tiktok_mandalecas')
+            client.n_monthly_contracted_feed_linkedin_mandalecas = data.get('n_monthly_contracted_feed_linkedin_mandalecas')
             client.id_tiktok = data.get('id_tiktok')
             client.normalized_name = data.get('normalized_name')
 
             # Campos contratuais
             client.n_monthly_contracted_creative_mandalecas = 6
             client.n_monthly_contracted_format_adaptation_mandalecas = 2
-            client.n_monthly_contracted_content_mandalecas = 5
+            client.n_monthly_contracted_production_content_mandalecas = 5
 
             # Outros campos adicionais
             client.marketing = data.get('marketing')
             client.verba_mensal_impulsionamento = data.get('verba_mensal_impulsionamento')
             client.copy = data.get('copy')
-            client.n_posts_contratados_estatico_instagram = data.get('n_posts_contratados_estatico_instagram')
-            client.n_posts_contratados_reels_instagram = data.get('n_posts_contratados_reels_instagram')
-            client.n_posts_contratados_feed_linkedin = data.get('n_posts_contratados_feed_linkedin')
-            client.n_posts_contratados_stories_instagram = data.get('n_posts_contratados_stories_instagram')
-            client.n_posts_contratados_feed_facebook = data.get('n_posts_contratados_feed_facebook')
-            client.n_posts_contratados_feed_tiktok = data.get('n_posts_contratados_feed_tiktok')
+            client.n_monthly_contracted_stories_mandalecas = data.get('n_posts_contratados_stories_instagram')
+            client.n_monthly_contracted_reels_mandalecas= data.get('n_posts_contratados_reels_instagram')
+            client.n_monthly_contracted_stories_repost_mandalecas = data.get('n_posts_contratados_feed_linkedin')
+            client.n_monthly_contracted_feed_linkedin_mandalecas= data.get('n_posts_contratados_stories_instagram')
+            client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_posts_contratados_feed_facebook')
+            client.n_monthly_contracted_creative_mandalecas = data.get('n_posts_contratados_feed_tiktok')
             client.url_img_logo = data.get('url_img_logo')
             client.ativo = data.get('ativo')
             client.impulsionamento = data.get('Impulsionamento')
