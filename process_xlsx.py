@@ -75,9 +75,9 @@ def calcular_e_atualizar_mandalecas_acumuladas(client):
 
     session.commit()
     
-@st.experimental_dialog("Adicionar novo cliente", width="large")
+@st.experimental_dialog("Correspondência de clientes", width="large")
 def match_client_dialog():
-    if not st.session_state("unmatched_clients"):
+    if not st.session_state.get("unmatched_clients"):
         return
 
     # Verificações e prints de depuração
@@ -122,7 +122,7 @@ def match_client_dialog():
                     selected_client['aliases'].append(client_name)
                 st.session_state.client_name_map[index] = selected_client
                 st.session_state.unmatched_clients.pop(0)
-                st.session_state.actions_taken.append(("correspondido", selected_client_name))
+                st.session_state.actions_taken.append("correspondido")
                 st.rerun()
 
     elif action == "Adicionar como novo cliente":
@@ -131,19 +131,17 @@ def match_client_dialog():
         adaptation_mandalecas = st.number_input("Mandalecas mensais contratadas (Adaptação)", min_value=0)
         content_mandalecas = st.number_input("Mandalecas mensais contratadas (Conteúdo)", min_value=0)
         if st.button("Confirmar Adição", key=f"confirm_add_{index}"):
-            new_client = Client(
-                name=new_client_name,
-                n_monthly_contracted_creative_mandalecas=creative_mandalecas,
-                n_monthly_contracted_format_adaptation_mandalecas=adaptation_mandalecas,
-                n_monthly_contracted_content_production_mandalecas=content_mandalecas,
-                aliases=[client_name]
-            )
-            session.add(new_client)
-            session.commit()
+            new_client = {
+                'name': new_client_name,
+                'creative_mandalecas': creative_mandalecas,
+                'adaptation_mandalecas': adaptation_mandalecas,
+                'content_mandalecas': content_mandalecas,
+                'aliases': [client_name]
+            }
             st.session_state.clients_to_add.append(new_client)
             st.session_state.client_name_map[index] = new_client
             st.session_state.unmatched_clients.pop(0)
-            st.session_state.actions_taken.append(("adicionado", new_client))
+            st.session_state.actions_taken.append("adicionado")
             st.write(f"Clientes não correspondidos após a adição: {st.session_state.unmatched_clients}")
             st.write(f"Clientes a serem adicionados após a adição: {st.session_state.clients_to_add}")
             st.rerun()
@@ -162,8 +160,6 @@ def match_client_dialog():
                 st.session_state.unmatched_clients.insert(0, (index, client_data))
             elif last_action == "adicionado":
                 st.session_state.unmatched_clients.insert(0, (index, client_data))
-                session.delete(client_data)
-                session.commit()
                 st.session_state.clients_to_add.pop()
             st.rerun()
 
