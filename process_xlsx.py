@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
 from common.models import DeliveryControlCreative, Client, Users, CategoryEnum
 from common.database import engine
+from sqlalchemy.dialects.postgresql import JSON
 from datetime import datetime
 import streamlit as st
 
@@ -19,6 +20,7 @@ def extract_mandalecas(title):
         return float(mandalecas)
     return None
 
+# Função para identificar a categoria do trabalho
 def identificar_categoria(titulo, projeto, index):
     titulo_lower = titulo.lower()
     projeto_lower = projeto.lower()
@@ -36,7 +38,6 @@ def identificar_categoria(titulo, projeto, index):
     if any(keyword in titulo_lower for keyword in ["card", "cards"]):
         categorias_encontradas.add("Cards")
 
-    # Se nenhuma categoria for encontrada ou mais de uma categoria for encontrada
     if not categorias_encontradas or len(categorias_encontradas) > 1:
         st.write(f"Título do Job: {titulo}")
         categoria_escolhida = st.selectbox(
@@ -48,11 +49,13 @@ def identificar_categoria(titulo, projeto, index):
     else:
         return categorias_encontradas.pop()
 
+# Função para converter valores para data
 def convert_to_date(value):
     if pd.isna(value):
         return None
     return value.date() if isinstance(value, pd.Timestamp) else value
 
+# Função para calcular e atualizar mandalecas acumuladas
 def calcular_e_atualizar_mandalecas_acumuladas(client):
     entregas = session.query(DeliveryControlCreative).filter_by(client_id=client.id).all()
 
@@ -71,6 +74,99 @@ def calcular_e_atualizar_mandalecas_acumuladas(client):
     client.accumulated_cards_mandalecas = mandalecas_usadas_cards
 
     session.commit()
+    
+@st.experimental_dialog("Adicionar novo cliente", width="large")
+def match_client_dialog():
+    if not st.session_state("unmatched_clients"):
+        return
+
+    # Verificações e prints de depuração
+    st.write(f"Clientes não correspondidos antes da ação: {st.session_state.unmatched_clients}")
+    st.write(f"Clientes a serem adicionados: {st.session_state.clients_to_add}")
+
+    index, client_name = st.session_state.unmatched_clients[0]
+    st.write(f"Nome do cliente na planilha: {client_name}")
+
+    # Combine os clientes existentes no banco de dados com os que estão na fila para serem adicionados
+    existing_clients = [client.name for client in session.query(Client).all()]
+    new_clients = [client['name'] for client in st.session_state.clients_to_add]
+    all_clients = existing_clients + new_clients
+
+    action = st.radio(
+        "Ação:",
+        ("Corresponder a um cliente existente", "Adicionar como novo cliente"),
+        key=f"action_{index}"
+    )
+
+    if action == "Corresponder a um cliente existente":
+        selected_client_name = st.selectbox(
+            "Selecione o cliente correspondente:",
+            all_clients,
+            key=f"client_{index}"
+        )
+        if st.button("Confirmar Correspondência", key=f"confirm_match_{index}"):
+            selected_client = session.query(Client).filter_by(name=selected_client_name).first()
+            if not selected_client:
+                # Se o cliente selecionado não estiver no banco de dados, ele deve estar na lista de novos clientes
+                selected_client = next((client for client in st.session_state.clients_to_add if client['name'] == selected_client_name), None)
+            if selected_client:
+                if not isinstance(selected_client, dict):
+                    # Cliente existente no banco de dados
+                    if not selected_client.aliases:
+                        selected_client.aliases = []
+                    selected_client.aliases.append(client_name)
+                else:
+                    # Cliente na fila para ser adicionado
+                    if 'aliases' not in selected_client:
+                        selected_client['aliases'] = []
+                    selected_client['aliases'].append(client_name)
+                st.session_state.client_name_map[index] = selected_client
+                st.session_state.unmatched_clients.pop(0)
+                st.session_state.actions_taken.append(("correspondido", selected_client_name))
+                st.rerun()
+
+    elif action == "Adicionar como novo cliente":
+        new_client_name = st.text_input("Nome do cliente", value=client_name)
+        creative_mandalecas = st.number_input("Mandalecas mensais contratadas (Criação)", min_value=0)
+        adaptation_mandalecas = st.number_input("Mandalecas mensais contratadas (Adaptação)", min_value=0)
+        content_mandalecas = st.number_input("Mandalecas mensais contratadas (Conteúdo)", min_value=0)
+        if st.button("Confirmar Adição", key=f"confirm_add_{index}"):
+            new_client = Client(
+                name=new_client_name,
+                n_monthly_contracted_creative_mandalecas=creative_mandalecas,
+                n_monthly_contracted_format_adaptation_mandalecas=adaptation_mandalecas,
+                n_monthly_contracted_content_production_mandalecas=content_mandalecas,
+                aliases=[client_name]
+            )
+            session.add(new_client)
+            session.commit()
+            st.session_state.clients_to_add.append(new_client)
+            st.session_state.client_name_map[index] = new_client
+            st.session_state.unmatched_clients.pop(0)
+            st.session_state.actions_taken.append(("adicionado", new_client))
+            st.write(f"Clientes não correspondidos após a adição: {st.session_state.unmatched_clients}")
+            st.write(f"Clientes a serem adicionados após a adição: {st.session_state.clients_to_add}")
+            st.rerun()
+
+    if st.button("Ignorar", key=f"ignore_button_{index}"):
+        st.write(f"Antes de ignorar: {st.session_state.unmatched_clients}")  # Mensagem de depuração antes de remover o cliente
+        st.session_state.unmatched_clients.pop(0)
+        st.write(f"Depois de ignorar: {st.session_state.unmatched_clients}")  # Mensagem de depuração após remover o cliente
+        st.session_state.actions_taken.append(("ignorado", client_name))
+        st.rerun()
+
+    if st.button("Voltar", key=f"back_button_{index}"):
+        if st.session_state.actions_taken:
+            last_action, client_data = st.session_state.actions_taken.pop()
+            if last_action in ["correspondido", "ignorado"]:
+                st.session_state.unmatched_clients.insert(0, (index, client_data))
+            elif last_action == "adicionado":
+                st.session_state.unmatched_clients.insert(0, (index, client_data))
+                session.delete(client_data)
+                session.commit()
+                st.session_state.clients_to_add.pop()
+            st.rerun()
+
 
 def process_xlsx_file(uploaded_file):
     try:
@@ -88,36 +184,34 @@ def process_xlsx_file(uploaded_file):
 
         # Listas para armazenar valores não encontrados
         unmatched_clients = []
-        unmatched_users_in_charge = []
-        unmatched_requested_by = []
+        client_name_map = {}
 
         # Processar os dados para encontrar valores não correspondidos
-        for _, row in df.iterrows():
-            client = session.query(Client).filter_by(name=row['Cliente']).first()
-            user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
-            requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
-
+        for index, row in df.iterrows():
+            client_name = row['Cliente']
+            client = session.query(Client).filter((Client.name == client_name) | (Client.aliases.contains([client_name]))).first()
             if not client:
-                unmatched_clients.append(row['Cliente'])
-            if not user_in_charge:
-                unmatched_users_in_charge.append(row['Responsável'])
-            if not requested_by:
-                unmatched_requested_by.append(row['Requisitante'])
+                unmatched_clients.append((index, client_name))
+            else:
+                client_name_map[index] = client
 
+        # Armazenar clientes não encontrados no estado da sessão
+        st.session_state.unmatched_clients = unmatched_clients
+        st.session_state.client_name_map = client_name_map
+        st.session_state.clients_to_add = []
+        st.session_state.actions_taken = []
+
+        # Exibir a caixa de diálogo para o primeiro cliente não encontrado
         if unmatched_clients:
-            st.warning(f"Clientes não encontrados no banco de dados: {set(unmatched_clients)}")
-        if unmatched_users_in_charge:
-            st.warning(f"Responsáveis não encontrados no banco de dados: {set(unmatched_users_in_charge)}")
-        if unmatched_requested_by:
-            st.warning(f"Requisitantes não encontrados no banco de dados: {set(unmatched_requested_by)}")
+            match_client_dialog()
 
-        for index, row in enumerate(df.iterrows()):
-            row = row[1]
-            client = session.query(Client).filter_by(name=row['Cliente']).first()
-            user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
-            requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
+        # Processar os dados e inseri-los no banco de dados
+        for index, row in df.iterrows():
+            if index in client_name_map:
+                client = client_name_map[index]
+                user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
+                requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
 
-            if client and user_in_charge and requested_by:
                 project_url = row.get('URL do projeto', '')
 
                 # Extração do valor de mandalecas
@@ -161,19 +255,21 @@ def process_xlsx_file(uploaded_file):
                         job_finish_date=job_finish_date,
                         job_status=row['Status'],
                         user_in_charge_id=user_in_charge.id,
-                        requested_by_id=requested_by.id,
+                        requested_by_id=row['Requisitante'],
                         category=categoria,
                         project=row['Projeto']
                     )
                     session.add(new_entry)
         session.commit()
         st.success("Dados processados e inseridos com sucesso!")
-        
+
         # Atualizar os valores acumulados de mandalecas
-        calcular_e_atualizar_mandalecas_acumuladas(client)
+        for client in set(client_name_map.values()):
+            calcular_e_atualizar_mandalecas_acumuladas(client)
 
         # Exibir os dados atualizados do banco de dados
-        updated_data = session.query(DeliveryControlCreative).filter_by(client_id=client.id).all()
+        updated_data = session.query(DeliveryControlCreative).filter(
+            DeliveryControlCreative.client_id.in_([client.id for client in set(client_name_map.values())])).all()
         updated_df = pd.DataFrame([{
             'ID': entry.id,
             'Cliente': entry.client.name,
@@ -195,5 +291,20 @@ def process_xlsx_file(uploaded_file):
         st.error(f"Erro ao processar dados: {e}")
 
 # Use esta função para processar o arquivo carregado
-if st.file_uploader("Carregue o arquivo Excel", type=["xlsx"]):
+uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"])
+if uploaded_file:
     process_xlsx_file(uploaded_file)
+
+# Botão para concluir e salvar todas as mudanças no banco de dados
+if st.button("Concluir"):
+    for client_data in st.session_state.clients_to_add:
+        new_client = Client(
+            name=client_data.name,
+            n_monthly_contracted_creative_mandalecas=client_data.n_monthly_contracted_creative_mandalecas,
+            n_monthly_contracted_format_adaptation_mandalecas=client_data.n_monthly_contracted_format_adaptation_mandalecas,
+            n_monthly_contracted_content_production_mandalecas=client_data.n_monthly_contracted_content_mandalecas,
+            aliases=client_data.aliases
+        )
+        session.add(new_client)
+    session.commit()
+    st.success("Todos os clientes adicionados com sucesso!")

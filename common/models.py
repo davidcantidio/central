@@ -214,6 +214,7 @@ class Client(Base):
     business_type = Column(SQLAlchemyEnum('Imob', 'Academia', 'Clínica', 'Político'), index=True)
     cnpj = Column(String(18), unique=True)
     cpf = Column(String(11), unique=True)
+    aliases = Column(JSON)
     is_instagram_connected_facebook_page = Column(Boolean, default=False)
     is_active_impulsionamento_instagram = Column(Boolean, default=False)
     is_active_impulsionamento_linkedin = Column(Boolean, default=False)
