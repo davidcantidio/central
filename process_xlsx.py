@@ -98,37 +98,81 @@ def match_category_dialog():
         st.write(f"Mapa de categorias: {st.session_state.job_category_map}")
         # Reiniciar o diálogo para o próximo item
         st.rerun()
-
-@st.experimental_dialog("Correspondência de categorias", width="large")
-def match_category_dialog():
-    if not st.session_state.get("unmatched_categories"):
+st.experimental_dialog("Correspondência de clientes", width="large")
+def match_client_dialog():
+    if not st.session_state.get("unmatched_clients"):
         return
 
-    # Obter o índice e o título do trabalho do primeiro item na lista
-    index, job_title = st.session_state.unmatched_categories[0]
+    index, client_name = st.session_state.unmatched_clients[0]
 
-    # Exibir o título do trabalho para o qual a categoria está sendo selecionada
-    st.write(f"Título do Job: {job_title}")
+    # Combine os clientes existentes no banco de dados com os que estão na fila para serem adicionados
+    existing_clients = [client.name for client in session.query(Client).all()]
+    new_clients = [client['name'] for client in st.session_state.clients_to_add]
+    all_clients = existing_clients + new_clients
 
-    # Exibir uma caixa de seleção para escolher a categoria
-    categoria_escolhida = st.selectbox(
-        "Escolha a categoria:",
-        [category.value for category in CategoryEnum],
-        key=f"categoria_{index}_{uuid.uuid4()}"
+    action = st.radio(
+        "Ação:",
+        ("Corresponder a um cliente existente", "Adicionar como novo cliente"),
+        key=f"action_{index}"
     )
 
-    # Botão para confirmar a correspondência
-    if st.button("Fazer Correspondência", key=f"confirm_category_{index}"):
-        # Armazenar a categoria escolhida no mapa de categorias
-        st.session_state.job_category_map[index] = categoria_escolhida
-        # Remover o item da lista de categorias não correspondidas
-        st.session_state.unmatched_categories.pop(0)
-        # Verificações de depuração
-        st.write(f"Categoria escolhida: {categoria_escolhida}")
-        st.write(f"Categorias não correspondidas restantes: {st.session_state.unmatched_categories}")
-        st.write(f"Mapa de categorias: {st.session_state.job_category_map}")
-        # Reiniciar o diálogo para o próximo item
+    if action == "Corresponder a um cliente existente":
+        selected_client_name = st.selectbox(
+            "Selecione o cliente correspondente:",
+            all_clients,
+            key=f"client_{index}"
+        )
+        if st.button("Confirmar Correspondência", key=f"confirm_match_{index}"):
+            selected_client = session.query(Client).filter_by(name=selected_client_name).first()
+            if not selected_client:
+                selected_client = next((client for client in st.session_state.clients_to_add if client['name'] == selected_client_name), None)
+            if selected_client:
+                if not isinstance(selected_client, dict):
+                    if not selected_client.aliases:
+                        selected_client.aliases = []
+                    selected_client.aliases.append(client_name)
+                else:
+                    if 'aliases' not in selected_client:
+                        selected_client['aliases'] = []
+                    selected_client['aliases'].append(client_name)
+                st.session_state.client_name_map[index] = selected_client
+                st.session_state.unmatched_clients.pop(0)
+                st.session_state.actions_taken.append("correspondido")
+                st.rerun()
+
+    elif action == "Adicionar como novo cliente":
+        new_client_name = st.text_input("Nome do cliente", value=client_name)
+        creative_mandalecas = st.number_input("Mandalecas mensais contratadas (Criação)", min_value=0)
+        adaptation_mandalecas = st.number_input("Mandalecas mensais contratadas (Adaptação)", min_value=0)
+        content_mandalecas = st.number_input("Mandalecas mensais contratadas (Conteúdo)", min_value=0)
+        if st.button("Confirmar Adição", key=f"confirm_add_{index}"):
+            new_client = {
+                'name': new_client_name,
+                'creative_mandalecas': creative_mandalecas,
+                'adaptation_mandalecas': adaptation_mandalecas,
+                'content_mandalecas': content_mandalecas,
+                'aliases': [client_name]
+            }
+            st.session_state.clients_to_add.append(new_client)
+            st.session_state.client_name_map[index] = new_client
+            st.session_state.unmatched_clients.pop(0)
+            st.session_state.actions_taken.append("adicionado")
+            st.rerun()
+
+    if st.button("Ignorar", key=f"ignore_button_{index}"):
+        st.session_state.unmatched_clients.pop(0)
+        st.session_state.actions_taken.append("ignorado")
         st.rerun()
+
+    if st.button("Voltar", key=f"back_button_{index}"):
+        if st.session_state.actions_taken:
+            last_action = st.session_state.actions_taken.pop()
+            if last_action in ["correspondido", "ignorado"]:
+                st.session_state.unmatched_clients.insert(0, (index, client_name))
+            elif last_action == "adicionado":
+                st.session_state.unmatched_clients.insert(0, (index, client_name))
+                st.session_state.clients_to_add.pop()
+            st.rerun()
 
 def process_xlsx_file(uploaded_file):
     try:
@@ -139,10 +183,6 @@ def process_xlsx_file(uploaded_file):
         df['Data de criação'] = pd.to_datetime(df['Data de criação'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         df['Data Início'] = pd.to_datetime(df['Data Início'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
         df['Data de Conclusão'] = pd.to_datetime(df['Data de Conclusão'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-
-        # Exibir os dados carregados para depuração
-        st.write("Dados carregados da planilha:")
-        st.dataframe(df)
 
         # Listas para armazenar valores não encontrados
         unmatched_clients = []
@@ -188,14 +228,15 @@ def process_xlsx_file(uploaded_file):
                 user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
                 requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
 
-                project_url = row.get('URL do projeto', '')
+                # Construir o job_link
+                doc_num = str(row['Nº Doc']).split('.')[0]  # Obter o número do documento antes do primeiro ponto
+                job_link = f"https://app4.operand.com.br/jobs/{doc_num}"
 
                 # Extração do valor de mandalecas
                 mandalecas = extract_mandalecas(row['Título'])
                 categoria = job_category_map.get(index)  # Usar categoria do mapa ou None
 
                 # Processar o campo "Nº Doc"
-                doc_num = str(row['Nº Doc']).replace('.', '').replace(',', '')
                 doc_id = int(doc_num)
 
                 existing_entry = session.query(DeliveryControlCreative).filter_by(id=doc_id).first()
@@ -207,7 +248,7 @@ def process_xlsx_file(uploaded_file):
                 if existing_entry:
                     # Atualizar a entrada existente
                     existing_entry.client_id = client.id
-                    existing_entry.job_link = project_url
+                    existing_entry.job_link = job_link
                     existing_entry.job_title = row['Título']
                     existing_entry.used_creative_mandalecas = mandalecas
                     existing_entry.job_creation_date = job_creation_date
@@ -223,7 +264,7 @@ def process_xlsx_file(uploaded_file):
                     new_entry = DeliveryControlCreative(
                         id=doc_id,
                         client_id=client.id,
-                        job_link=project_url,
+                        job_link=job_link,
                         job_title=row['Título'],
                         used_creative_mandalecas=mandalecas,
                         job_creation_date=job_creation_date,
@@ -243,29 +284,10 @@ def process_xlsx_file(uploaded_file):
         for client in set(client_name_map.values()):
             calcular_e_atualizar_mandalecas_acumuladas(client)
 
-        # Exibir os dados atualizados do banco de dados
-        updated_data = session.query(DeliveryControlCreative).filter(
-            DeliveryControlCreative.client_id.in_([client.id for client in set(client_name_map.values())])).all()
-        updated_df = pd.DataFrame([{
-            'ID': entry.id,
-            'Cliente': entry.client.name,
-            'Título': entry.job_title,
-            'Mandalecas': entry.used_creative_mandalecas,
-            'Status': entry.job_status,
-            'Data de criação': entry.job_creation_date,
-            'Data Início': entry.job_start_date,
-            'Data de Conclusão': entry.job_finish_date,
-            'Responsável': entry.user_in_charge.first_name if entry.user_in_charge else None,
-            'Requisitante': entry.requested_by.first_name if entry.requested_by else None,
-            'Categoria': entry.category,
-            'Projeto': entry.project
-        } for entry in updated_data])
-        st.write("Dados atualizados no banco de dados:")
-        st.dataframe(updated_df)
-
     except Exception as e:
         st.error(f"Erro ao processar dados: {e}")
 
+# Código para carregar o arquivo e processá-lo
 uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"])
 if uploaded_file:
     process_xlsx_file(uploaded_file)

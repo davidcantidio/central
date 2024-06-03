@@ -9,6 +9,32 @@ def get_clientes():
         df = pd.read_sql_query("SELECT * FROM clients", conn)
     return df
 
+# Função para atualizar o cliente no banco de dados
+def update_cliente(cliente_id, updated_data):
+    with sqlite3.connect('common/db_mandala.sqlite') as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE clients
+            SET name = ?, 
+                n_monthly_contracted_creative_mandalecas = ?, 
+                n_monthly_contracted_format_adaptation_mandalecas = ?, 
+                n_monthly_contracted_content_production_mandalecas = ?, 
+                accumulated_creative_mandalecas = ?, 
+                accumulated_format_adaptation_mandalecas = ?, 
+                accumulated_content_mandalecas = ?
+            WHERE id = ?
+        """, (
+            updated_data['name'], 
+            updated_data['n_monthly_contracted_creative_mandalecas'], 
+            updated_data['n_monthly_contracted_format_adaptation_mandalecas'], 
+            updated_data['n_monthly_contracted_content_production_mandalecas'], 
+            updated_data['accumulated_creative_mandalecas'], 
+            updated_data['accumulated_format_adaptation_mandalecas'], 
+            updated_data['accumulated_content_mandalecas'], 
+            cliente_id
+        ))
+        conn.commit()
+
 # Função para exibir os detalhes do cliente
 def show_cliente(cliente_id):
     df = get_clientes()
@@ -28,13 +54,29 @@ def show_cliente(cliente_id):
 
     if menu == "Contrato":
         st.header("Informações do Contrato")
-        st.write(f"Nome: {cliente['name']}")
-        st.write(f"Mandaleças Criativas Mensais Contratadas: {cliente['n_monthly_contracted_creative_mandalecas']}")
-        st.write(f"Mandaleças de Adaptação de Formato Mensais Contratadas: {cliente['n_monthly_contracted_format_adaptation_mandalecas']}")
-        st.write(f"Mandaleças de Conteúdo Mensais Contratadas: {cliente['n_monthly_contracted_content_mandalecas']}")
-        st.write(f"Mandaleças Criativas Acumuladas: {cliente['accumulated_creative_mandalecas']}")
-        st.write(f"Mandaleças de Adaptação de Formato Acumuladas: {cliente['accumulated_format_adaptation_mandalecas']}")
-        st.write(f"Mandaleças de Conteúdo Acumuladas: {cliente['accumulated_content_mandalecas']}")
+        name = st.text_input("Nome", cliente['name'])
+        n_monthly_contracted_creative_mandalecas = st.number_input("Mandaleças Criativas Mensais Contratadas", value=cliente['n_monthly_contracted_creative_mandalecas'])
+        n_monthly_contracted_format_adaptation_mandalecas = st.number_input("Mandaleças de Adaptação de Formato Mensais Contratadas", value=cliente['n_monthly_contracted_format_adaptation_mandalecas'])
+        n_monthly_contracted_content_production_mandalecas = st.number_input("Mandaleças de Conteúdo Mensais Contratadas", value=cliente['n_monthly_contracted_content_production_mandalecas'])
+        accumulated_creative_mandalecas = st.number_input("Mandaleças Criativas Acumuladas", value=cliente['accumulated_creative_mandalecas'])
+        accumulated_format_adaptation_mandalecas = st.number_input("Mandaleças de Adaptação de Formato Acumuladas", value=cliente['accumulated_format_adaptation_mandalecas'])
+        accumulated_content_mandalecas = st.number_input("Mandaleças de Conteúdo Acumuladas", value=cliente['accumulated_content_mandalecas'])
+
+        if st.button("Atualizar"):
+            if not name:
+                st.error("O campo 'Nome' não pode ficar em branco.")
+            else:
+                updated_data = {
+                    'name': name,
+                    'n_monthly_contracted_creative_mandalecas': n_monthly_contracted_creative_mandalecas,
+                    'n_monthly_contracted_format_adaptation_mandalecas': n_monthly_contracted_format_adaptation_mandalecas,
+                    'n_monthly_contracted_content_production_mandalecas': n_monthly_contracted_content_production_mandalecas,
+                    'accumulated_creative_mandalecas': accumulated_creative_mandalecas,
+                    'accumulated_format_adaptation_mandalecas': accumulated_format_adaptation_mandalecas,
+                    'accumulated_content_mandalecas': accumulated_content_mandalecas
+                }
+                update_cliente(cliente_id, updated_data)
+                st.success("Dados do cliente atualizados com sucesso!")
 
 # Main logic to select a client and display their details
 def main():
