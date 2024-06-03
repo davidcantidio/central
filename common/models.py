@@ -1022,7 +1022,7 @@ class CategoryEnum(str, Enum):
     ADAPTACAO = 'Adaptação'
     REELS = 'Reels'
     STORIES = 'Stories'
-    CARD = 'Card'
+    CARDS = 'Cards'
     STORIES_REPOST = 'Stories Repost'
 
 class DeliveryControlCreative(Base):
@@ -1055,7 +1055,7 @@ Users.user_in_charge_jobs = relationship("DeliveryControlCreative", foreign_keys
 Users.requested_jobs = relationship("DeliveryControlCreative", foreign_keys=[DeliveryControlCreative.requested_by_id], back_populates="requested_by")
 
 def __repr__(self):
-    return f"<Client(id={self.client}, job='{self.job_title}', category='{self.category}')>"
+    return f"job='{self.job_title}', category='{self.category}')>"
 
 class DeliveryControlAssessoria(Base):
     __tablename__ = 'delivery_control_assessoria'

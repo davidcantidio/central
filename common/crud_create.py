@@ -89,7 +89,8 @@ def insert_users():
                 "Júlia / Paloma",
                 "Mariana M. / Maiane",
                 "Crisler / Guilherme",
-                "Mariana Caldas"
+                "Mariana Caldas",
+                "Desconhecido"
             ]
         },
         6: {  # ID do departamento 'Social Media'

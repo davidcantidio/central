@@ -7,8 +7,8 @@ from common.models import DeliveryControlCreative, Client, Users
 from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime
-from process_xlsx import process_xlsx_file  # Importar a nova função
-
+from process_xlsx import process_xlsx_file, identificar_categoria  # Importar a nova função
+import matplotlib as plt
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
 session = Session()
@@ -35,9 +35,9 @@ def debug_display_data(cliente_id=None):
         for client in clients:
             entregas = session.query(DeliveryControlCreative).filter_by(client_id=client.id).all()
             
-            mandalecas_usadas_criacao = sum(entrega.used_creative_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "criacao")
-            mandalecas_usadas_adaptacao = sum(entrega.used_creative_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "adaptacao")
-            mandalecas_usadas_conteudo = sum(entrega.used_creative_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "conteudo")
+            mandalecas_usadas_criacao = sum(entrega.used_creative_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
+            mandalecas_usadas_adaptacao = sum(entrega.used_adaptacao_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Adaptação")
+            mandalecas_usadas_conteudo = sum(entrega.used_conteudo_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Conteúdo")
             
             mandalecas_acumuladas_criacao = client.accumulated_creative_mandalecas if client.accumulated_creative_mandalecas else 0
             mandalecas_acumuladas_adaptacao = client.accumulated_format_adaptation_mandalecas if client.accumulated_format_adaptation_mandalecas else 0
@@ -50,7 +50,7 @@ def debug_display_data(cliente_id=None):
                 'Total de Mandalecas Usadas (Conteúdo)': mandalecas_usadas_conteudo,
                 'Mandalecas Contratadas (Criação)': client.n_monthly_contracted_creative_mandalecas,
                 'Mandalecas Contratadas (Adaptação)': client.n_monthly_contracted_format_adaptation_mandalecas,
-                'Mandalecas Contratadas (Conteúdo)': client.n_monthly_contracted_content_mandalecas,
+                'Mandalecas Contratadas (Conteúdo)': client.n_monthly_contracted_content_production_mandalecas,
                 'Mandalecas Acumuladas (Criação)': mandalecas_acumuladas_criacao,
                 'Mandalecas Acumuladas (Adaptação)': mandalecas_acumuladas_adaptacao,
                 'Mandalecas Acumuladas (Conteúdo)': mandalecas_acumuladas_conteudo
@@ -61,7 +61,6 @@ def debug_display_data(cliente_id=None):
         st.dataframe(df_debug)
     except Exception as e:
         st.write(f"Erro ao exibir os dados: {e}")
-
 
 def page_criacao(cliente_selecionado=None):
     st.title("Controle de entregas: Criação")
@@ -92,7 +91,6 @@ def page_criacao(cliente_selecionado=None):
 
         if entregas:
             st.write("Entregas encontradas:")
-            st.write(entregas)  # Adicionando para depuração
             tabela_dados = [{
                 "Nome do Cliente": entrega.client.name,
                 "Título do Job": entrega.job_title,
