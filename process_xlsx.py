@@ -8,6 +8,9 @@ from sqlalchemy.dialects.postgresql import JSON
 from datetime import datetime
 import streamlit as st
 import uuid
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from sqlalchemy import func
 
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
@@ -50,129 +53,45 @@ def convert_to_date(value):
 
 # Função para calcular e atualizar mandalecas acumuladas
 def calcular_e_atualizar_mandalecas_acumuladas(client):
+    # Identificar o job mais antigo
+    job_mais_antigo = session.query(DeliveryControlCreative).filter_by(client_id=client.id).order_by(DeliveryControlCreative.data_criacao).first()
+    
+    if not job_mais_antigo:
+        return  # Nenhum job encontrado, nada a fazer
+    
+    data_mais_antiga = job_mais_antigo.data_criacao
+    data_atual = datetime.now()
+    
+    # Calcular o número de meses entre o mês do job mais antigo e o mês atual
+    numero_meses = relativedelta(data_atual, data_mais_antiga).years * 12 + relativedelta(data_atual, data_mais_antiga).months + 1  # +1 para incluir o mês atual
+    
+    # Calcular mandalecas contratadas acumuladas
+    mandalecas_contratadas_criacao = numero_meses * (client.n_monthly_contracted_creative_mandalecas or 0)
+    mandalecas_contratadas_adaptacao = numero_meses * (client.n_monthly_contracted_format_adaptation_mandalecas or 0)
+    mandalecas_contratadas_conteudo = numero_meses * (client.n_monthly_contracted_content_mandalecas or 0)
+    mandalecas_contratadas_reels = numero_meses * (client.n_monthly_contracted_reels_mandalecas or 0)
+    mandalecas_contratadas_stories = numero_meses * (client.n_monthly_contracted_stories_mandalecas or 0)
+    mandalecas_contratadas_cards = numero_meses * (client.n_monthly_contracted_cards_mandalecas or 0)
+    
+    # Somar mandalecas usadas desde o job mais antigo
     entregas = session.query(DeliveryControlCreative).filter_by(client_id=client.id).all()
-
     mandalecas_usadas_criacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
     mandalecas_usadas_adaptacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Adaptação")
     mandalecas_usadas_conteudo = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Conteúdo")
-    mandalecas_usadas_reels = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Reels")
+    mandalecas_usadas_reels = sum ((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Reels")
     mandalecas_usadas_stories = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Stories")
     mandalecas_usadas_cards = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Cards")
-
-    client.accumulated_creative_mandalecas = mandalecas_usadas_criacao
-    client.accumulated_format_adaptation_mandalecas = mandalecas_usadas_adaptacao
-    client.accumulated_content_mandalecas = mandalecas_usadas_conteudo
-    client.accumulated_stories_mandalecas = mandalecas_usadas_stories
-    client.accumulated_reels_mandalecas = mandalecas_usadas_reels
-    client.accumulated_cards_mandalecas = mandalecas_usadas_cards
-
+    
+    # Calcular mandalecas acumuladas
+    client.accumulated_creative_mandalecas = mandalecas_contratadas_criacao - mandalecas_usadas_criacao
+    client.accumulated_format_adaptation_mandalecas = mandalecas_contratadas_adaptacao - mandalecas_usadas_adaptacao
+    client.accumulated_content_mandalecas = mandalecas_contratadas_conteudo - mandalecas_usadas_conteudo
+    client.accumulated_stories_mandalecas = mandalecas_contratadas_stories - mandalecas_usadas_stories
+    client.accumulated_reels_mandalecas = mandalecas_contratadas_reels - mandalecas_usadas_reels
+    client.accumulated_cards_mandalecas = mandalecas_contratadas_cards - mandalecas_usadas_cards
+    
+    # Salvar mudanças no banco de dados
     session.commit()
-
-@st.experimental_dialog("Correspondência de categorias", width="large")
-def match_category_dialog():
-    if not st.session_state.get("unmatched_categories"):
-        return
-
-    # Obter o índice e o título do trabalho do primeiro item na lista
-    index, job_title = st.session_state.unmatched_categories[0]
-
-    # Exibir o título do trabalho para o qual a categoria está sendo selecionada
-    st.write(f"Título do Job: {job_title}")
-
-    # Exibir uma caixa de seleção para escolher a categoria
-    categoria_escolhida = st.selectbox(
-        "Escolha a categoria:",
-        [category.value for category in CategoryEnum],
-        key=f"categoria_{index}_{uuid.uuid4()}"
-    )
-
-    # Botão para confirmar a correspondência
-    if st.button("Fazer Correspondência", key=f"confirm_category_{index}"):
-        # Armazenar a categoria escolhida no mapa de categorias
-        st.session_state.job_category_map[index] = categoria_escolhida
-        # Remover o item da lista de categorias não correspondidas
-        st.session_state.unmatched_categories.pop(0)
-        # Verificações de depuração
-        st.write(f"Categoria escolhida: {categoria_escolhida}")
-        st.write(f"Categorias não correspondidas restantes: {st.session_state.unmatched_categories}")
-        st.write(f"Mapa de categorias: {st.session_state.job_category_map}")
-        # Reiniciar o diálogo para o próximo item
-        st.rerun()
-st.experimental_dialog("Correspondência de clientes", width="large")
-def match_client_dialog():
-    if not st.session_state.get("unmatched_clients"):
-        return
-
-    index, client_name = st.session_state.unmatched_clients[0]
-
-    # Combine os clientes existentes no banco de dados com os que estão na fila para serem adicionados
-    existing_clients = [client.name for client in session.query(Client).all()]
-    new_clients = [client['name'] for client in st.session_state.clients_to_add]
-    all_clients = existing_clients + new_clients
-
-    action = st.radio(
-        "Ação:",
-        ("Corresponder a um cliente existente", "Adicionar como novo cliente"),
-        key=f"action_{index}"
-    )
-
-    if action == "Corresponder a um cliente existente":
-        selected_client_name = st.selectbox(
-            "Selecione o cliente correspondente:",
-            all_clients,
-            key=f"client_{index}"
-        )
-        if st.button("Confirmar Correspondência", key=f"confirm_match_{index}"):
-            selected_client = session.query(Client).filter_by(name=selected_client_name).first()
-            if not selected_client:
-                selected_client = next((client for client in st.session_state.clients_to_add if client['name'] == selected_client_name), None)
-            if selected_client:
-                if not isinstance(selected_client, dict):
-                    if not selected_client.aliases:
-                        selected_client.aliases = []
-                    selected_client.aliases.append(client_name)
-                else:
-                    if 'aliases' not in selected_client:
-                        selected_client['aliases'] = []
-                    selected_client['aliases'].append(client_name)
-                st.session_state.client_name_map[index] = selected_client
-                st.session_state.unmatched_clients.pop(0)
-                st.session_state.actions_taken.append("correspondido")
-                st.rerun()
-
-    elif action == "Adicionar como novo cliente":
-        new_client_name = st.text_input("Nome do cliente", value=client_name)
-        creative_mandalecas = st.number_input("Mandalecas mensais contratadas (Criação)", min_value=0)
-        adaptation_mandalecas = st.number_input("Mandalecas mensais contratadas (Adaptação)", min_value=0)
-        content_mandalecas = st.number_input("Mandalecas mensais contratadas (Conteúdo)", min_value=0)
-        if st.button("Confirmar Adição", key=f"confirm_add_{index}"):
-            new_client = {
-                'name': new_client_name,
-                'creative_mandalecas': creative_mandalecas,
-                'adaptation_mandalecas': adaptation_mandalecas,
-                'content_mandalecas': content_mandalecas,
-                'aliases': [client_name]
-            }
-            st.session_state.clients_to_add.append(new_client)
-            st.session_state.client_name_map[index] = new_client
-            st.session_state.unmatched_clients.pop(0)
-            st.session_state.actions_taken.append("adicionado")
-            st.rerun()
-
-    if st.button("Ignorar", key=f"ignore_button_{index}"):
-        st.session_state.unmatched_clients.pop(0)
-        st.session_state.actions_taken.append("ignorado")
-        st.rerun()
-
-    if st.button("Voltar", key=f"back_button_{index}"):
-        if st.session_state.actions_taken:
-            last_action = st.session_state.actions_taken.pop()
-            if last_action in ["correspondido", "ignorado"]:
-                st.session_state.unmatched_clients.insert(0, (index, client_name))
-            elif last_action == "adicionado":
-                st.session_state.unmatched_clients.insert(0, (index, client_name))
-                st.session_state.clients_to_add.pop()
-            st.rerun()
 
 def process_xlsx_file(uploaded_file):
     try:
@@ -215,11 +134,9 @@ def process_xlsx_file(uploaded_file):
         st.session_state.unmatched_categories = unmatched_categories
         st.session_state.job_category_map = job_category_map
 
-        # Exibir a caixa de diálogo para o primeiro cliente não encontrado
-        if unmatched_clients:
-            match_client_dialog()
-        elif unmatched_categories:
-            match_category_dialog()
+        # Exibir a caixa de diálogo para correspondência de categorias
+        if unmatched_categories:
+            match_categories_dialog()
 
         # Processar os dados e inseri-los no banco de dados
         for index, row in df.iterrows():
@@ -250,7 +167,7 @@ def process_xlsx_file(uploaded_file):
                     existing_entry.client_id = client.id
                     existing_entry.job_link = job_link
                     existing_entry.job_title = row['Título']
-                    existing_entry.used_creative_mandalecas = mandalecas
+                    existing_entry.used_mandalecas = mandalecas
                     existing_entry.job_creation_date = job_creation_date
                     existing_entry.job_start_date = job_start_date
                     existing_entry.job_finish_date = job_finish_date
@@ -266,7 +183,7 @@ def process_xlsx_file(uploaded_file):
                         client_id=client.id,
                         job_link=job_link,
                         job_title=row['Título'],
-                        used_creative_mandalecas=mandalecas,
+                        used_mandalecas=mandalecas,
                         job_creation_date=job_creation_date,
                         job_start_date=job_start_date,
                         job_finish_date=job_finish_date,
@@ -287,6 +204,26 @@ def process_xlsx_file(uploaded_file):
     except Exception as e:
         st.error(f"Erro ao processar dados: {e}")
 
+@st.experimental_dialog("Correspondência de categorias", width="large")
+def match_categories_dialog():
+    if not st.session_state.get("unmatched_categories"):
+        return
+
+    st.write("Correspondência de categorias para trabalhos pendentes:")
+
+    for index, job_title in st.session_state.unmatched_categories:
+        st.write(f"Título do Job: {job_title}")
+        categoria_escolhida = st.selectbox(
+            f"Escolha a categoria para o job '{job_title}':",
+            [category.value for category in CategoryEnum],
+            key=f"categoria_{index}_{uuid.uuid4()}"
+        )
+        st.session_state.job_category_map[index] = categoria_escolhida
+
+    if st.button("Confirmar Todas"):
+        st.session_state.unmatched_categories = []
+        st.rerun()
+
 # Código para carregar o arquivo e processá-lo
 uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"])
 if uploaded_file:
@@ -304,3 +241,4 @@ if st.button("Concluir"):
         session.add(new_client)
     session.commit()
     st.success("Todos os clientes adicionados com sucesso!")
+

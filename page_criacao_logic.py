@@ -7,7 +7,7 @@ from common.models import DeliveryControlCreative, Client, Users
 from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime
-from process_xlsx import process_xlsx_file, identificar_categoria
+from process_xlsx import process_xlsx_file, identificar_categoria, extract_mandalecas
 import matplotlib.pyplot as plt
 
 # Crie uma sessão
@@ -63,11 +63,6 @@ def debug_display_data(cliente_id=None, start_date=None, end_date=None):
                 'Mandalecas Acumuladas (Conteúdo)': mandalecas_acumuladas_conteudo
             })
 
-        # df_debug = pd.DataFrame(debug_data)
-        # st.write(f"Dados completos dos clientes e suas mandalecas (filtrados de {start_date} até {end_date}):")
-        # st.dataframe(df_debug)
-
-        # Exibir gráficos de gauge
         for data in debug_data:
             col1, col2, col3 = st.columns(3)
             with col1:
@@ -129,8 +124,9 @@ def page_criacao(cliente_selecionado=None):
                 
                 "Título do Job": entrega.job_title,
                 "Data de Início do Job": entrega.job_creation_date,
-                "Número de Mandalecas": entrega.used_creative_mandalecas,
-                "Link do job": entrega.job_link
+                "Número de Mandalecas": extract_mandalecas(entrega.job_title),
+                "Link do job": entrega.job_link,
+                "Categoria": entrega.category
             } for entrega in entregas]
 
             df_tabela = pd.DataFrame(tabela_dados)
