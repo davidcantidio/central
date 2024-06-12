@@ -1,0 +1,7 @@
+ERROR:root:Erro ao processar dados: 'float' object has no attribute 'lower'
+ERROR:root:Erro ao processar dados: 'Requisitante'
+ERROR:root:Erro ao processar dados: 'Requisitante'
+ERROR:root:Erro ao processar dados: 'Requisitante'
+ERROR:root:Erro ao processar dados: 'Requisitante'
+ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined
+ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined

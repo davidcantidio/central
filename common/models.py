@@ -179,6 +179,12 @@ class Users(Base):
     briefing_redes_sociais_updates = relationship("BriefingRedesSociais", back_populates="updater", foreign_keys="[BriefingRedesSociais.last_updated_by]")
     updated_briefings_trafego_pago = relationship("BriefingTrafegoPago", back_populates="updater", foreign_keys="[BriefingTrafegoPago.last_updated_by]")
     created_plans_trafego_pago = relationship("PlanTrafegoPago", back_populates="author")
+    user_in_charge_jobs = relationship("DeliveryControlCreative", foreign_keys='DeliveryControlCreative.user_in_charge_id', back_populates="user_in_charge")
+    requested_jobs = relationship("DeliveryControlCreative", foreign_keys='DeliveryControlCreative.requested_by_id', back_populates="requested_by")
+    user_in_charge_redes_sociais = relationship("DeliveryControlRedesSociais", foreign_keys='DeliveryControlRedesSociais.user_in_charge_id', back_populates="user_in_charge")
+    requested_redes_sociais = relationship("DeliveryControlRedesSociais", foreign_keys='DeliveryControlRedesSociais.requested_by_id', back_populates="requested_by")
+
+
 
     def __repr__(self):
         return f"<Users(id={self.id}, name='{self.first_name} {self.last_name}')>"
@@ -300,6 +306,8 @@ class Client(Base):
     strategic_actions = relationship("StrategicActionsTrafegoPago", back_populates="client")
     profit_analysis = relationship('ProductProfitAnalysis', back_populates='client')
     liaisons = relationship("Liaison", secondary=client_liaison_association, back_populates="clients")
+    delivery_control_creatives = relationship("DeliveryControlCreative", back_populates="client")
+    delivery_control_redes_sociais = relationship("DeliveryControlRedesSociais", back_populates="client")
 
     account_executives = relationship("Users", secondary=client_account_executives_association)
     social_media = relationship("Users", secondary=client_social_media_association)
@@ -1017,13 +1025,18 @@ class ActionPlanAssessoria(Base):
     def __repr__(self):
         return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
 
-class CategoryEnum(str, Enum):
+class CategoryEnumCreative(str, Enum):
     CRIACAO = 'Criação'
     ADAPTACAO = 'Adaptação'
+    
+
+class CategoryEnumRedesSociais(str, Enum):
     REELS = 'Reels'
     STORIES = 'Stories'
     CARDS = 'Cards'
     STORIES_REPOST = 'Stories Repost'
+    CONTENT = 'Conteúdo'
+
 
 class DeliveryControlCreative(Base):
     __tablename__ = 'delivery_control_creative'
@@ -1036,7 +1049,7 @@ class DeliveryControlCreative(Base):
     client = relationship("Client", back_populates="delivery_control_creative")
     job_link = Column(String)
     project = Column(String)
-    category= Column(SQLAlchemyEnum(CategoryEnum))
+    category= Column(SQLAlchemyEnum(CategoryEnumCreative))
     job_title = Column(String)
     used_creative_mandalecas = Column(Integer, default=0)
     used_format_adaptation_mandalecas = Column(Integer, default=0)
@@ -1050,9 +1063,9 @@ class DeliveryControlCreative(Base):
     requested_by_id = Column(Integer, ForeignKey('users.id'))
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="requested_jobs")
 
-Client.delivery_control_creative = relationship("DeliveryControlCreative", order_by=DeliveryControlCreative.id, back_populates="client")
-Users.user_in_charge_jobs = relationship("DeliveryControlCreative", foreign_keys=[DeliveryControlCreative.user_in_charge_id], back_populates="user_in_charge")
-Users.requested_jobs = relationship("DeliveryControlCreative", foreign_keys=[DeliveryControlCreative.requested_by_id], back_populates="requested_by")
+    client = relationship("Client", back_populates="delivery_control_creatives")
+    user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="user_in_charge_jobs")
+    requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="requested_jobs")
 
 def __repr__(self):
     return f"job='{self.job_title}', category='{self.category}')>"
@@ -1075,22 +1088,32 @@ class DeliveryControlAssessoria(Base):
         return f"<DeliveryControlAssessoria(id={self.id}, client_id={self.client_id}, plan_id={self.plan_id})>"
 
 class DeliveryControlRedesSociais(Base):
-    __tablename__ = 'controle_entregas_redes_sociais'
+    __tablename__ = 'delivery_control_redes_social'
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_by_id = Column(Integer, ForeignKey('users.id'))
+    updated_by = relationship("Users", foreign_keys=[updated_by_id])
     client_id = Column(Integer, ForeignKey('clients.id'))
-    author_id = Column(Integer)
-    created_at = Column(TIMESTAMP, default=datetime.now)
-    service_id = Column(Integer)
-    action_date = Column(Date)
-    # plan_id = Column(Integer, ForeignKey('planRedesSociais.id'))
-    sent_guidance = Column(Boolean)
-    sent_plan = Column(Boolean)
-    notes = Column(Text)
-    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
-
-    def __repr__(self):
-        return f"<DeliveryControlRedesSociais(id={self.id}, client_id={self.client_id}, plan_id={self.plan_id})>"
+    client = relationship("Client", back_populates="delivery_control_creative")
+    job_link = Column(String)
+    project = Column(String)
+    category= Column(SQLAlchemyEnum(CategoryEnumRedesSociais))
+    job_title = Column(String)
+    used_creative_mandalecas = Column(Integer, default=0)
+    used_format_adaptation_mandalecas = Column(Integer, default=0)
+    used_content_mandalecas = Column(Integer, default=0)
+    job_creation_date = Column(Date)
+    job_start_date = Column(Date)
+    job_finish_date = Column(Date)
+    job_status = Column(String)
+    user_in_charge_id = Column(Integer, ForeignKey('users.id'))
+    user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="user_in_charge_jobs")
+    requested_by_id = Column(Integer, ForeignKey('users.id'))
+    requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="requested_jobs")
+    client = relationship("Client", back_populates="delivery_control_redes_sociais")
+    user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="user_in_charge_redes_sociais")
+    requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="requested_redes_sociais")
 
 class DeliveryControlTrafegoPago(Base):
 

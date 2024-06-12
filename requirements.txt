@@ -14,3 +14,4 @@ async-asgi-testclient
 factory_boy
 streamlit-option-menu
 matplotlib
+plotly

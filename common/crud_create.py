@@ -342,6 +342,6 @@ if __name__ == "__main__":
     insert_users()
     
     # Carregar dados de clientes a partir do arquivo JSON
-    json_filepath = '/home/david/Documentos/mandala/common/clientes.json'
+    json_filepath = '/home/debrito/Documentos/central/common/clientes.json'
     json_data = load_json(json_filepath)
     process_data(json_data)
