@@ -55,11 +55,11 @@ def convert_to_date(value):
 
 # Função para calcular e atualizar mandalecas acumuladas
 def calcular_e_atualizar_mandalecas_acumuladas(client, session):
-    job_mais_antigo = session.query(DeliveryControlCreative).filter_by(client_id=client.id).order_by(DeliveryControlCreative.data_criacao).first()
+    job_mais_antigo = session.query(DeliveryControlCreative).filter_by(client_id=client.id).order_by(DeliveryControlCreative.job_creation_date).first()
     if not job_mais_antigo:
         return
     
-    data_mais_antiga = job_mais_antigo.data_criacao
+    data_mais_antiga = job_mais_antigo.job_creation_date
     data_atual = datetime.now()
     numero_meses = relativedelta(data_atual, data_mais_antiga).years * 12 + relativedelta(data_atual, data_mais_antiga).months + 1
     
@@ -275,7 +275,7 @@ def match_client_dialog():
                 st.session_state.client_name_map[index] = selected_client
                 st.session_state.unmatched_clients.pop(0)
                 st.session_state.actions_taken.append("correspondido")
-                # Remove st.rerun() from here to avoid re-running issues
+                st.experimental_rerun()
 
     elif action == "Adicionar como novo cliente":
         new_client_name = st.text_input("Nome do cliente", value=client_name)
@@ -294,12 +294,12 @@ def match_client_dialog():
             st.session_state.client_name_map[index] = new_client
             st.session_state.unmatched_clients.pop(0)
             st.session_state.actions_taken.append("adicionado")
-            # Remove st.rerun() from here to avoid re-running issues
+            st.experimental_rerun()
 
     if st.button("Ignorar", key=f"ignore_button_{index}"):
         st.session_state.unmatched_clients.pop(0)
         st.session_state.actions_taken.append("ignorado")
-        # Remove st.rerun() from here to avoid re-running issues
+        st.experimental_rerun()
 
     if st.button("Voltar", key=f"back_button_{index}"):
         if st.session_state.actions_taken:
@@ -309,7 +309,8 @@ def match_client_dialog():
             elif last_action == "adicionado":
                 st.session_state.unmatched_clients.insert(0, (index, client_name))
                 st.session_state.clients_to_add.pop()
-            # Remove st.rerun() from here to avoid re-running issues
+            st.experimental_rerun()
+
 
 @st.experimental_dialog("Correspondência de categorias", width="large")
 def match_categories_dialog():
@@ -318,22 +319,24 @@ def match_categories_dialog():
 
     st.write("Correspondência de categorias para trabalhos pendentes:")
 
+    updated_categories = {}
     for index, job_title in st.session_state.unmatched_categories:
         st.write(f"Título do Job: {job_title}")
         categoria_escolhida = st.selectbox(
             f"Escolha a categoria para o job '{job_title}':",
             [category.value for category in CategoryEnumCreative] + [category.value for category in CategoryEnumRedesSociais],
-            key=f"categoria_{index}_{uuid.uuid4()}"
+            key=f"categoria_{index}"
         )
-        st.session_state.job_category_map[index] = categoria_escolhida
+        updated_categories[index] = categoria_escolhida
 
     if st.button("Confirmar Todas"):
         st.session_state.unmatched_categories = []
+        st.session_state.job_category_map.update(updated_categories)
         process_jobs(st.session_state.df, st.session_state.client_name_map, st.session_state.job_category_map, st.session_state.session)
-        # Remove st.rerun() from here to avoid re-running issues
+        st.experimental_rerun()
 
 # Código para carregar o arquivo e processá-lo
-uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"])
+uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"], key="file_uploader_1")
 if uploaded_file:
     df = pd.read_excel(uploaded_file)
     st.session_state.df = df
