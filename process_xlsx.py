@@ -87,164 +87,94 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     
     session.commit()
 
-def process_xlsx_file(uploaded_file):
-    session = Session()
+def process_xlsx(file):
     try:
-        df = pd.read_excel(uploaded_file)
+        # Verifica se o arquivo é um Excel
+        if not file.name.endswith(('.xlsx', '.xls')):
+            raise ValueError("O arquivo enviado não é um arquivo Excel")
 
-        df['Data de criação'] = pd.to_datetime(df['Data de criação'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-        df['Data Início'] = pd.to_datetime(df['Data Início'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
-        df['Data de Conclusão'] = pd.to_datetime(df['Data de Conclusão'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+        # Tenta ler o arquivo Excel
+        df = pd.read_excel(file)
 
-        unmatched_clients = []
-        client_name_map = {}
-        unmatched_categories = []
-        job_category_map = {}
+        # Verifica se as colunas esperadas estão presentes
+        expected_columns = ["Cliente", "Projeto", "Título"]
+        for column in expected_columns:
+            if column not in df.columns:
+                raise ValueError(f"A coluna esperada '{column}' não está presente no arquivo Excel")
 
-        existing_clients = {client.name: client for client in session.query(Client).all()}
+        # Realiza outras validações se necessário
+        # ...
 
-        for index, row in df.iterrows():
-            client_name = str(row['Cliente'])
-            client = existing_clients.get(client_name) or session.query(Client).filter(Client.aliases.contains([client_name])).first()
-            if not client:
-                unmatched_clients.append((index, client_name))
-            else:
-                client_name_map[index] = client
+        return df
 
-            categoria = identificar_categoria(row['Título'], row['Projeto'])
-            if not categoria:
-                unmatched_categories.append((index, row['Título']))
-            else:
-                job_category_map[index] = categoria
+    except ValueError as ve:
+        print(f"Erro de validação: {ve}")
+        st.error(f"Erro de validação: {ve}")
+    except Exception as e:
+        print(f"Erro ao processar o arquivo Excel: {e}")
+        st.error(f"Erro ao processar o arquivo Excel: {e}")
 
-        # Inicializa os valores no st.session_state
+def read_and_transform_excel(uploaded_file):
+    df = pd.read_excel(uploaded_file)
+    
+    # Conversão de campos de data para o formato datetime
+    df['Data de criação'] = pd.to_datetime(df['Data de criação'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+    df['Data Início'] = pd.to_datetime(df['Data Início'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+    df['Data de Conclusão'] = pd.to_datetime(df['Data de Conclusão'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+
+    # Tratamento do campo "Nº Doc"
+    df['Nº Doc'] = df['Nº Doc'].apply(lambda x: int(str(x).split('.')[0]) if pd.notna(x) else None)
+    
+    return df
+
+def initialize_session_state():
+    # Inicializa as listas e dicionários no session_state
+    st.session_state.unmatched_clients = []  # Lista de clientes não correspondidos
+    st.session_state.client_name_map = {}  # Mapeamento de nomes de clientes
+    st.session_state.clients_to_add = []  # Lista de clientes a serem adicionados
+    st.session_state.actions_taken = []  # Lista de ações realizadas
+    st.session_state.unmatched_categories = []  # Lista de categorias de trabalho não correspondidas
+    st.session_state.job_category_map = {}  # Mapeamento de categorias de trabalho
+    st.session_state.df = None  # DataFrame do arquivo XLSX lido
+    st.session_state.session = None  # Sessão do banco de dados
+
+def get_existing_clients(session: Session):
+    # Obtem todos os clientes do banco de dados e cria um dicionário com o nome do cliente como chave
+    existing_clients = {client.name: client for client in session.query(Client).all()}
+    return existing_clients
+
+
+def match_clients(df, existing_clients, session):
+    unmatched_clients = []
+    client_name_map = {}
+
+    for index, row in df.iterrows():
+        client_name = str(row['Cliente'])
+        client = existing_clients.get(client_name)
+
+        if not client:
+            client = session.query(Client).filter(Client.aliases.contains([client_name])).first()
+
+        if not client:
+            unmatched_clients.append((index, client_name))
+        else:
+            client_name_map[index] = client
+
+    if unmatched_clients:
         st.session_state.unmatched_clients = unmatched_clients
         st.session_state.client_name_map = client_name_map
-        st.session_state.clients_to_add = []
-        st.session_state.actions_taken = []
 
-        st.session_state.unmatched_categories = unmatched_categories
-        st.session_state.job_category_map = job_category_map
-        st.session_state.df = df
-        st.session_state.session = session
+    return unmatched_clients, client_name_map
 
-        if unmatched_categories:
-            match_categories_dialog()
-        else:
-            process_jobs(df, client_name_map, job_category_map, session)
-
-    except Exception as e:
-        logging.error(f"Erro ao processar dados: {e}")
-        st.error(f"Erro ao processar dados: {e}")
-
-def process_jobs(df, client_name_map, job_category_map, session):
-    for index, row in df.iterrows():
-        if index in client_name_map:
-            client = client_name_map[index]
-            user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
-            requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
-
-            doc_num = str(row['Nº Doc']).split('.')[0]
-            job_link = f"https://app4.operand.com.br/jobs/{doc_num}"
-
-            mandalecas = extract_mandalecas(row['Título'])
-            categoria = job_category_map.get(index)
-
-            doc_id = int(doc_num)
-
-            project_type = row['Projeto']
-
-            if 'Redes Sociais' in project_type:
-                existing_entry = session.query(DeliveryControlRedesSociais).filter_by(id=doc_id).first()
-            else:
-                existing_entry = session.query(DeliveryControlCreative).filter_by(id=doc_id).first()
-
-            job_creation_date = convert_to_date(row['Data de criação'])
-            job_start_date = convert_to_date(row['Data Início'])
-            job_finish_date = convert_to_date(row['Data de Conclusão'])
-
-            if 'Redes Sociais' in project_type:
-                if existing_entry:
-                    existing_entry.client_id = client.id
-                    existing_entry.job_link = job_link
-                    existing_entry.job_title = row['Título']
-                    existing_entry.used_mandalecas = mandalecas
-                    existing_entry.job_creation_date = job_creation_date
-                    existing_entry.job_start_date = job_start_date
-                    existing_entry.job_finish_date = job_finish_date
-                    existing_entry.job_status = row['Status']
-                    existing_entry.user_in_charge_id = user_in_charge.id if user_in_charge else None
-                    existing_entry.requested_by_id = requested_by.id if requested_by else None
-                    existing_entry.category = categoria
-                    existing_entry.project = row['Projeto']
-                else:
-                    new_entry = DeliveryControlRedesSociais(
-                        id=doc_id,
-                        client_id=client.id,
-                        job_link=job_link,
-                        job_title=row['Título'],
-                        used_mandalecas=mandalecas,
-                        job_creation_date=job_creation_date,
-                        job_start_date=job_start_date,
-                        job_finish_date=job_finish_date,
-                        job_status=row['Status'],
-                        user_in_charge_id=user_in_charge.id if user_in_charge else None,
-                        requested_by_id=requested_by.id if requested_by else None,
-                        category=categoria,
-                        project=row['Projeto']
-                    )
-                    session.add(new_entry)
-            else:
-                if existing_entry:
-                    existing_entry.client_id = client.id
-                    existing_entry.job_link = job_link
-                    existing_entry.job_title = row['Título']
-                    existing_entry.used_mandalecas = mandalecas
-                    existing_entry.job_creation_date = job_creation_date
-                    existing_entry.job_start_date = job_start_date
-                    existing_entry.job_finish_date = job_finish_date
-                    existing_entry.job_status = row['Status']
-                    existing_entry.user_in_charge_id = user_in_charge.id if user_in_charge else None
-                    existing_entry.requested_by_id = requested_by.id if requested_by else None
-                    existing_entry.category = categoria
-                    existing_entry.project = row['Projeto']
-                else:
-                    new_entry = DeliveryControlCreative(
-                        id=doc_id,
-                        client_id=client.id,
-                        job_link=job_link,
-                        job_title=row['Título'],
-                        used_mandalecas=mandalecas,
-                        job_creation_date=job_creation_date,
-                        job_start_date=job_start_date,
-                        job_finish_date=job_finish_date,
-                        job_status=row['Status'],
-                        user_in_charge_id=user_in_charge.id if user_in_charge else None,
-                        requested_by_id=requested_by.id if requested_by else None,
-                        category=categoria,
-                        project=row['Projeto']
-                    )
-                    session.add(new_entry)
-
-    session.commit()
-    st.success("Dados processados e inseridos com sucesso!")
-
-    for client in set(client_name_map.values()):
-        calcular_e_atualizar_mandalecas_acumuladas(client, session)
-
-    session.close()
-
-@st.experimental_dialog("Correspondência de clientes", width="large")
+@st.experimental_dialog("Correspondência de Clientes", width="large")
 def match_client_dialog():
     if not st.session_state.get("unmatched_clients"):
         return
 
     index, client_name = st.session_state.unmatched_clients[0]
-
-    # Combine os clientes existentes no banco de dados com os que estão na fila para serem adicionados
     session = st.session_state.session
     existing_clients = [client.name for client in session.query(Client).all()]
-    new_clients = [client['name'] for client in st.session_state.clients_to_add]
+    new_clients = [client['name'] for client in st.session_state.get('clients_to_add', [])]
     all_clients = existing_clients + new_clients
 
     action = st.radio(
@@ -275,7 +205,8 @@ def match_client_dialog():
                 st.session_state.client_name_map[index] = selected_client
                 st.session_state.unmatched_clients.pop(0)
                 st.session_state.actions_taken.append("correspondido")
-                st.experimental_rerun()
+                if not st.session_state.unmatched_clients:
+                    st.rerun()
 
     elif action == "Adicionar como novo cliente":
         new_client_name = st.text_input("Nome do cliente", value=client_name)
@@ -294,12 +225,14 @@ def match_client_dialog():
             st.session_state.client_name_map[index] = new_client
             st.session_state.unmatched_clients.pop(0)
             st.session_state.actions_taken.append("adicionado")
-            st.experimental_rerun()
+            if not st.session_state.unmatched_clients:
+                st.rerun()
 
     if st.button("Ignorar", key=f"ignore_button_{index}"):
         st.session_state.unmatched_clients.pop(0)
         st.session_state.actions_taken.append("ignorado")
-        st.experimental_rerun()
+        if not st.session_state.unmatched_clients:
+            st.rerun()
 
     if st.button("Voltar", key=f"back_button_{index}"):
         if st.session_state.actions_taken:
@@ -309,55 +242,267 @@ def match_client_dialog():
             elif last_action == "adicionado":
                 st.session_state.unmatched_clients.insert(0, (index, client_name))
                 st.session_state.clients_to_add.pop()
-            st.experimental_rerun()
+            st.rerun()
 
 
-@st.experimental_dialog("Correspondência de categorias", width="large")
-def match_categories_dialog():
-    if not st.session_state.get("unmatched_categories"):
+def match_categories(df):
+    unmatched_categories = []
+    job_category_map = {}
+
+    for index, row in df.iterrows():
+        categoria = identificar_categoria(row['Título'], row['Projeto'])
+        if not categoria:
+            unmatched_categories.append((index, row['Título']))
+        else:
+            job_category_map[index] = categoria
+
+    return unmatched_categories, job_category_map
+
+@st.experimental_dialog("Correspondência de Clientes", width="large")
+def match_client_dialog():
+    if not st.session_state.get("unmatched_clients"):
         return
 
-    st.write("Correspondência de categorias para trabalhos pendentes:")
+    index, client_name = st.session_state.unmatched_clients[0]
+    session = st.session_state.session
+    existing_clients = [client.name for client in session.query(Client).all()]
+    new_clients = [client['name'] for client in st.session_state.get('clients_to_add', [])]
+    all_clients = existing_clients + new_clients
 
-    updated_categories = {}
-    for index, job_title in st.session_state.unmatched_categories:
-        st.write(f"Título do Job: {job_title}")
-        categoria_escolhida = st.selectbox(
-            f"Escolha a categoria para o job '{job_title}':",
-            [category.value for category in CategoryEnumCreative] + [category.value for category in CategoryEnumRedesSociais],
-            key=f"categoria_{index}"
+    action = st.radio(
+        "Ação:",
+        ("Corresponder a um cliente existente", "Adicionar como novo cliente"),
+        key=f"action_{index}"
+    )
+
+    if action == "Corresponder a um cliente existente":
+        selected_client_name = st.selectbox(
+            "Selecione o cliente correspondente:",
+            all_clients,
+            key=f"client_{index}"
         )
-        updated_categories[index] = categoria_escolhida
+        if st.button("Confirmar Correspondência", key=f"confirm_match_{index}"):
+            selected_client = session.query(Client).filter_by(name=selected_client_name).first()
+            if not selected_client:
+                selected_client = next((client for client in st.session_state.clients_to_add if client['name'] == selected_client_name), None)
+            if selected_client:
+                if not isinstance(selected_client, dict):
+                    if not selected_client.aliases:
+                        selected_client.aliases = []
+                    selected_client.aliases.append(client_name)
+                else:
+                    if 'aliases' not in selected_client:
+                        selected_client['aliases'] = []
+                    selected_client['aliases'].append(client_name)
+                st.session_state.client_name_map[index] = selected_client
+                st.session_state.unmatched_clients.pop(0)
+                st.session_state.actions_taken.append("correspondido")
+                print("Cliente Correspondido:", client_name)
+                print("Clientes não correspondidos restantes:", st.session_state.unmatched_clients)
+                if not st.session_state.unmatched_clients:
+                    print("Todos os clientes foram correspondidos.")
+                    st.rerun()
 
-    if st.button("Confirmar Todas"):
-        st.session_state.unmatched_categories = []
-        st.session_state.job_category_map.update(updated_categories)
-        process_jobs(st.session_state.df, st.session_state.client_name_map, st.session_state.job_category_map, st.session_state.session)
-        st.experimental_rerun()
+    elif action == "Adicionar como novo cliente":
+        new_client_name = st.text_input("Nome do cliente", value=client_name)
+        creative_mandalecas = st.number_input("Mandalecas mensais contratadas (Criação)", min_value=0)
+        adaptation_mandalecas = st.number_input("Mandalecas mensais contratadas (Adaptação)", min_value=0)
+        content_mandalecas = st.number_input("Mandalecas mensais contratadas (Conteúdo)", min_value=0)
+        if st.button("Confirmar Adição", key=f"confirm_add_{index}"):
+            new_client = {
+                'name': new_client_name,
+                'creative_mandalecas': creative_mandalecas,
+                'adaptation_mandalecas': adaptation_mandalecas,
+                'content_mandalecas': content_mandalecas,
+                'aliases': [client_name]
+            }
+            st.session_state.clients_to_add.append(new_client)
+            st.session_state.client_name_map[index] = new_client
+            st.session_state.unmatched_clients.pop(0)
+            st.session_state.actions_taken.append("adicionado")
+            print("Novo Cliente Adicionado:", new_client_name)
+            print("Clientes não correspondidos restantes:", st.session_state.unmatched_clients)
+            if not st.session_state.unmatched_clients:
+                print("Todos os clientes foram adicionados.")
+                st.rerun()
 
-# Código para carregar o arquivo e processá-lo
-uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"], key="file_uploader_1")
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
+    if st.button("Ignorar", key=f"ignore_button_{index}"):
+        st.session_state.unmatched_clients.pop(0)
+        st.session_state.actions_taken.append("ignorado")
+        print("Cliente Ignorado:", client_name)
+        print("Clientes não correspondidos restantes:", st.session_state.unmatched_clients)
+        if not st.session_state.unmatched_clients:
+            print("Todos os clientes foram ignorados.")
+            st.rerun()
+
+    if st.button("Voltar", key=f"back_button_{index}"):
+        if st.session_state.actions_taken:
+            last_action = st.session_state.actions_taken.pop()
+            if last_action in ["correspondido", "ignorado"]:
+                st.session_state.unmatched_clients.insert(0, (index, client_name))
+            elif last_action == "adicionado":
+                st.session_state.unmatched_clients.insert(0, (index, client_name))
+                st.session_state.clients_to_add.pop()
+            print("Ação desfeita:", last_action)
+            st.rerun()
+
+def analyze_project_field(df):
+    try:
+        for index, row in df.iterrows():
+            project = row['Projeto']
+            if 'Redes Sociais' in project:
+                update_delivery_control_redes_sociais(row)
+            else:
+                update_delivery_control_creative(row)
+
+    except Exception as e:
+        st.error(f"Erro ao analisar o campo 'Projeto': {e}")
+
+def update_delivery_control_redes_sociais(row):
+    try:
+        # Lógica para atualizar DeliveryControlRedesSociais
+        titulo = row['Título']
+        # Adicione sua lógica específica para atualizar o modelo DeliveryControlRedesSociais
+        # Verifique a correspondência de categoria e faça as atualizações necessárias
+    except Exception as e:
+        st.error(f"Erro ao atualizar DeliveryControlRedesSociais: {e}")
+
+def update_delivery_control_creative(row):
+    try:
+        # Lógica para atualizar DeliveryControlCreative
+        titulo = row['Título']
+        # Adicione sua lógica específica para atualizar o modelo DeliveryControlCreative
+        # Verifique a correspondência de categoria e faça as atualizações necessárias
+    except Exception as e:
+        st.error(f"Erro ao atualizar DeliveryControlCreative: {e}")
+
+def update_session_state(df, session, unmatched_clients, client_name_map, unmatched_categories, job_category_map):
     st.session_state.df = df
-    process_xlsx_file(uploaded_file)
+    st.session_state.session = session
+    st.session_state.unmatched_clients = unmatched_clients
+    st.session_state.client_name_map = client_name_map
+    st.session_state.clients_to_add = []
+    st.session_state.actions_taken = []
+    st.session_state.unmatched_categories = unmatched_categories
+    st.session_state.job_category_map = job_category_map
 
-if st.button("Concluir"):
+def process_xlsx_file(uploaded_file):
     session = Session()
     try:
-        for client_data in st.session_state.clients_to_add:
-            new_client = Client(
-                name=client_data['name'],
-                n_monthly_contracted_creative_mandalecas=client_data['creative_mandalecas'],
-                n_monthly_contracted_format_adaptation_mandalecas=client_data['adaptation_mandalecas'],
-                n_monthly_contracted_content_production_mandalecas=client_data['content_mandalecas'],
-                aliases=client_data['aliases']
-            )
-            session.add(new_client)
-        session.commit()
-        st.success("Todos os clientes adicionados com sucesso!")
+        # Ler e transformar o arquivo XLSX
+        df = read_and_transform_excel(uploaded_file)
+        
+        # Inicializar o session_state
+        initialize_session_state()
+        
+        # Obter clientes existentes do banco de dados
+        existing_clients = get_existing_clients(session)
+        
+        # Fazer correspondência automática de clientes
+        unmatched_clients, client_name_map = match_clients(df, existing_clients, session)
+        
+        # Atualizar o session_state com os dados processados
+        update_session_state(df, session, unmatched_clients, client_name_map, [], {})
+        
+        # Se houver clientes não correspondidos, chamar o diálogo de correspondência manual
+        if unmatched_clients:
+            print("Clientes não correspondidos encontrados, iniciando correspondência manual.")
+            match_client_dialog()
+        # Se não houver clientes não correspondidos, continuar com o processamento
+        else:
+            unmatched_categories, job_category_map = match_categories(df)
+            update_session_state(df, session, unmatched_clients, client_name_map, unmatched_categories, job_category_map)
+            if unmatched_categories:
+                print("Categorias não correspondidas encontradas, iniciando correspondência manual.")
+                match_categories_dialog()
+            else:
+                print("Todos os dados foram correspondidos automaticamente.")
+                process_jobs(df, client_name_map, job_category_map, session)
+    
     except Exception as e:
-        logging.error(f"Erro ao adicionar novos clientes: {e}")
-        st.error(f"Erro ao adicionar novos clientes: {e}")
+        # Logar o erro e mostrar uma mensagem de erro no Streamlit
+        logging.error(f"Erro ao processar dados: {e}")
+        st.error(f"Erro ao processar dados: {e}")
     finally:
         session.close()
+
+def process_jobs(df, client_name_map, job_category_map, session: Session):
+    try:
+        for index, row in df.iterrows():
+            # Determinar qual modelo atualizar com base no campo "Projeto"
+            project = row['Projeto'].lower()
+            if 'redes sociais' in project:
+                model = DeliveryControlRedesSociais
+                category_enum = CategoryEnumRedesSociais
+            else:
+                model = DeliveryControlCreative
+                category_enum = CategoryEnumCreative
+
+            # Obter os valores correspondentes dos dicionários de mapeamento
+            client = client_name_map.get(index)
+            category = job_category_map.get(index)
+
+            # Verificar se todos os dados necessários estão disponíveis
+            if not client or not category:
+                st.warning(f"Dados insuficientes para o job no índice {index}.")
+                continue
+
+            # Validar dados antes de salvar
+            if not validate_job_data(row, client, category):
+                st.warning(f"Dados inválidos para o job no índice {index}.")
+                continue
+
+            # Criar ou atualizar o registro no banco de dados
+            job_id = row['Nº Doc']
+            job = session.query(model).filter_by(id=job_id).first()
+            if not job:
+                job = model(id=job_id)
+
+            # Atualizar os campos do job
+            job.updated_at = datetime.utcnow()
+            job.client_id = client.id if not isinstance(client, dict) else None
+            job.project = row['Projeto']
+            job.category = category
+            job.job_title = row['Título']
+            job.job_creation_date = row['Data de criação']
+            job.job_start_date = row['Data Início']
+            job.job_finish_date = row['Data de Conclusão']
+            job.job_status = row['Status']
+            job.user_in_charge_id = get_user_id_by_name(row['Responsável'], session)  # Implementar função para obter o ID do usuário pelo nome
+            job.job_deadline_met = True if row['Concluído no prazo'].lower() == 'sim' else False
+
+            # Adicionar o job à sessão
+            session.add(job)
+        
+        # Commit após processar todos os jobs
+        session.commit()
+    except Exception as e:
+        session.rollback()
+        logging.error(f"Erro ao processar jobs: {e}")
+        st.error(f"Erro ao processar jobs: {e}")
+
+def validate_job_data(row, client, category):
+    # Adicione aqui as validações necessárias para os dados do job
+    if not client or not category:
+        return False
+    if not row['Nº Doc'] or not row['Projeto'] or not row['Título']:
+        return False
+    # Adicione outras validações conforme necessário
+    return True
+
+def get_user_id_by_name(name, session: Session):
+    user = session.query(Users).filter_by(name=name).first()
+    return user.id if user else None
+
+def validate_job_data(row, client, category):
+    # Adicione aqui as validações necessárias para os dados do job
+    if not client or not category:
+        return False
+    if not row['Nº Doc'] or not row['Projeto'] or not row['Título']:
+        return False
+    # Adicione outras validações conforme necessário
+    return True
+
+def get_user_id_by_name(name, session: Session):
+    user = session.query(Users).filter_by(name=name).first()
+    return user.id if user else None
