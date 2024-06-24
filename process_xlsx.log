@@ -1,7 +1,261 @@
-ERROR:root:Erro ao processar dados: 'float' object has no attribute 'lower'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined
-ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined
+ERROR:root:Erro ao processar dados: name 'match_clients_in_dataframe' is not defined
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 133, in process_xlsx_file
+    unmatched_clients, client_name_map = match_clients_in_dataframe(df, session)
+NameError: name 'match_clients_in_dataframe' is not defined
+ERROR:root:Erro ao processar dados: 'NoneType' object has no attribute 'query'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 206, in process_xlsx_file
+    handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 214, in handle_unmatched_entities
+    corresponder_clientes()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 77, in wrap
+    fragmented_dialog_content()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 194, in wrap
+    return wrapped_fragment()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 180, in wrapped_fragment
+    result = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 71, in dialog_content
+    _ = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 293, in corresponder_clientes
+    show_client_matching_dialog()
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 301, in show_client_matching_dialog
+    options=[c.name for c in st.session_state.session.query(Client).all()]
+AttributeError: 'NoneType' object has no attribute 'query'
+ERROR:root:Erro ao processar dados: 'NoneType' object has no attribute 'query'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 206, in process_xlsx_file
+    handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 214, in handle_unmatched_entities
+    corresponder_clientes()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 77, in wrap
+    fragmented_dialog_content()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 194, in wrap
+    return wrapped_fragment()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 180, in wrapped_fragment
+    result = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 71, in dialog_content
+    _ = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 263, in corresponder_clientes
+    show_client_matching_dialog()
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 277, in show_client_matching_dialog
+    options=[c.name for c in st.session_state.session.query(Client).all()]
+AttributeError: 'NoneType' object has no attribute 'query'
+ERROR:root:Erro ao processar dados: 'NoneType' object has no attribute 'query'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 206, in process_xlsx_file
+    handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 214, in handle_unmatched_entities
+    corresponder_clientes()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 77, in wrap
+    fragmented_dialog_content()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 194, in wrap
+    return wrapped_fragment()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/fragment.py", line 180, in wrapped_fragment
+    result = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 71, in dialog_content
+    _ = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 263, in corresponder_clientes
+    show_client_matching_dialog()
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 277, in show_client_matching_dialog
+    options=[c.name for c in st.session_state.session.query(Client).all()]
+AttributeError: 'NoneType' object has no attribute 'query'
+ERROR:root:Erro ao confirmar correspondência do cliente: 'NoneType' object has no attribute 'append'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 293, in confirm_client_matching
+    db_client.aliases.append(cliente[1])
+AttributeError: 'NoneType' object has no attribute 'append'
+ERROR:root:Erro ao confirmar correspondência do cliente: 'NoneType' object has no attribute 'append'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 293, in confirm_client_matching
+    db_client.aliases.append(cliente[1])
+AttributeError: 'NoneType' object has no attribute 'append'
+ERROR:root:Erro ao confirmar correspondência do cliente: There are multiple identical `st.selectbox` widgets with the
+same generated key.
+
+When a widget is created, it's assigned an internal key based on
+its structure. Multiple widgets with an identical structure will
+result in the same internal key, which causes this error.
+
+To fix this error, please pass a unique `key` argument to
+`st.selectbox`.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 302, in confirm_client_matching
+    show_client_matching_dialog(session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 266, in show_client_matching_dialog
+    cliente_correspondido = st.selectbox(
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/widgets/selectbox.py", line 206, in selectbox
+    return self._selectbox(
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/widgets/selectbox.py", line 295, in _selectbox
+    widget_state = register_widget(
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/state/widgets.py", line 167, in register_widget
+    return register_widget_from_metadata(metadata, ctx, widget_func_name, element_type)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/runtime/state/widgets.py", line 212, in register_widget_from_metadata
+    raise DuplicateWidgetID(
+streamlit.errors.DuplicateWidgetID: There are multiple identical `st.selectbox` widgets with the
+same generated key.
+
+When a widget is created, it's assigned an internal key based on
+its structure. Multiple widgets with an identical structure will
+result in the same internal key, which causes this error.
+
+To fix this error, please pass a unique `key` argument to
+`st.selectbox`.
+ERROR:root:Erro ao confirmar correspondência do cliente: Dialogs may not be nested inside other dialogs.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 307, in confirm_client_matching
+    match_categories_dialog()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 62, in wrap
+    _assert_no_nested_dialogs()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 46, in _assert_no_nested_dialogs
+    raise StreamlitAPIException("Dialogs may not be nested inside other dialogs.")
+streamlit.errors.StreamlitAPIException: Dialogs may not be nested inside other dialogs.
+ERROR:root:Erro na função 'process_jobs': process_jobs() got multiple values for argument 'session'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 25, in wrapper
+    result = func(*args, session=session, **kwargs)
+TypeError: process_jobs() got multiple values for argument 'session'
+ERROR:root:Erro ao confirmar correspondência do cliente: Dialogs may not be nested inside other dialogs.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 516, in confirm_client_matching
+    match_categories_dialog()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 62, in wrap
+    _assert_no_nested_dialogs()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 46, in _assert_no_nested_dialogs
+    raise StreamlitAPIException("Dialogs may not be nested inside other dialogs.")
+streamlit.errors.StreamlitAPIException: Dialogs may not be nested inside other dialogs.
+ERROR:root:Índice (0, 'OGUNJÁ | Caruru - fitinha bonfim personalizada OP (M) #2 mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (1, 'Crachás Ogunjá mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (2, 'Arte plotagem caminhões mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (3, 'Crachás Ogunjá < Crachás Centro Logistico mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (5, 'OGUNJÁ | Vídeo Institucional mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (6, 'Peças dia do evento mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (7, 'OGUNJÁ | Vídeo Institucional < Roteiro (redação) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (8, 'Peças dia do evento < 1 - Ficha Cerimonialista; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (9, 'Peças dia do evento < 2 - Ficha personalizada para lista de convidados; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (10, 'Peças dia do evento < 3 - Arte Palco 360; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (11, 'Peças dia do evento < 4 - Vinhetas institucionais; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (12, 'Peças dia do evento < 5 - Material TV da loja; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (13, 'Peças dia do evento < 6 - Crachá de acesso. Mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (14, 'Peças dia do evento < OGUNJA | Vinhetas institucionais (M) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (15, 'Peças dia do evento < OGUNJA | Vídeo Institucional (D) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (16, 'OGUNJA | Assinatura de email mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (17, 'Ajuste Ogunjá Support para Ogunjá Service mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (18, 'Ogunjá | Reconexão Instagram - Página Facebook mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (21, 'Atualização destaques e nova loja mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (22, 'Capa destaque colab mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (23, 'Ogunjá | Reconexão Instagram - Página Facebook < Reconectar IG e Página do Facebook mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (24, 'Ogunjá | Reconexão Instagram - Página Facebook < colocar permissões True no banco de dados quando reconectar mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (26, 'OGUNJÁ | Posts semana 1 e 2 (D) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (27, 'Reels loja (designer Renata e cliente) < Criação de telas mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (37, 'MOTE DA CAMPANHA mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (38, 'MOTE DA CAMPANHA < Redação mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (39, nan) não encontrado no DataFrame.
+ERROR:root:Erro ao confirmar correspondência do cliente: Dialogs may not be nested inside other dialogs.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 365, in confirm_client_matching
+    match_categories_dialog()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 62, in wrap
+    _assert_no_nested_dialogs()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 46, in _assert_no_nested_dialogs
+    raise StreamlitAPIException("Dialogs may not be nested inside other dialogs.")
+streamlit.errors.StreamlitAPIException: Dialogs may not be nested inside other dialogs.
+ERROR:root:Erro ao processar dados: Only one dialog is allowed to be opened at the same time. Please make sure to not call a dialog-decorated function more than once in a script run.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 202, in process_xlsx_file
+    handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 210, in handle_unmatched_entities
+    corresponder_clientes()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 67, in wrap
+    dialog.open()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 133, in open
+    self._update(True)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 119, in _update
+    _assert_first_dialog_to_be_opened(should_open)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 67, in _assert_first_dialog_to_be_opened
+    raise StreamlitAPIException(
+streamlit.errors.StreamlitAPIException: Only one dialog is allowed to be opened at the same time. Please make sure to not call a dialog-decorated function more than once in a script run.
+ERROR:root:Erro ao processar trabalhos: 'Requisitante'
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3791, in get_loc
+    return self._engine.get_loc(casted_key)
+  File "index.pyx", line 152, in pandas._libs.index.IndexEngine.get_loc
+  File "index.pyx", line 181, in pandas._libs.index.IndexEngine.get_loc
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7080, in pandas._libs.hashtable.PyObjectHashTable.get_item
+  File "pandas/_libs/hashtable_class_helper.pxi", line 7088, in pandas._libs.hashtable.PyObjectHashTable.get_item
+KeyError: 'Requisitante'
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 232, in process_jobs
+    requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/pandas/core/series.py", line 1040, in __getitem__
+    return self._get_value(key)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/pandas/core/series.py", line 1156, in _get_value
+    loc = self.index.get_loc(label)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/pandas/core/indexes/base.py", line 3798, in get_loc
+    raise KeyError(key) from err
+KeyError: 'Requisitante'
+ERROR:root:Erro ao confirmar correspondência do cliente: Dialogs may not be nested inside other dialogs.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 365, in confirm_client_matching
+    match_categories_dialog()  # Chama o diálogo de correspondência de categorias diretamente
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 62, in wrap
+    _assert_no_nested_dialogs()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 46, in _assert_no_nested_dialogs
+    raise StreamlitAPIException("Dialogs may not be nested inside other dialogs.")
+streamlit.errors.StreamlitAPIException: Dialogs may not be nested inside other dialogs.
+ERROR:root:Erro ao confirmar correspondência do cliente: Dialogs may not be nested inside other dialogs.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 365, in confirm_client_matching
+    match_categories_dialog()  # Chama o diálogo de correspondência de categorias diretamente
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 62, in wrap
+    _assert_no_nested_dialogs()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 46, in _assert_no_nested_dialogs
+    raise StreamlitAPIException("Dialogs may not be nested inside other dialogs.")
+streamlit.errors.StreamlitAPIException: Dialogs may not be nested inside other dialogs.
+ERROR:root:Índice (0, 'OGUNJÁ | Caruru - fitinha bonfim personalizada OP (M) #2 mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (1, 'Crachás Ogunjá mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (2, 'Arte plotagem caminhões mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (3, 'Crachás Ogunjá < Crachás Centro Logistico mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (5, 'OGUNJÁ | Vídeo Institucional mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (6, 'Peças dia do evento mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (7, 'OGUNJÁ | Vídeo Institucional < Roteiro (redação) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (8, 'Peças dia do evento < 1 - Ficha Cerimonialista; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (9, 'Peças dia do evento < 2 - Ficha personalizada para lista de convidados; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (10, 'Peças dia do evento < 3 - Arte Palco 360; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (11, 'Peças dia do evento < 4 - Vinhetas institucionais; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (12, 'Peças dia do evento < 5 - Material TV da loja; mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (13, 'Peças dia do evento < 6 - Crachá de acesso. Mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (14, 'Peças dia do evento < OGUNJA | Vinhetas institucionais (M) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (15, 'Peças dia do evento < OGUNJA | Vídeo Institucional (D) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (16, 'OGUNJA | Assinatura de email mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (17, 'Ajuste Ogunjá Support para Ogunjá Service mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (18, 'Ogunjá | Reconexão Instagram - Página Facebook mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (21, 'Atualização destaques e nova loja mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (22, 'Capa destaque colab mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (23, 'Ogunjá | Reconexão Instagram - Página Facebook < Reconectar IG e Página do Facebook mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (24, 'Ogunjá | Reconexão Instagram - Página Facebook < colocar permissões True no banco de dados quando reconectar mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (26, 'OGUNJÁ | Posts semana 1 e 2 (D) mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (27, 'Reels loja (designer Renata e cliente) < Criação de telas mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (37, 'MOTE DA CAMPANHA mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (38, 'MOTE DA CAMPANHA < Redação mdl 1') não encontrado no DataFrame.
+ERROR:root:Índice (39, nan) não encontrado no DataFrame.
+ERROR:root:Erro ao processar dados: Only one dialog is allowed to be opened at the same time. Please make sure to not call a dialog-decorated function more than once in a script run.
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 202, in process_xlsx_file
+    handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+  File "/home/debrito/Documentos/central/process_xlsx.py", line 210, in handle_unmatched_entities
+    corresponder_clientes()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/dialog_decorator.py", line 67, in wrap
+    dialog.open()
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 133, in open
+    self._update(True)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 119, in _update
+    _assert_first_dialog_to_be_opened(should_open)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/streamlit/elements/lib/dialog.py", line 67, in _assert_first_dialog_to_be_opened
+    raise StreamlitAPIException(
+streamlit.errors.StreamlitAPIException: Only one dialog is allowed to be opened at the same time. Please make sure to not call a dialog-decorated function more than once in a script run.
