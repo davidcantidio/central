@@ -718,3 +718,17 @@ INFO:root:Executando debug_display_data...
 INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
 INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
 INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+ERROR:root:Erro ao exibir os dados: name 'DeliveryControlCreative' is not defined
+Traceback (most recent call last):
+  File "/home/debrito/Documentos/central/page_criacao_logic.py", line 78, in debug_display_data
+    entregas_creative = session.query(DeliveryControlCreative).filter(
+NameError: name 'DeliveryControlCreative' is not defined
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 0.0, 'Mandalecas Acumuladas (Criação)': 0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 0.0, 'Mandalecas Acumuladas (Criação)': 0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}

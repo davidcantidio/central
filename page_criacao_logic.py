@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from common.models import DeliveryControlCreative, Client, Users
+from common.models import DeliveryControl, Client, Users
 from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime
@@ -75,10 +75,10 @@ def debug_display_data(cliente_id=None, start_date=None, end_date=None):
         debug_data = []
         table_data = []  # Para armazenar os dados da tabela de debug
         for client in clients:
-            entregas_creative = session.query(DeliveryControlCreative).filter(
-                DeliveryControlCreative.client_id == client.id,
-                DeliveryControlCreative.job_creation_date >= start_date,
-                DeliveryControlCreative.job_creation_date <= end_date
+            entregas_creative = session.query(DeliveryControl).filter(
+                DeliveryControl.client_id == client.id,
+                DeliveryControl.job_creation_date >= start_date,
+                DeliveryControl.job_creation_date <= end_date
             ).all()
 
             mandalecas_usadas_criacao = sum(entrega.used_creative_mandalecas for entrega in entregas_creative if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
@@ -170,10 +170,10 @@ def page_criacao(cliente_selecionado=None):
         debug_display_data(cliente_id=cliente.id, start_date=data_inicio, end_date=data_fim)
 
         # Tabela de informações de entrega contratual
-        entregas = session.query(DeliveryControlCreative).filter(
-            DeliveryControlCreative.client_id == cliente.id,
-            DeliveryControlCreative.job_creation_date >= data_inicio,
-            DeliveryControlCreative.job_creation_date <= data_fim
+        entregas = session.query(DeliveryControl).filter(
+            DeliveryControl.client_id == cliente.id,
+            DeliveryControl.job_creation_date >= data_inicio,
+            DeliveryControl.job_creation_date <= data_fim
         ).all()
 
         if entregas:

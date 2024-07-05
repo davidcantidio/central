@@ -38,35 +38,30 @@ def update_cliente(cliente_id, updated_data):
 # Função para obter as mandalecas usadas dos controles de entrega
 def get_used_mandalecas(cliente_id, start_date, end_date):
     with sqlite3.connect('common/db_mandala.sqlite') as conn:
-        query_creative = """
+        query = """
             SELECT 
-                SUM(used_creative_mandalecas) as mandalecas_criacao,
-                SUM(used_format_adaptation_mandalecas) as mandalecas_adaptacao,
-                SUM(used_content_mandalecas) as mandalecas_conteudo
-            FROM delivery_control_creative
+                SUM(used_creative_mandalecas) as creative_mandalecas,
+                SUM(used_format_adaptation_mandalecas) as format_adaptation_mandalecas,
+                SUM(used_content_production_mandalecas) as content_production_mandalecas,
+                SUM(used_feed_instagram_mandalecas) as feed_instagram_mandalecas,
+                SUM(used_reels_instagram_mandalecas) as reels_instagram_mandalecas,
+                SUM(used_stories_instagram_mandalecas) as stories_instagram_mandalecas,
+                SUM(used_stories_repost_instagram_mandalecas) as stories_repost_instagram_mandalecas,
+                SUM(used_feed_linkedin_mandalecas) as feed_linkedin_mandalecas,
+                SUM(used_feed_tiktok_mandalecas) as feed_tiktok_mandalecas
+            FROM delivery_control
             WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
         """
-        query_redes_sociais = """
-            SELECT 
-                SUM(used_feed_instagram_mandalecas) as mandalecas_feed_instagram,
-                SUM(used_reels_instagram_mandalecas) as mandalecas_reels_instagram,
-                SUM(used_stories_instagram_mandalecas) as mandalecas_stories_instagram,
-                SUM(used_stories_repost_instagram_mandalecas) as mandalecas_stories_repost_instagram,
-                SUM(used_feed_linkedin_mandalecas) as mandalecas_feed_linkedin,
-                SUM(used_feed_tiktok_mandalecas) as mandalecas_feed_tiktok,
-                SUM(used_content_production_mandalecas) as mandalecas_content_production
-            FROM delivery_control_redes_social
-            WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
-        """
-        creative_df = pd.read_sql_query(query_creative, conn, params=(cliente_id, start_date, end_date))
-        redes_sociais_df = pd.read_sql_query(query_redes_sociais, conn, params=(cliente_id, start_date, end_date))
-    return creative_df, redes_sociais_df
+        df = pd.read_sql_query(query, conn, params=(cliente_id, start_date, end_date))
+    
+    return df
+
 
 # Função para exibir os detalhes do cliente
 def show_cliente(cliente_id, start_date, end_date):
     df = get_clientes()
     cliente = df[df["id"] == cliente_id].iloc[0]
-    creative_mandalecas, redes_sociais_mandalecas = get_used_mandalecas(cliente_id, start_date, end_date)
+    used_mandalecas = get_used_mandalecas(cliente_id, start_date, end_date).iloc[0]
     
     st.title(f"Cliente: {cliente['name']}")
     
@@ -108,23 +103,29 @@ def show_cliente(cliente_id, start_date, end_date):
         
         # Exibir mandalecas usadas
         st.subheader("Mandalecas Usadas")
-        st.write(f"Criação: {creative_mandalecas['mandalecas_criacao'].values[0]}")
-        st.write(f"Adaptação: {creative_mandalecas['mandalecas_adaptacao'].values[0]}")
-        st.write(f"Conteúdo: {creative_mandalecas['mandalecas_conteudo'].values[0]}")
-        st.write(f"Feed Instagram: {redes_sociais_mandalecas['mandalecas_feed_instagram'].values[0]}")
-        st.write(f"Reels Instagram: {redes_sociais_mandalecas['mandalecas_reels_instagram'].values[0]}")
-        st.write(f"Stories Instagram: {redes_sociais_mandalecas['mandalecas_stories_instagram'].values[0]}")
-        st.write(f"Stories Repost Instagram: {redes_sociais_mandalecas['mandalecas_stories_repost_instagram'].values[0]}")
-        st.write(f"Feed LinkedIn: {redes_sociais_mandalecas['mandalecas_feed_linkedin'].values[0]}")
-        st.write(f"Feed TikTok: {redes_sociais_mandalecas['mandalecas_feed_tiktok'].values[0]}")
-        st.write(f"Produção de Conteúdo: {redes_sociais_mandalecas['mandalecas_content_production'].values[0]}")
-
+        st.write(f"Criação: {used_mandalecas['creative_mandalecas']}")
+        st.write(f"Adaptação: {used_mandalecas['format_adaptation_mandalecas']}")
+        st.write(f"Conteúdo: {used_mandalecas['content_mandalecas']}")
+        st.write(f"Feed Instagram: {used_mandalecas['feed_instagram_mandalecas']}")
+        st.write(f"Reels Instagram: {used_mandalecas['reels_instagram_mandalecas']}")
+        st.write(f"Stories Instagram: {used_mandalecas['stories_instagram_mandalecas']}")
+        st.write(f"Stories Repost Instagram: {used_mandalecas['stories_repost_instagram_mandalecas']}")
+        st.write(f"Feed LinkedIn: {used_mandalecas['feed_linkedin_mandalecas']}")
+        st.write(f"Feed TikTok: {used_mandalecas['feed_tiktok_mandalecas']}")
+        
         # Exibir tabela de dados
         st.subheader("Detalhes das Mandalecas")
         dados = {
             "Cliente": [cliente['name']],
             "Mandalecas Contratadas Criação": [cliente['n_monthly_contracted_creative_mandalecas']],
-            "Mandalecas Usadas Criação": [creative_mandalecas['mandalecas_criacao'].values[0]]
+            "Mandalecas Usadas Criação": [used_mandalecas['creative_mandalecas']]
         }
         df_tabela = pd.DataFrame(dados)
         st.table(df_tabela)
+
+# Código principal para executar a função show_cliente com exemplo de dados
+if __name__ == "__main__":
+    cliente_id = 1  # Exemplo de ID do cliente
+    start_date = '2023-01-01'  # Data de início de exemplo
+    end_date = '2023-12-31'  # Data de término de exemplo
+    show_cliente(cliente_id, start_date, end_date)
