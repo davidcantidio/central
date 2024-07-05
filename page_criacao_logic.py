@@ -8,26 +8,64 @@ from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime
 from process_xlsx import process_xlsx_file, identificar_categoria, extract_mandalecas
-import matplotlib.pyplot as plt
+import logging
+
+
+# Configura o log
+logging.basicConfig(
+    filename='process_xlsx.log',  # Nome do arquivo de log
+    level=logging.INFO,           # Nível de log (INFO para registrar informações úteis)
+    format='%(asctime)s - %(levelname)s - %(message)s',  # Formato das mensagens de log
+    datefmt='%Y-%m-%d %H:%M:%S'   # Formato da data e hora
+)
 
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def display_gauge_chart(title, contracted, used):
+def display_gauge_chart(title, contracted, accumulated, used):
+    max_value = contracted + accumulated
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=used,
         title={'text': title},
-        gauge={'axis': {'range': [0, contracted]},
-               'bar': {'color': "green"},
-               'steps': [{'range': [0, contracted], 'color': "lightgray"}]}))
+        gauge={
+            'axis': {'range': [0, max_value]},
+            'bar': {'color': "green"},
+            'steps': [
+                {'range': [0, contracted], 'color': "lightgray"},
+                {'range': [contracted, max_value], 'color': "orange"}
+            ],
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': contracted
+            }
+        }))
 
-    fig.update_layout(height=250)  # Ajuste a altura conforme necessário
+    # Atualizar layout para lidar com valores que excedem o limite
+    fig.update_layout(
+        height=180,
+        margin=dict(l=20, r=20, t=50, b=20),
+        annotations=[
+            dict(
+                x=0.5, y=0.55, xref='paper', yref='paper',
+                text="Valor atual",
+                showarrow=False
+            ),
+            dict(
+                x=0.5, y= 0, xref='paper', yref='paper',  # Ajuste x e y conforme necessário
+                text=f"Acumulado: {accumulated}",
+                showarrow=False,
+                font=dict(color="gray", size=12)
+            )
+        ]
+    )
 
-    st.plotly_chart(fig)
+    return fig
 
 def debug_display_data(cliente_id=None, start_date=None, end_date=None):
+    logging.info("Executando debug_display_data...")
     try:
         if cliente_id:
             clients = session.query(Client).filter_by(id=cliente_id).all()
@@ -35,56 +73,75 @@ def debug_display_data(cliente_id=None, start_date=None, end_date=None):
             clients = session.query(Client).all()
 
         debug_data = []
+        table_data = []  # Para armazenar os dados da tabela de debug
         for client in clients:
-            entregas = session.query(DeliveryControlCreative).filter(
+            entregas_creative = session.query(DeliveryControlCreative).filter(
                 DeliveryControlCreative.client_id == client.id,
                 DeliveryControlCreative.job_creation_date >= start_date,
                 DeliveryControlCreative.job_creation_date <= end_date
             ).all()
 
-            mandalecas_usadas_criacao = sum(entrega.used_creative_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
-            mandalecas_usadas_adaptacao = sum(entrega.used_adaptacao_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Adaptação")
-            mandalecas_usadas_conteudo = sum(entrega.used_conteudo_mandalecas for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == "Conteúdo")
+            mandalecas_usadas_criacao = sum(entrega.used_creative_mandalecas for entrega in entregas_creative if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
+            mandalecas_usadas_adaptacao = sum(entrega.used_creative_mandalecas for entrega in entregas_creative if identificar_categoria(entrega.job_title, entrega.project) == "Adaptação")
+
+            # Log para verificar mandalecas usadas
+            logging.info(f"Cliente: {client.name}, Mandalecas usadas (Criação): {mandalecas_usadas_criacao}, Entregas: {[(entrega.job_title, entrega.used_creative_mandalecas) for entrega in entregas_creative]}")
+            logging.info(f"Cliente: {client.name}, Mandalecas usadas (Adaptação): {mandalecas_usadas_adaptacao}, Entregas: {[(entrega.job_title, entrega.used_creative_mandalecas) for entrega in entregas_creative]}")
 
             mandalecas_acumuladas_criacao = client.accumulated_creative_mandalecas if client.accumulated_creative_mandalecas else 0
             mandalecas_acumuladas_adaptacao = client.accumulated_format_adaptation_mandalecas if client.accumulated_format_adaptation_mandalecas else 0
-            mandalecas_acumuladas_conteudo = client.accumulated_content_mandalecas if client.accumulated_content_mandalecas else 0
 
             debug_data.append({
                 'Nome do Cliente': client.name,
                 'Total de Mandalecas Usadas (Criação)': mandalecas_usadas_criacao,
-                'Total de Mandalecas Usadas (Adaptação)': mandalecas_usadas_adaptacao,
-                'Total de Mandalecas Usadas (Conteúdo)': mandalecas_usadas_conteudo,
                 'Mandalecas Contratadas (Criação)': client.n_monthly_contracted_creative_mandalecas,
-                'Mandalecas Contratadas (Adaptação)': client.n_monthly_contracted_format_adaptation_mandalecas,
-                'Mandalecas Contratadas (Conteúdo)': client.n_monthly_contracted_content_production_mandalecas,
                 'Mandalecas Acumuladas (Criação)': mandalecas_acumuladas_criacao,
-                'Mandalecas Acumuladas (Adaptação)': mandalecas_acumuladas_adaptacao,
-                'Mandalecas Acumuladas (Conteúdo)': mandalecas_acumuladas_conteudo
+                'Total de Mandalecas Usadas (Adaptação)': mandalecas_usadas_adaptacao,
+                'Mandalecas Contratadas (Adaptação)': client.n_monthly_contracted_format_adaptation_mandalecas,
+                'Mandalecas Acumuladas (Adaptação)': mandalecas_acumuladas_adaptacao
             })
 
+            # Log dos dados de cada cliente
+            logging.info(f"Dados do cliente {client.name}: {debug_data[-1]}")
+
+            # Adicionar dados para a tabela de debug
+            for entrega in entregas_creative:
+                table_data.append({
+                    'Cliente': client.name,
+                    'used_creative_mandalecas': entrega.used_creative_mandalecas,
+                    'job_creation_date': entrega.job_creation_date
+                })
+
         for data in debug_data:
-            col1, col2, col3 = st.columns(3)
+            col1, col2 = st.columns(2)
             with col1:
-                display_gauge_chart(
+                fig_criacao = display_gauge_chart(
                     "Criação",
                     data['Mandalecas Contratadas (Criação)'],
+                    data['Mandalecas Acumuladas (Criação)'],
                     data['Total de Mandalecas Usadas (Criação)']
                 )
+                st.plotly_chart(fig_criacao)
             with col2:
-                display_gauge_chart(
-                    "Conteúdo",
-                    data['Mandalecas Contratadas (Conteúdo)'],
-                    data['Total de Mandalecas Usadas (Conteúdo)']
-                )
-            with col3:
-                display_gauge_chart(
+                fig_adaptacao = display_gauge_chart(
                     "Adaptação",
                     data['Mandalecas Contratadas (Adaptação)'],
+                    data['Mandalecas Acumuladas (Adaptação)'],
                     data['Total de Mandalecas Usadas (Adaptação)']
                 )
+                st.plotly_chart(fig_adaptacao)
+
+        # Exibir tabela de debug
+        if table_data:
+            df_table = pd.DataFrame(table_data)
+            st.write("Tabela de Debug:")
+            st.dataframe(df_table)
+
+            # Log dos dados da tabela de debug
+            logging.info(f"Tabela de Debug: {df_table.to_dict(orient='records')}")
 
     except Exception as e:
+        logging.error(f"Erro ao exibir os dados: {e}", exc_info=True)
         st.write(f"Erro ao exibir os dados: {e}")
 
 def page_criacao(cliente_selecionado=None):
@@ -121,7 +178,6 @@ def page_criacao(cliente_selecionado=None):
 
         if entregas:
             tabela_dados = [{
-                
                 "Título do Job": entrega.job_title,
                 "Data de Início do Job": entrega.job_creation_date,
                 "Número de Mandalecas": extract_mandalecas(entrega.job_title),

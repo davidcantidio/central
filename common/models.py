@@ -237,21 +237,21 @@ class Client(Base):
     n_monthly_contracted_creative_mandalecas = Column(Float, default=0)
     n_monthly_contracted_format_adaptation_mandalecas = Column(Float, default=0)
     n_monthly_contracted_content_production_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_stories_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_stories_instagram_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_linkedin_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_tiktok_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_stories_repost_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_reels_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_cards_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_stories_repost_instagram_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_reels_instagram_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_feed_instagram_mandalecas = Column(Float, default=0)
     accumulated_creative_mandalecas = Column(Float, default=0)
     accumulated_format_adaptation_mandalecas = Column(Float, default=0)
-    accumulated_content_mandalecas = Column(Float, default=0)
+    accumulated_content_production_mandalecas = Column(Float, default=0)
     accomulated_feed_linkedin_mandalecas = Column(Float, default=0)
     accumulated_feed_tiktok_mandalecas = Column(Float, default=0)
-    accumulated_stories_mandalecas = Column(Float, default=0)
-    accumulated_stories_repost_mandalecas = Column(Float, default=0)
-    accumulated_reels_mandalecas = Column(Float, default=0)
-    accumulated_cards_mandalecas = Column(Float, default=0)
+    accumulated_stories_instagram_mandalecas = Column(Float, default=0)
+    accumulated_stories_repost_instagram_mandalecas = Column(Float, default=0)
+    accumulated_reels_instagram_mandalecas = Column(Float, default=0)
+    accumulated_feed_instagram_mandalecas = Column(Float, default=0)
     name = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.now)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
@@ -1031,11 +1031,14 @@ class CategoryEnumCreative(str, Enum):
     
 
 class CategoryEnumRedesSociais(str, Enum):
-    REELS = 'Reels'
+    REELS_INSTAGRAM = 'Reels Instagram'
+    STORIES_INSTAGRAM = "Stories Instagram"
     STORIES = 'Stories'
-    CARDS = 'Cards'
-    STORIES_REPOST = 'Stories Repost'
-    CONTENT = 'Conteúdo'
+    FEED_INSTAGRAM = 'Feed Instagram'
+    FEED_TIKTOK = 'Feed Tiktok'
+    FEED_LINKEDIN = 'Feed Linkedin'
+    STORIES_REPOST_INSTAGRAM = 'Stories Repost'
+    CONTENT_PRODUCTION = ' Produção de Conteúdo'
 
 
 class DeliveryControlCreative(Base):
@@ -1067,7 +1070,6 @@ class DeliveryControlCreative(Base):
     client = relationship("Client", back_populates="delivery_control_creatives")
     user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="user_in_charge_jobs")
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="requested_jobs")
-
 def __repr__(self):
     return f"job='{self.job_title}', category='{self.category}')>"
 
@@ -1101,9 +1103,13 @@ class DeliveryControlRedesSociais(Base):
     project = Column(String)
     category= Column(SQLAlchemyEnum(CategoryEnumRedesSociais))
     job_title = Column(String)
-    used_creative_mandalecas = Column(Integer, default=0)
-    used_format_adaptation_mandalecas = Column(Integer, default=0)
-    used_content_mandalecas = Column(Integer, default=0)
+    used_feed_instagram_mandalecas = Column(Integer, default=0)
+    used_reels_instagram_mandalecas = Column(Integer, default=0)
+    used_stories_instagram_mandalecas = Column(Integer, default=0)
+    used_stories_repost_instagram_mandalecas = Column(Integer, default=0)
+    used_feed_linkedin_mandalecas = Column(Integer, default=0)
+    used_feed_tiktok_mandalecas = Column(Integer, default=0)
+    used_content_production_mandalecas = Column(Integer, default=0)
     job_creation_date = Column(Date)
     job_deadline_date = Column(Date)
     job_start_date = Column(Date)

@@ -1,31 +1,720 @@
-ERROR:root:Erro ao processar dados: 'float' object has no attribute 'lower'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: 'Requisitante'
-ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined
-ERROR:root:Erro ao processar dados: name 'CategoryEnum' is not defined
-ERROR:root:Erro ao processar dados: invalid literal for int() with base 10: 'nan'
-ERROR:asyncio:Task exception was never retrieved
-future: <Task finished name='Task-21289' coro=<WebSocketProtocol13.write_message.<locals>.wrapper() done, defined at /home/debrito/Documentos/central/venv/lib/python3.10/site-packages/tornado/websocket.py:1086> exception=WebSocketClosedError()>
-Traceback (most recent call last):
-  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/tornado/websocket.py", line 1088, in wrapper
-    await fut
-tornado.iostream.StreamClosedError: Stream is closed
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 77.0}
+INFO:root:Atualizando DeliveryControlCreative com ID 2815. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2815.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlCreative com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2818.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2819.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2820.
+INFO:root:Atualizando DeliveryControlCreative com ID 2821. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2821.
+INFO:root:Atualizando DeliveryControlCreative com ID 2822. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2822.
+INFO:root:Atualizando DeliveryControlCreative com ID 2826. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2826. Campo used_feed_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2826.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_stories_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlRedesSociais com ID 2885. Campo used_reels_instagram_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlRedesSociais com ID 2885.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Atualizando DeliveryControlCreative com ID 2889. Campo used_creative_mandalecas definido como 1.0.
+INFO:root:Dados comitados para DeliveryControlCreative com ID 2889.
+INFO:root:Calculando mandalecas acumuladas para o cliente: Ogunjá Revestimentos
+INFO:root:Mandaleças usadas para o cliente Ogunjá Revestimentos (Criação): 7, (Adaptação): 0
+INFO:root:Valores atualizados para o cliente Ogunjá Revestimentos: Criação: 77.0, Adaptação: 28.0, Conteúdo: 56.0, Stories: -3, Feed LinkedIn: 0, Feed TikTok: 0, Stories Repost: 0, Reels: -1, Feed Instagram: -1
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: SAEB - Sociedade de Anestesiologia do Estado da Bahia, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente SAEB - Sociedade de Anestesiologia do Estado da Bahia: {'Nome do Cliente': 'SAEB - Sociedade de Anestesiologia do Estado da Bahia', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 0.0, 'Mandalecas Acumuladas (Criação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: SAEB - Sociedade de Anestesiologia do Estado da Bahia, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente SAEB - Sociedade de Anestesiologia do Estado da Bahia: {'Nome do Cliente': 'SAEB - Sociedade de Anestesiologia do Estado da Bahia', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 0.0, 'Mandalecas Acumuladas (Criação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 7, Entregas: [('Criação OGUNJÁ | Caruru - fitinha bonfim personalizada OP (M) #2 mdl 1', 1), ('Criação Crachás Ogunjá  Crachás Centro Logistico mdl 1', 1), ('Criação Peças dia do evento < OGUNJA | Vídeo Institucional (D) mdl 1', 1), ('Criação OGUNJA | Assinatura de email mdl 1', 1), ('Criação Ajuste Ogunjá Support para Ogunjá Service mdl 1', 1), ('Criação Ogunjá | Reconexão Instagram - Página Facebook mdl 1', 1), ('Criação MOTE DA CAMPANHA < Redação mdl 1', 1)]
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 7, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Tabela de Debug: [{'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 3)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 9)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 10)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 29)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 15)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 9)}, {'Cliente': 'Ogunjá Revestimentos', 'used_creative_mandalecas': 1, 'job_creation_date': datetime.date(2023, 5, 29)}]
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+ERROR:root:Erro ao exibir os dados: 
+    Invalid value of type 'builtins.set' received for the 'text' property of layout.annotation
+        Received value: {0}
 
-During handling of the above exception, another exception occurred:
-
+    The 'text' property is a string and must be specified as:
+      - A string
+      - A number that will be converted to a string
 Traceback (most recent call last):
-  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/tornado/websocket.py", line 1090, in wrapper
-    raise WebSocketClosedError()
-tornado.websocket.WebSocketClosedError
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
-ERROR:root:Erro ao processar jobs: Entity namespace for "users" has no property "name"
+  File "/home/debrito/Documentos/central/page_criacao_logic.py", line 97, in debug_display_data
+    display_gauge_chart(
+  File "/home/debrito/Documentos/central/page_criacao_logic.py", line 39, in display_gauge_chart
+    fig.update_layout(
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/graph_objs/_figure.py", line 788, in update_layout
+    return super(Figure, self).update_layout(dict1, overwrite, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 1391, in update_layout
+    self.layout.update(dict1, overwrite=overwrite, **kwargs)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 5137, in update
+    BaseFigure._perform_update(self, kwargs, overwrite=overwrite)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 3937, in _perform_update
+    plotly_obj[key] = val
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 5912, in __setitem__
+    super(BaseLayoutHierarchyType, self).__setitem__(prop, value)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 4870, in __setitem__
+    self._set_array_prop(prop, value)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 5351, in _set_array_prop
+    val = validator.validate_coerce(val, skip_invalid=self._skip_invalid)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/_plotly_utils/basevalidators.py", line 2576, in validate_coerce
+    res.append(self.data_class(v_el, skip_invalid=skip_invalid))
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/graph_objs/layout/_annotation.py", line 2033, in __init__
+    self["text"] = _v
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 4874, in __setitem__
+    self._set_prop(prop, value)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 5218, in _set_prop
+    raise err
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/plotly/basedatatypes.py", line 5213, in _set_prop
+    val = validator.validate_coerce(val)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/_plotly_utils/basevalidators.py", line 1104, in validate_coerce
+    self.raise_invalid_val(v)
+  File "/home/debrito/Documentos/central/venv/lib/python3.10/site-packages/_plotly_utils/basevalidators.py", line 296, in raise_invalid_val
+    raise ValueError(
+ValueError: 
+    Invalid value of type 'builtins.set' received for the 'text' property of layout.annotation
+        Received value: {0}
+
+    The 'text' property is a string and must be specified as:
+      - A string
+      - A number that will be converted to a string
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
+INFO:root:Executando debug_display_data...
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Criação): 0, Entregas: []
+INFO:root:Cliente: Ogunjá Revestimentos, Mandalecas usadas (Adaptação): 0, Entregas: []
+INFO:root:Dados do cliente Ogunjá Revestimentos: {'Nome do Cliente': 'Ogunjá Revestimentos', 'Total de Mandalecas Usadas (Criação)': 0, 'Mandalecas Contratadas (Criação)': 6.0, 'Mandalecas Acumuladas (Criação)': 2.0, 'Total de Mandalecas Usadas (Adaptação)': 0, 'Mandalecas Contratadas (Adaptação)': 2.0, 'Mandalecas Acumuladas (Adaptação)': 0}
