@@ -3,8 +3,11 @@ from datetime import date
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from common.database import engine
-from common.models import Department, Users, Role, Client, Liaison
+from common.models import Base, Department, Users, Role, Client, Liaison
 from .crud_logging import get_or_create, logger
+
+# Certifique-se de que todas as tabelas são criadas
+Base.metadata.create_all(bind=engine)
 
 def create_user(email, first_name, last_name, password, username, cpf, department_id=None, role_id=None, **other_fields):
     with Session(bind=engine) as session:

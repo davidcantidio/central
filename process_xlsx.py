@@ -1,7 +1,7 @@
 import re
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
-from common.models import DeliveryControlCreative, DeliveryControlRedesSociais, Client, Users, JobCategoryEnum, JobCategoryEnum
+from common.models import DeliveryControl, Client, Users, JobCategoryEnum
 from common.database import engine
 from sqlalchemy.dialects.postgresql import JSON
 from datetime import datetime
@@ -73,41 +73,20 @@ def convert_to_date(value):
 def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     logging.info(f"Calculando mandalecas acumuladas para o cliente: {client.name}")
 
-    # Consultar o trabalho mais antigo para DeliveryControlCreative
-    job_mais_antigo_creative = session.query(DeliveryControlCreative).filter_by(client_id=client.id).order_by(DeliveryControlCreative.job_creation_date).first()
-    # Consultar o trabalho mais antigo para DeliveryControlRedesSociais
-    job_mais_antigo_redes_sociais = session.query(DeliveryControlRedesSociais).filter_by(client_id=client.id).order_by(DeliveryControlRedesSociais.job_creation_date).first()
+    # Consultar o trabalho mais antigo para DeliveryControl
+    job_mais_antigo = session.query(DeliveryControl).filter_by(client_id=client.id).order_by(DeliveryControl.job_creation_date).first()
 
-    # Determinar a data mais antiga entre os dois modelos
-    if job_mais_antigo_creative and job_mais_antigo_redes_sociais:
-        data_mais_antiga = min(job_mais_antigo_creative.job_creation_date, job_mais_antigo_redes_sociais.job_creation_date)
-    elif job_mais_antigo_creative:
-        data_mais_antiga = job_mais_antigo_creative.job_creation_date
-    elif job_mais_antigo_redes_sociais:
-        data_mais_antiga = job_mais_antigo_redes_sociais.job_creation_date
-    else:
+    if not job_mais_antigo:
         logging.info("Nenhum trabalho encontrado para o cliente.")
         return
 
+    data_mais_antiga = job_mais_antigo.job_creation_date
     data_atual = datetime.now()
     numero_meses = relativedelta(data_atual, data_mais_antiga).years * 12 + relativedelta(data_atual, data_mais_antiga).months + 1
 
-    # Calcular mandalecas contratadas para DeliveryControlCreative
+    # Calcular mandalecas contratadas para DeliveryControl
     mandalecas_contratadas_criacao = numero_meses * (client.n_monthly_contracted_creative_mandalecas or 0)
     mandalecas_contratadas_adaptacao = numero_meses * (client.n_monthly_contracted_format_adaptation_mandalecas or 0)
-
-    # Consultar entregas para DeliveryControlCreative
-    entregas_creative = session.query(DeliveryControlCreative).filter_by(client_id=client.id).all()
-    mandalecas_usadas_criacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas_creative if identificar_categoria(entrega.job_title, entrega.project) == "Criação")
-    mandalecas_usadas_adaptacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas_creative if identificar_categoria(entrega.job_title, entrega.project) == "Adaptação")
-
-    # Atualizar acumulados para DeliveryControlCreative
-    client.accumulated_creative_mandalecas = mandalecas_contratadas_criacao - mandalecas_usadas_criacao
-    client.accumulated_format_adaptation_mandalecas = mandalecas_contratadas_adaptacao - mandalecas_usadas_adaptacao
-
-    logging.info(f"Mandaleças usadas para o cliente {client.name} (Criação): {mandalecas_usadas_criacao}, (Adaptação): {mandalecas_usadas_adaptacao}")
-
-    # Calcular mandalecas contratadas para DeliveryControlRedesSociais
     mandalecas_contratadas_conteudo = numero_meses * (client.n_monthly_contracted_content_production_mandalecas or 0)
     mandalecas_contratadas_stories_instagram = numero_meses * (client.n_monthly_contracted_stories_instagram_mandalecas or 0)
     mandalecas_contratadas_feed_linkedin = numero_meses * (client.n_monthly_contracted_feed_linkedin_mandalecas or 0)
@@ -116,17 +95,21 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     mandalecas_contratadas_reels_instagram = numero_meses * (client.n_monthly_contracted_reels_instagram_mandalecas or 0)
     mandalecas_contratadas_feed_instagram = numero_meses * (client.n_monthly_contracted_feed_instagram_mandalecas or 0)
 
-    # Consultar entregas para DeliveryControlRedesSociais
-    entregas_redes_sociais = session.query(DeliveryControlRedesSociais).filter_by(client_id=client.id).all()
-    mandalecas_usadas_conteudo = sum((entrega.used_content_production_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_stories_instagram = sum((entrega.used_stories_instagram_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_feed_linkedin = sum((entrega.used_feed_linkedin_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_feed_tiktok = sum((entrega.used_feed_tiktok_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_stories_repost_instagram = sum((entrega.used_stories_repost_instagram_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_reels_instagram = sum((entrega.used_reels_instagram_mandalecas or 0) for entrega in entregas_redes_sociais)
-    mandalecas_usadas_feed_instagram = sum((entrega.used_feed_instagram_mandalecas or 0) for entrega in entregas_redes_sociais)
+    # Consultar entregas para DeliveryControl
+    entregas = session.query(DeliveryControl).filter_by(client_id=client.id).all()
+    mandalecas_usadas_criacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CRIACAO.value)
+    mandalecas_usadas_adaptacao = sum((entrega.used_format_adaptation_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.ADAPTACAO.value)
+    mandalecas_usadas_conteudo = sum((entrega.used_content_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CONTENT_PRODUCTION.value)
+    mandalecas_usadas_stories_instagram = sum((entrega.used_stories_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STORIES_INSTAGRAM.value)
+    mandalecas_usadas_feed_linkedin = sum((entrega.used_feed_linkedin_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_LINKEDIN.value)
+    mandalecas_usadas_feed_tiktok = sum((entrega.used_feed_tiktok_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_TIKTOK.value)
+    mandalecas_usadas_stories_repost_instagram = sum((entrega.used_stories_repost_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STORIES_REPOST_INSTAGRAM.value)
+    mandalecas_usadas_reels_instagram = sum((entrega.used_reels_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.REELS_INSTAGRAM.value)
+    mandalecas_usadas_feed_instagram = sum((entrega.used_feed_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_INSTAGRAM.value)
 
-    # Atualizar acumulados para DeliveryControlRedesSociais
+    # Atualizar acumulados para DeliveryControl
+    client.accumulated_creative_mandalecas = mandalecas_contratadas_criacao - mandalecas_usadas_criacao
+    client.accumulated_format_adaptation_mandalecas = mandalecas_contratadas_adaptacao - mandalecas_usadas_adaptacao
     client.accumulated_content_mandalecas = mandalecas_contratadas_conteudo - mandalecas_usadas_conteudo
     client.accumulated_stories_mandalecas = mandalecas_contratadas_stories_instagram - mandalecas_usadas_stories_instagram
     client.accumulated_feed_linkedin_mandalecas = mandalecas_contratadas_feed_linkedin - mandalecas_usadas_feed_linkedin
@@ -225,7 +208,7 @@ def process_xlsx_file(uploaded_file):
     try:
         df = read_excel_file(uploaded_file)
         
-        # Remover linhas onde a coluna 'Cliente' tenha valores NaN ou em branco
+        # Remover linhas onde a coluna 'Cliente' tenha valores NaN ou in branco
         df = df.dropna(subset=['Cliente']).reset_index(drop=True)
         df = df[df['Cliente'].str.strip().astype(bool)]
         
@@ -287,13 +270,7 @@ def process_jobs(df, client_name_map, job_category_map, session):
                 job_start_date = convert_to_date(row['Data Início'])
                 job_finish_date = convert_to_date(row['Data de Conclusão'])
 
-                project_type = row['Projeto']
-                if 'Redes Sociais' in project_type:
-                    model = DeliveryControlRedesSociais
-                else:
-                    model = DeliveryControlCreative
-
-                upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, user_in_charge, categoria, project_type, model)
+                upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, user_in_charge, categoria)
 
         for client in set(client_name_map.values()):
             calcular_e_atualizar_mandalecas_acumuladas(client, session)
@@ -303,7 +280,7 @@ def process_jobs(df, client_name_map, job_category_map, session):
         logging.error(f"Erro ao processar trabalhos: {e}", exc_info=True)
         st.error(f"Erro ao processar trabalhos: {e}")
 
-def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, user_in_charge, categoria, project_type, model):
+def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, user_in_charge, categoria):
     """
     Insere ou atualiza uma entrada de controle de entrega no banco de dados.
 
@@ -319,37 +296,28 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
     job_finish_date (datetime.date): A data de conclusão do trabalho.
     user_in_charge (Users): O usuário responsável pelo trabalho.
     categoria (str): A categoria do trabalho.
-    project_type (str): O tipo de projeto do trabalho.
-    model (Base): A classe do modelo SQLAlchemy a ser usada (DeliveryControlCreative ou DeliveryControlRedesSociais).
     """
-    existing_entry = session.query(model).filter_by(id=doc_id).first()
+    existing_entry = session.query(DeliveryControl).filter_by(id=doc_id).first()
 
-    if model == DeliveryControlCreative:
-        if categoria == JobCategoryEnum.CRIACAO:
-            mandaleca_field = 'used_creative_mandalecas'
-        elif categoria == JobCategoryEnum.ADAPTACAO:
-            mandaleca_field = 'used_format_adaptation_mandalecas'
-        else:
-            mandaleca_field = None
-    elif model == DeliveryControlRedesSociais:
-        if categoria == JobCategoryEnum.CONTENT_PRODUCTION:
-            mandaleca_field = 'used_content_production_mandalecas'
-        elif categoria == JobCategoryEnum.STORIES_INSTAGRAM:
-            mandaleca_field = 'used_stories_instagram_mandalecas'
-        elif categoria == JobCategoryEnum.FEED_LINKEDIN:
-            mandaleca_field = 'used_feed_linkedin_mandalecas'
-        elif categoria == JobCategoryEnum.FEED_TIKTOK:
-            mandaleca_field = 'used_feed_tiktok_mandalecas'
-        elif categoria == JobCategoryEnum.STORIES_REPOST_INSTAGRAM:
-            mandaleca_field = 'used_stories_repost_instagram_mandalecas'
-        elif categoria == JobCategoryEnum.REELS_INSTAGRAM:
-            mandaleca_field = 'used_reels_instagram_mandalecas'
-        elif categoria == JobCategoryEnum.FEED_INSTAGRAM:
-            mandaleca_field = 'used_feed_instagram_mandalecas'
-        else:
-            mandaleca_field = None
-    else:
-        mandaleca_field = None
+    mandaleca_field = None
+    if categoria == JobCategoryEnum.CRIACAO.value:
+        mandaleca_field = 'used_creative_mandalecas'
+    elif categoria == JobCategoryEnum.ADAPTACAO.value:
+        mandaleca_field = 'used_format_adaptation_mandalecas'
+    elif categoria == JobCategoryEnum.CONTENT_PRODUCTION.value:
+        mandaleca_field = 'used_content_mandalecas'
+    elif categoria == JobCategoryEnum.STORIES_INSTAGRAM.value:
+        mandaleca_field = 'used_stories_instagram_mandalecas'
+    elif categoria == JobCategoryEnum.FEED_LINKEDIN.value:
+        mandaleca_field = 'used_feed_linkedin_mandalecas'
+    elif categoria == JobCategoryEnum.FEED_TIKTOK.value:
+        mandaleca_field = 'used_feed_tiktok_mandalecas'
+    elif categoria == JobCategoryEnum.STORIES_REPOST_INSTAGRAM.value:
+        mandaleca_field = 'used_stories_repost_instagram_mandalecas'
+    elif categoria == JobCategoryEnum.REELS_INSTAGRAM.value:
+        mandaleca_field = 'used_reels_instagram_mandalecas'
+    elif categoria == JobCategoryEnum.FEED_INSTAGRAM.value:
+        mandaleca_field = 'used_feed_instagram_mandalecas'
 
     if existing_entry:
         existing_entry.client_id = client.id
@@ -357,7 +325,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
         existing_entry.job_title = row['Título']
         if mandaleca_field:
             setattr(existing_entry, mandaleca_field, mandalecas)
-            logging.info(f"Atualizando {model.__name__} com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
+            logging.info(f"Atualizando DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
         existing_entry.job_creation_date = job_creation_date
         existing_entry.job_start_date = job_start_date
         existing_entry.job_finish_date = job_finish_date
@@ -365,7 +333,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
         existing_entry.user_in_charge_id = user_in_charge.id if user_in_charge else None
         existing_entry.requested_by_id = None
         existing_entry.category = categoria
-        existing_entry.project = project_type
+        existing_entry.project = row['Projeto']
     else:
         new_entry_args = {
             'id': doc_id,
@@ -379,17 +347,17 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
             'user_in_charge_id': user_in_charge.id if user_in_charge else None,
             'requested_by_id': None,
             'category': categoria,
-            'project': project_type
+            'project': row['Projeto']
         }
         if mandaleca_field:
             new_entry_args[mandaleca_field] = mandalecas
-            logging.info(f"Criando nova entrada em {model.__name__} com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
+            logging.info(f"Criando nova entrada in DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
         
-        new_entry = model(**new_entry_args)
+        new_entry = DeliveryControl(**new_entry_args)
         session.add(new_entry)
 
     session.commit()
-    logging.info(f"Dados comitados para {model.__name__} com ID {doc_id}.")
+    logging.info(f"Dados comitados para DeliveryControl com ID {doc_id}.")
 
 
 
