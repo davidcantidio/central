@@ -35,7 +35,6 @@ def update_cliente(cliente_id, updated_data):
         ))
         conn.commit()
 
-# Função para obter as mandalecas usadas dos controles de entrega
 def get_used_mandalecas(cliente_id, start_date, end_date):
     with sqlite3.connect('common/db_mandala.sqlite') as conn:
         query = """
@@ -57,7 +56,6 @@ def get_used_mandalecas(cliente_id, start_date, end_date):
     return df
 
 
-# Função para exibir os detalhes do cliente
 def show_cliente(cliente_id, start_date, end_date):
     df = get_clientes()
     cliente = df[df["id"] == cliente_id].iloc[0]
@@ -105,7 +103,7 @@ def show_cliente(cliente_id, start_date, end_date):
         st.subheader("Mandalecas Usadas")
         st.write(f"Criação: {used_mandalecas['creative_mandalecas']}")
         st.write(f"Adaptação: {used_mandalecas['format_adaptation_mandalecas']}")
-        st.write(f"Conteúdo: {used_mandalecas['content_mandalecas']}")
+        st.write(f"Conteúdo: {used_mandalecas['content_production_mandalecas']}")
         st.write(f"Feed Instagram: {used_mandalecas['feed_instagram_mandalecas']}")
         st.write(f"Reels Instagram: {used_mandalecas['reels_instagram_mandalecas']}")
         st.write(f"Stories Instagram: {used_mandalecas['stories_instagram_mandalecas']}")
@@ -122,6 +120,13 @@ def show_cliente(cliente_id, start_date, end_date):
         }
         df_tabela = pd.DataFrame(dados)
         st.table(df_tabela)
+
+# Código principal para executar a função show_cliente com exemplo de dados
+if __name__ == "__main__":
+    cliente_id = 1  # Exemplo de ID do cliente
+    start_date = '2023-01-01'  # Data de início de exemplo
+    end_date = '2023-12-31'  # Data de término de exemplo
+    show_cliente(cliente_id, start_date, end_date)
 
 # Código principal para executar a função show_cliente com exemplo de dados
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ from sqlalchemy import create_engine, DateTime, Column, DECIMAL, Integer, String
 from sqlalchemy.ext.declarative import declared_attr
 from datetime import datetime
 from sqlalchemy.orm import relationship, sessionmaker
-from enum import Enum as PyEnum
+from enum import Enum
 from sqlalchemy.types import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import declarative_base  # Importando a nova função
 
@@ -59,12 +59,13 @@ client_services_association = Table(
 )
 
 # Enums
-class ContractTypes(PyEnum):
+class ContractTypes(str, Enum):
     POR_JOB = "Por job"
     POR_MES = "Por mês"
     POR_JORNADA = "Por jornada"
 
-class JobCategoryEnum(PyEnum):
+
+class JobCategoryEnum(str, Enum):
     REELS_INSTAGRAM = 'Reels Instagram'
     STORIES_INSTAGRAM = "Stories Instagram"
     STORIES = 'Stories'
