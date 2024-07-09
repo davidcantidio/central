@@ -297,8 +297,3 @@ def handle_unmatched_entities(unmatched_clients, unmatched_categories, df, clien
     if not unmatched_clients and not unmatched_categories:
         process_jobs(df, client_name_map, job_category_map, session)
 
-uploaded_file = st.file_uploader("Carregue o arquivo Excel", type=["xlsx"], key="file_uploader_1")
-if uploaded_file:
-    df = pd.read_excel(uploaded_file)
-    st.session_state.df = df
-    process_xlsx_file(uploaded_file)

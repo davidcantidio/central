@@ -238,7 +238,7 @@ class Client(Base):
     accumulated_creative_mandalecas = Column(Float, default=0)
     accumulated_format_adaptation_mandalecas = Column(Float, default=0)
     accumulated_content_production_mandalecas = Column(Float, default=0)
-    accomulated_feed_linkedin_mandalecas = Column(Float, default=0)
+    accumulated_feed_linkedin_mandalecas = Column(Float, default=0)
     accumulated_feed_tiktok_mandalecas = Column(Float, default=0)
     accumulated_stories_instagram_mandalecas = Column(Float, default=0)
     accumulated_stories_repost_instagram_mandalecas = Column(Float, default=0)
