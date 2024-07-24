@@ -68,16 +68,24 @@ class ContractTypes(str, Enum):
 class JobCategoryEnum(str, Enum):
     REELS_INSTAGRAM = 'Reels Instagram'
     STORIES_INSTAGRAM = "Stories Instagram"
-    STORIES = 'Stories'
+    CAROUSEL_INSTAGRAM = "Carrossel Instagram"
     FEED_INSTAGRAM = 'Feed Instagram'
     FEED_TIKTOK = 'Feed Tiktok'
     FEED_LINKEDIN = 'Feed Linkedin'
     STORIES_REPOST_INSTAGRAM = 'Stories Repost'
-    CONTENT_PRODUCTION = ' Produção de Conteúdo'
+    CONTENT_PRODUCTION = 'Produção de Conteúdo'
     CRIACAO = 'Criação'
     ADAPTACAO = 'Adaptação'
-    PRODUCAO = "Produção"
-    TRAFEGO_PAGO = "Tráfego Pago"
+    STATIC_TRAFEGO_PAGO = "Material Estático Tráfego Pago"
+    ANIMATED_TRAFEGO_PAGO = "Material Animado Tráfego Pago"
+
+
+class DeliveryControlCategoryEnum(str, Enum):
+    SOCIAL = "Redes Sociais"
+    TRAFEGO_PAGO = 'Tráfego Pago'
+    CONTENT_PRODUCTION = 'Produção de Conteúdo'
+    CREATIVE = 'Criação'
+
 
 # Definições das classes
 class MetaAdsCTA(Base):
@@ -182,7 +190,6 @@ class Users(Base):
 
     def __repr__(self):
         return f"<Users(id={self.id}, name='{self.first_name} {self.last_name}')>"
-
 class Liaison(Base):
     __tablename__ = 'liaisons'
     id = Column(Integer, primary_key=True)
@@ -221,6 +228,9 @@ class Client(Base):
     is_active_linkedin = Column(Boolean, default=False)
     is_active_tiktok = Column(Boolean, default=False)
     is_active_google_ads = Column(Boolean, default=False)
+    is_active_trafego_pago = Column(Boolean, default=False)
+    is_active_tiktok_ads = Column(Boolean, default=False)
+    is_active_linkedin_ads = Column(Boolean, default=False)
     invoice_recipients_emails = Column(JSON)
     foundation_date = Column(Date)
     due_charge_date = Column(Date)
@@ -233,8 +243,11 @@ class Client(Base):
     n_monthly_contracted_feed_linkedin_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_tiktok_mandalecas = Column(Float, default=0)
     n_monthly_contracted_stories_repost_instagram_mandalecas = Column(Float, default=0)
-    n_monthly_contracted_reels_instagram_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_instagram_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_trafego_pago_static =  Column(Float, default=0)
+    n_monthly_contracted_trafego_pago_animated =  Column(Float, default=0)
+    accumulated_trafego_pago_static =  Column(Float, default=0)
+    accumulated_trafego_pago_animated =  Column(Float, default=0)
     accumulated_creative_mandalecas = Column(Float, default=0)
     accumulated_format_adaptation_mandalecas = Column(Float, default=0)
     accumulated_content_production_mandalecas = Column(Float, default=0)
@@ -242,7 +255,6 @@ class Client(Base):
     accumulated_feed_tiktok_mandalecas = Column(Float, default=0)
     accumulated_stories_instagram_mandalecas = Column(Float, default=0)
     accumulated_stories_repost_instagram_mandalecas = Column(Float, default=0)
-    accumulated_reels_instagram_mandalecas = Column(Float, default=0)
     accumulated_feed_instagram_mandalecas = Column(Float, default=0)
     name = Column(String(255))
     created_at = Column(TIMESTAMP, default=datetime.now)
@@ -836,7 +848,9 @@ class ActionPlanAssessoria(Base):
     def __repr__(self):
         return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
 
+
 class DeliveryControl(Base):
+
     __tablename__ = 'delivery_control'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -848,7 +862,9 @@ class DeliveryControl(Base):
     job_link = Column(String)
     project = Column(String)
     category = Column(SQLAlchemyEnum(JobCategoryEnum))
+    delivery_control_category = Column(SQLAlchemyEnum(DeliveryControlCategoryEnum))
     job_title = Column(String)
+    job_department = Column(String)
     used_creative_mandalecas = Column(Integer, default=0)
     used_format_adaptation_mandalecas = Column(Integer, default=0)
     used_content_production_mandalecas = Column(Integer, default=0)
@@ -857,7 +873,10 @@ class DeliveryControl(Base):
     used_feed_tiktok_mandalecas = Column(Integer, default=0)
     used_stories_repost_instagram_mandalecas = Column(Integer, default=0)
     used_reels_instagram_mandalecas = Column(Integer, default=0)
-    used_feed_instagram_mandalecas = Column(Integer, default=0)
+    used_card_instagram_mandalecas = Column(Integer, default=0)
+    used_static_trafego_pago_mandalecas = Column(Integer, default=0)
+    used_animated_trafego_pago_mandalecas = Column(Integer, default=0)
+    used_carousel_mandalecas = Column(Integer, default=0)
     job_creation_date = Column(Date)
     job_start_date = Column(Date)
     job_deadline_date = Column(Date)
@@ -869,4 +888,7 @@ class DeliveryControl(Base):
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="delivery_controls_requested")
 
     def __repr__(self):
+
+
         return f"job='{self.job_title}', category='{self.category}')>"
+    

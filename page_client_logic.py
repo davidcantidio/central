@@ -1,8 +1,9 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-from streamlit_option_menu import option_menu  # Certifique-se de importar a função option_menu
-
+from streamlit_option_menu import option_menu
+from datetime import datetime
+import json
 
 # Função para obter clientes do banco de dados
 def get_clientes():
@@ -24,8 +25,8 @@ def update_cliente(cliente_id, updated_data):
                 n_monthly_contracted_feed_linkedin_mandalecas = ?, 
                 n_monthly_contracted_feed_tiktok_mandalecas = ?, 
                 n_monthly_contracted_stories_repost_instagram_mandalecas = ?, 
-                n_monthly_contracted_reels_instagram_mandalecas = ?, 
-                n_monthly_contracted_feed_instagram_mandalecas = ?, 
+                n_monthly_contracted_trafego_pago_static = ?, 
+                n_monthly_contracted_trafego_pago_animated = ?, 
                 accumulated_creative_mandalecas = ?, 
                 accumulated_format_adaptation_mandalecas = ?, 
                 accumulated_content_production_mandalecas = ?, 
@@ -33,8 +34,9 @@ def update_cliente(cliente_id, updated_data):
                 accumulated_feed_linkedin_mandalecas = ?, 
                 accumulated_feed_tiktok_mandalecas = ?, 
                 accumulated_stories_repost_instagram_mandalecas = ?, 
-                accumulated_reels_instagram_mandalecas = ?, 
-                accumulated_feed_instagram_mandalecas = ?
+                accumulated_feed_instagram_mandalecas = ?, 
+                accumulated_trafego_pago_static = ?, 
+                accumulated_trafego_pago_animated = ?
             WHERE id = ?
         """, (
             updated_data['name'], 
@@ -45,8 +47,8 @@ def update_cliente(cliente_id, updated_data):
             updated_data['n_monthly_contracted_feed_linkedin_mandalecas'], 
             updated_data['n_monthly_contracted_feed_tiktok_mandalecas'], 
             updated_data['n_monthly_contracted_stories_repost_instagram_mandalecas'], 
-            updated_data['n_monthly_contracted_reels_instagram_mandalecas'], 
-            updated_data['n_monthly_contracted_feed_instagram_mandalecas'], 
+            updated_data['n_monthly_contracted_trafego_pago_static'], 
+            updated_data['n_monthly_contracted_trafego_pago_animated'], 
             updated_data['accumulated_creative_mandalecas'], 
             updated_data['accumulated_format_adaptation_mandalecas'], 
             updated_data['accumulated_content_production_mandalecas'], 
@@ -54,8 +56,9 @@ def update_cliente(cliente_id, updated_data):
             updated_data['accumulated_feed_linkedin_mandalecas'], 
             updated_data['accumulated_feed_tiktok_mandalecas'], 
             updated_data['accumulated_stories_repost_instagram_mandalecas'], 
-            updated_data['accumulated_reels_instagram_mandalecas'], 
             updated_data['accumulated_feed_instagram_mandalecas'], 
+            updated_data['accumulated_trafego_pago_static'], 
+            updated_data['accumulated_trafego_pago_animated'], 
             cliente_id
         ))
         conn.commit()
@@ -65,14 +68,17 @@ def get_used_mandalecas(cliente_id, start_date, end_date):
         query = """
             SELECT 
                 SUM(used_creative_mandalecas) as creative_mandalecas,
+                SUM(used_carousel_mandalecas) as carousel_mandalecas,
                 SUM(used_format_adaptation_mandalecas) as format_adaptation_mandalecas,
                 SUM(used_content_production_mandalecas) as content_production_mandalecas,
-                SUM(used_feed_instagram_mandalecas) as feed_instagram_mandalecas,
                 SUM(used_reels_instagram_mandalecas) as reels_instagram_mandalecas,
                 SUM(used_stories_instagram_mandalecas) as stories_instagram_mandalecas,
                 SUM(used_stories_repost_instagram_mandalecas) as stories_repost_instagram_mandalecas,
                 SUM(used_feed_linkedin_mandalecas) as feed_linkedin_mandalecas,
-                SUM(used_feed_tiktok_mandalecas) as feed_tiktok_mandalecas
+                SUM(used_feed_tiktok_mandalecas) as feed_tiktok_mandalecas,
+                SUM(used_static_trafego_pago_mandalecas) as static_trafego_pago_mandalecas,
+                SUM(used_animated_trafego_pago_mandalecas) as animated_trafego_pago_mandalecas,
+                SUM(used_carousel_mandalecas) + SUM(used_card_instagram_mandalecas) + SUM(used_reels_instagram_mandalecas) as feed_instagram_mandalecas
             FROM delivery_control
             WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
         """
@@ -80,10 +86,42 @@ def get_used_mandalecas(cliente_id, start_date, end_date):
     
     return df
 
+
+# Função para obter perfil do Instagram
+def get_instagram_profile(client_id):
+    with sqlite3.connect('common/db_mandala.sqlite') as conn:
+        query = """
+            SELECT * FROM instagram_profiles WHERE client_id = ?
+        """
+        df = pd.read_sql_query(query, conn, params=(client_id,))
+    return df.iloc[0] if not df.empty else None
+
+# Função para atualizar ou adicionar perfil do Instagram
+def update_instagram_profile(client_id, user_name, official_hashtags, insights):
+    with sqlite3.connect('common/db_mandala.sqlite') as conn:
+        cursor = conn.cursor()
+        profile = get_instagram_profile(client_id)
+        if profile is not None:
+            cursor.execute("""
+                UPDATE instagram_profiles
+                SET user_name = ?, official_hashtags = ?, insights = ?, updated_at = ?
+                WHERE client_id = ?
+            """, (user_name, json.dumps(official_hashtags), json.dumps(insights), datetime.now(), client_id))
+        else:
+            cursor.execute("""
+                INSERT INTO instagram_profiles (client_id, user_name, official_hashtags, insights, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+            """, (client_id, user_name, json.dumps(official_hashtags), json.dumps(insights), datetime.now()))
+        conn.commit()
+
+
+
+# Função para exibir os detalhes do cliente
 def show_cliente(cliente_id, start_date, end_date):
     df = get_clientes()
     cliente = df[df["id"] == cliente_id].iloc[0]
     used_mandalecas = get_used_mandalecas(cliente_id, start_date, end_date).iloc[0]
+    instagram_profile = get_instagram_profile(cliente_id)
     
     st.title(f"Cliente: {cliente['name']}")
     
@@ -102,23 +140,25 @@ def show_cliente(cliente_id, start_date, end_date):
         name = st.text_input("Nome", cliente['name'])
         n_monthly_contracted_creative_mandalecas = st.number_input("Mandalecas Criativas Mensais Contratadas", value=cliente['n_monthly_contracted_creative_mandalecas'])
         n_monthly_contracted_format_adaptation_mandalecas = st.number_input("Mandalecas de Adaptação de Formato Mensais Contratadas", value=cliente['n_monthly_contracted_format_adaptation_mandalecas'])
-        n_monthly_contracted_content_production_mandalecas = st.number_input("Mandalecas de Conteúdo Mensais Contratadas", value=cliente['n_monthly_contracted_content_production_mandalecas'])
+        n_monthly_contracted_content_production_mandalecas = st.number_input("Mandalecas de Produção de Conteúdo Mensais Contratadas", value=cliente['n_monthly_contracted_content_production_mandalecas'])
         n_monthly_contracted_stories_instagram_mandalecas = st.number_input("Mandalecas de Stories Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_instagram_mandalecas'])
         n_monthly_contracted_feed_linkedin_mandalecas = st.number_input("Mandalecas de Feed LinkedIn Mensais Contratadas", value=cliente['n_monthly_contracted_feed_linkedin_mandalecas'])
         n_monthly_contracted_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Mensais Contratadas", value=cliente['n_monthly_contracted_feed_tiktok_mandalecas'])
         n_monthly_contracted_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_repost_instagram_mandalecas'])
-        n_monthly_contracted_reels_instagram_mandalecas = st.number_input("Mandalecas de Reels Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_reels_instagram_mandalecas'])
-        n_monthly_contracted_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_feed_instagram_mandalecas'])
+
+        n_monthly_contracted_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_static'])
+        n_monthly_contracted_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_animated'])
 
         accumulated_creative_mandalecas = st.number_input("Mandalecas Criativas Acumuladas", value=cliente['accumulated_creative_mandalecas'])
         accumulated_format_adaptation_mandalecas = st.number_input("Mandalecas de Adaptação de Formato Acumuladas", value=cliente['accumulated_format_adaptation_mandalecas'])
-        accumulated_content_production_mandalecas = st.number_input("Mandalecas de Conteúdo Acumuladas", value=cliente['accumulated_content_production_mandalecas'])
+        accumulated_content_production_mandalecas = st.number_input("Mandalecas de Produção de Conteúdo Acumuladas", value=cliente['accumulated_content_production_mandalecas'])
         accumulated_stories_instagram_mandalecas = st.number_input("Mandalecas de Stories Instagram Acumuladas", value=cliente['accumulated_stories_instagram_mandalecas'])
         accumulated_feed_linkedin_mandalecas = st.number_input("Mandalecas de Feed LinkedIn Acumuladas", value=cliente['accumulated_feed_linkedin_mandalecas'])
         accumulated_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Acumuladas", value=cliente['accumulated_feed_tiktok_mandalecas'])
         accumulated_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Acumuladas", value=cliente['accumulated_stories_repost_instagram_mandalecas'])
-        accumulated_reels_instagram_mandalecas = st.number_input("Mandalecas de Reels Instagram Acumuladas", value=cliente['accumulated_reels_instagram_mandalecas'])
         accumulated_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Acumuladas", value=cliente['accumulated_feed_instagram_mandalecas'])
+        accumulated_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Acumuladas", value=cliente['accumulated_trafego_pago_static'])
+        accumulated_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Acumuladas", value=cliente['accumulated_trafego_pago_animated'])
 
         if st.button("Atualizar"):
             if not name:
@@ -129,37 +169,34 @@ def show_cliente(cliente_id, start_date, end_date):
                     'n_monthly_contracted_creative_mandalecas': n_monthly_contracted_creative_mandalecas,
                     'n_monthly_contracted_format_adaptation_mandalecas': n_monthly_contracted_format_adaptation_mandalecas,
                     'n_monthly_contracted_content_production_mandalecas': n_monthly_contracted_content_production_mandalecas,
-                    "n_monthly_contracted_stories_instagram_mandalecas": n_monthly_contracted_stories_instagram_mandalecas,
-                    "n_monthly_contracted_feed_linkedin_mandalecas": n_monthly_contracted_feed_linkedin_mandalecas,
-                    "n_monthly_contracted_feed_tiktok_mandalecas": n_monthly_contracted_feed_tiktok_mandalecas,
-                    "n_monthly_contracted_stories_repost_instagram_mandalecas": n_monthly_contracted_stories_repost_instagram_mandalecas,
-                    "n_monthly_contracted_reels_instagram_mandalecas": n_monthly_contracted_reels_instagram_mandalecas,
-                    "n_monthly_contracted_feed_instagram_mandalecas": n_monthly_contracted_feed_instagram_mandalecas,
-
+                    'n_monthly_contracted_stories_instagram_mandalecas': n_monthly_contracted_stories_instagram_mandalecas,
+                    'n_monthly_contracted_feed_linkedin_mandalecas': n_monthly_contracted_feed_linkedin_mandalecas,
+                    'n_monthly_contracted_feed_tiktok_mandalecas': n_monthly_contracted_feed_tiktok_mandalecas,
+                    'n_monthly_contracted_stories_repost_instagram_mandalecas': n_monthly_contracted_stories_repost_instagram_mandalecas,
+                    'n_monthly_contracted_trafego_pago_static': n_monthly_contracted_trafego_pago_static,
+                    'n_monthly_contracted_trafego_pago_animated': n_monthly_contracted_trafego_pago_animated,
                     'accumulated_creative_mandalecas': accumulated_creative_mandalecas,
                     'accumulated_format_adaptation_mandalecas': accumulated_format_adaptation_mandalecas,
                     'accumulated_content_production_mandalecas': accumulated_content_production_mandalecas,
-                    "accumulated_stories_instagram_mandalecas": accumulated_stories_instagram_mandalecas,
-                    "accumulated_feed_linkedin_mandalecas": accumulated_feed_linkedin_mandalecas,
-                    "accumulated_feed_tiktok_mandalecas": accumulated_feed_tiktok_mandalecas,
-                    "accumulated_stories_repost_instagram_mandalecas": accumulated_stories_repost_instagram_mandalecas,
-                    "accumulated_reels_instagram_mandalecas": accumulated_reels_instagram_mandalecas,
-                    "accumulated_feed_instagram_mandalecas": accumulated_feed_instagram_mandalecas,
+                    'accumulated_stories_instagram_mandalecas': accumulated_stories_instagram_mandalecas,
+                    'accumulated_feed_linkedin_mandalecas': accumulated_feed_linkedin_mandalecas,
+                    'accumulated_feed_tiktok_mandalecas': accumulated_feed_tiktok_mandalecas,
+                    'accumulated_stories_repost_instagram_mandalecas': accumulated_stories_repost_instagram_mandalecas,
+                    'accumulated_feed_instagram_mandalecas': accumulated_feed_instagram_mandalecas,
+                    'accumulated_trafego_pago_static': accumulated_trafego_pago_static,
+                    'accumulated_trafego_pago_animated': accumulated_trafego_pago_animated,
                 }
+
                 update_cliente(cliente_id, updated_data)
                 st.success("Dados do cliente atualizados com sucesso!")
         
-        # Exibir mandalecas usadas
-        st.subheader("Mandalecas Usadas")
-        st.write(f"Criação: {used_mandalecas['creative_mandalecas']}")
-        st.write(f"Adaptação: {used_mandalecas['format_adaptation_mandalecas']}")
-        st.write(f"Conteúdo: {used_mandalecas['content_production_mandalecas']}")
-        st.write(f"Feed Instagram: {used_mandalecas['feed_instagram_mandalecas']}")
-        st.write(f"Reels Instagram: {used_mandalecas['reels_instagram_mandalecas']}")
-        st.write(f"Stories Instagram: {used_mandalecas['stories_instagram_mandalecas']}")
-        st.write(f"Stories Repost Instagram: {used_mandalecas['stories_repost_instagram_mandalecas']}")
-        st.write(f"Feed LinkedIn: {used_mandalecas['feed_linkedin_mandalecas']}")
-        st.write(f"Feed TikTok: {used_mandalecas['feed_tiktok_mandalecas']}")
+        st.header("Perfil do Instagram")
+        user_name = st.text_input("Nome de Usuário", instagram_profile['user_name'] if instagram_profile else "")
+        official_hashtags = st.text_area("Hashtags Oficiais", ", ".join(instagram_profile['official_hashtags']) if instagram_profile else "")
+        
+        if st.button("Atualizar Perfil do Instagram"):
+            update_instagram_profile(cliente_id, user_name, official_hashtags.split(", "))
+            st.success("Perfil do Instagram atualizado com sucesso!")
         
         # Exibir tabela de dados
         st.subheader("Detalhes das Mandalecas")

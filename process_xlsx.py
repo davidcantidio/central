@@ -7,12 +7,22 @@ from datetime import datetime
 import streamlit as st
 from dateutil.relativedelta import relativedelta
 import logging
+import sqlite3
 
 # Configura o log
-logging.basicConfig(filename='process_xlsx.log', level=logging.INFO)
+logging.basicConfig(filename='process_xlsx.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
+
+
+def get_total_feed_instagram_mandalecas(delivery_control):
+    return (
+        delivery_control.used_reels_instagram_mandalecas +
+        delivery_control.used_carousel_mandalecas +
+        delivery_control.used_card_instagram_mandalecas
+    )
+
 
 def initialize_session_state():
     if 'clientes_nao_correspondidos' not in st.session_state:
@@ -59,8 +69,10 @@ def identificar_categoria(titulo, projeto):
         return JobCategoryEnum.CRIACAO.value
     elif 'adaptação' in titulo_lower:
         return JobCategoryEnum.ADAPTACAO.value
-    elif 'tráfego pago' in titulo_lower:
-        return JobCategoryEnum.TRAFEGO_PAGO.value
+    elif 'tráfego pago' in titulo_lower and 'estático' in titulo_lower:
+        return JobCategoryEnum.STATIC_TRAFEGO_PAGO.value
+    elif 'tráfego pago' in titulo_lower and 'animado' in titulo_lower:
+        return JobCategoryEnum.ANIMATED_TRAFEGO_PAGO.value
     else:
         return None
 
@@ -75,6 +87,7 @@ def convert_to_date(date_value):
     return None
 
 def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, categoria):
+    logging.debug(f"upsert_delivery_control chamada para doc_id {doc_id}")
     existing_entry = session.query(DeliveryControl).filter_by(id=doc_id).first()
     mandaleca_field = None
 
@@ -83,7 +96,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
     elif categoria == JobCategoryEnum.ADAPTACAO.value:
         mandaleca_field = 'used_format_adaptation_mandalecas'
     elif categoria == JobCategoryEnum.CONTENT_PRODUCTION.value:
-        mandaleca_field = 'used_content_mandalecas'
+        mandaleca_field = 'used_content_production_mandalecas'
     elif categoria == JobCategoryEnum.STORIES_INSTAGRAM.value:
         mandaleca_field = 'used_stories_instagram_mandalecas'
     elif categoria == JobCategoryEnum.FEED_LINKEDIN.value:
@@ -96,11 +109,16 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
         mandaleca_field = 'used_reels_instagram_mandalecas'
     elif categoria == JobCategoryEnum.FEED_INSTAGRAM.value:
         mandaleca_field = 'used_feed_instagram_mandalecas'
+    elif categoria == JobCategoryEnum.STATIC_TRAFEGO_PAGO.value:
+        mandaleca_field = 'used_static_trafego_pago_mandalecas'
+    elif categoria == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO.value:
+        mandaleca_field = 'used_animated_trafego_pago_mandalecas'
 
     if existing_entry:
         existing_entry.client_id = client.id
         existing_entry.job_link = job_link
         existing_entry.job_title = row['Título']
+        existing_entry.project = row['Projeto']  # Adicione esta linha
         if mandaleca_field:
             setattr(existing_entry, mandaleca_field, mandalecas)
             logging.info(f"Atualizando DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
@@ -115,6 +133,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
             'client_id': client.id,
             'job_link': job_link,
             'job_title': row['Título'],
+            'project': row['Projeto'],  # Adicione esta linha
             'job_creation_date': job_creation_date,
             'job_start_date': job_start_date,
             'job_finish_date': job_finish_date,
@@ -123,7 +142,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
         }
         if mandaleca_field:
             new_entry_args[mandaleca_field] = mandalecas
-            logging.info(f"Criando nova entrada in DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
+            logging.info(f"Criando nova entrada em DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
         
         new_entry = DeliveryControl(**new_entry_args)
         session.add(new_entry)
@@ -136,14 +155,14 @@ def process_jobs(df, client_name_map, job_category_map, session):
         for index, row in df.iterrows():
             if index in client_name_map:
                 client = client_name_map[index]
+                user_in_charge = session.query(Users).filter_by(first_name=row['Responsável']).first()
+                requested_by = session.query(Users).filter_by(first_name=row['Requisitante']).first()
+
                 doc_num = str(row['Nº Doc']).split('.')[0]
                 job_link = f"https://app4.operand.com.br/jobs/{doc_num}"
 
                 mandalecas = extract_mandalecas(row['Título'])
-                categoria = identificar_categoria(row['Título'], row['Projeto'])
-                if categoria is None:
-                    print(f"Título não corresponde: {row['Título']}")
-                    return
+                categoria = job_category_map.get(index)
 
                 doc_id = int(doc_num)
 
@@ -151,9 +170,20 @@ def process_jobs(df, client_name_map, job_category_map, session):
                 job_start_date = convert_to_date(row['Data Início'])
                 job_finish_date = convert_to_date(row['Data de Conclusão'])
 
+                # Função para atualizar ou inserir controle de entrega
                 upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, categoria)
+
+                # Consolidação das mandalecas usadas
+                delivery_control = session.query(DeliveryControl).filter_by(id=doc_id).first()
+                total_feed_instagram_mandalecas = get_total_feed_instagram_mandalecas(delivery_control)
+
+                # Atualizar mandalecas contratadas para o cliente
+                client.n_monthly_contracted_feed_instagram_mandalecas -= total_feed_instagram_mandalecas
+
+                # Atualizar o cliente no banco de dados
+                session.commit()
     except Exception as e:
-        print(f"Erro ao processar trabalhos: {e}")
+        print(f"Erro ao processar os jobs: {e}")
 
 def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     logging.info(f"Calculando mandalecas acumuladas para o cliente: {client.name}")
@@ -175,19 +205,21 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     mandalecas_contratadas_feed_linkedin = numero_meses * (client.n_monthly_contracted_feed_linkedin_mandalecas or 0)
     mandalecas_contratadas_feed_tiktok = numero_meses * (client.n_monthly_contracted_feed_tiktok_mandalecas or 0)
     mandalecas_contratadas_stories_repost_instagram = numero_meses * (client.n_monthly_contracted_stories_repost_instagram_mandalecas or 0)
-    mandalecas_contratadas_reels_instagram = numero_meses * (client.n_monthly_contracted_reels_instagram_mandalecas or 0)
     mandalecas_contratadas_feed_instagram = numero_meses * (client.n_monthly_contracted_feed_instagram_mandalecas or 0)
+    mandalecas_contratadas_static_trafego_pago = numero_meses * (client.n_monthly_contracted_trafego_pago_static or 0)
+    mandalecas_contratadas_animated_trafego_pago = numero_meses * (client.n_monthly_contracted_trafego_pago_animated or 0)
 
     entregas = session.query(DeliveryControl).filter_by(client_id=client.id).all()
     mandalecas_usadas_criacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CRIACAO.value)
     mandalecas_usadas_adaptacao = sum((entrega.used_format_adaptation_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.ADAPTACAO.value)
-    mandalecas_usadas_conteudo = sum((entrega.used_content_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CONTENT_PRODUCTION.value)
+    mandalecas_usadas_conteudo = sum((entrega.used_content_production_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CONTENT_PRODUCTION.value)
     mandalecas_usadas_stories_instagram = sum((entrega.used_stories_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STORIES_INSTAGRAM.value)
     mandalecas_usadas_feed_linkedin = sum((entrega.used_feed_linkedin_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_LINKEDIN.value)
     mandalecas_usadas_feed_tiktok = sum((entrega.used_feed_tiktok_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_TIKTOK.value)
     mandalecas_usadas_stories_repost_instagram = sum((entrega.used_stories_repost_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STORIES_REPOST_INSTAGRAM.value)
-    mandalecas_usadas_reels_instagram = sum((entrega.used_reels_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.REELS_INSTAGRAM.value)
     mandalecas_usadas_feed_instagram = sum((entrega.used_feed_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_INSTAGRAM.value)
+    mandalecas_usadas_static_trafego_pago = sum((entrega.used_static_trafego_pago_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STATIC_TRAFEGO_PAGO.value)
+    mandalecas_usadas_animated_trafego_pago = sum((entrega.used_animated_trafego_pago_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO.value)
 
     client.accumulated_creative_mandalecas = mandalecas_contratadas_criacao - mandalecas_usadas_criacao
     client.accumulated_format_adaptation_mandalecas = mandalecas_contratadas_adaptacao - mandalecas_usadas_adaptacao
@@ -196,8 +228,9 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     client.accumulated_feed_linkedin_mandalecas = mandalecas_contratadas_feed_linkedin - mandalecas_usadas_feed_linkedin
     client.accumulated_feed_tiktok_mandalecas = mandalecas_contratadas_feed_tiktok - mandalecas_usadas_feed_tiktok
     client.accumulated_stories_repost_mandalecas = mandalecas_contratadas_stories_repost_instagram - mandalecas_usadas_stories_repost_instagram
-    client.accumulated_reels_mandalecas = mandalecas_contratadas_reels_instagram - mandalecas_usadas_reels_instagram
     client.accumulated_feed_instagram_mandalecas = mandalecas_contratadas_feed_instagram - mandalecas_usadas_feed_instagram
+    client.accumulated_static_trafego_pago = mandalecas_contratadas_static_trafego_pago - mandalecas_usadas_static_trafego_pago
+    client.accumulated_animated_trafego_pago = mandalecas_contratadas_animated_trafego_pago - mandalecas_usadas_animated_trafego_pago
 
     logging.info(f"Valores atualizados para o cliente {client.name}: "
                  f"Criação: {client.accumulated_creative_mandalecas}, "
@@ -207,8 +240,9 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
                  f"Feed LinkedIn: {client.accumulated_feed_linkedin_mandalecas}, "
                  f"Feed TikTok: {client.accumulated_feed_tiktok_mandalecas}, "
                  f"Stories Repost: {client.accumulated_stories_repost_mandalecas}, "
-                 f"Reels: {client.accumulated_reels_mandalecas}, "
-                 f"Feed Instagram: {client.accumulated_feed_instagram_mandalecas}")
+                 f"Feed Instagram: {client.accumulated_feed_instagram_mandalecas}, "
+                 f"Static Tráfego Pago: {client.accumulated_static_trafego_pago}, "
+                 f"Animated Tráfego Pago: {client.accumulated_animated_trafego_pago}")
 
     session.commit()
 
@@ -217,6 +251,7 @@ def read_excel_file(uploaded_file):
     df['Data de criação'] = pd.to_datetime(df['Data de criação'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
     df['Data Início'] = pd.to_datetime(df['Data Início'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
     df['Data de Conclusão'] = pd.to_datetime(df['Data de Conclusão'], format='%Y-%m-%d %H:%M:%S', errors='coerce')
+    logging.info(f"Arquivo XLSX lido com sucesso. Colunas: {df.columns.tolist()}")
     return df
 
 def match_clients_in_dataframe(df, session):
@@ -225,13 +260,17 @@ def match_clients_in_dataframe(df, session):
     existing_clients = {client.name: client for client in session.query(Client).all()}
 
     for index, row in df.iterrows():
-        client_name = str(row['Cliente'])
+        client_name = str(row['Cliente']).strip()
         client = existing_clients.get(client_name) or session.query(Client).filter(Client.aliases.contains([client_name])).first()
         if not client:
             unmatched_clients.append((index, client_name))
         else:
             client_name_map[index] = client
 
+    if unmatched_clients:
+        logging.warning(f"Clientes não correspondidos: {unmatched_clients}")
+    else:
+        logging.info("Todos os clientes foram correspondidos com sucesso.")
     return unmatched_clients, client_name_map
 
 def match_categories_in_dataframe(df, client_name_map):
@@ -245,13 +284,21 @@ def match_categories_in_dataframe(df, client_name_map):
         else:
             job_category_map[index] = categoria
 
+    if unmatched_categories:
+        logging.warning(f"Categorias não correspondidas: {unmatched_categories}")
+    else:
+        logging.info("Todas as categorias foram correspondidas com sucesso.")
     return unmatched_categories, job_category_map
 
 def handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session):
     if not unmatched_clients and not unmatched_categories:
+        logging.info("Iniciando processamento dos trabalhos.")
         process_jobs(df, client_name_map, job_category_map, session)
+    else:
+        logging.error("Existem clientes ou categorias não correspondidos. Não é possível processar os trabalhos.")
 
 def process_xlsx_file(uploaded_file):
+    logging.info("Iniciando process_xlsx_file")
     initialize_session_state()
     session = Session()
     try:
@@ -286,14 +333,11 @@ def process_xlsx_file(uploaded_file):
             st.write("Todas as categorias foram encontradas e correspondidas.")
 
         handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
+        logging.info("Arquivo processado com sucesso e dados inseridos no banco de dados.")
+        st.success("Arquivo processado com sucesso e dados inseridos no banco de dados.")
 
     except Exception as e:
         logging.error(f"Erro ao processar dados: {e}", exc_info=True)
         st.error(f"Erro ao processar dados: {e}")
     finally:
         session.close()
-
-def handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session):
-    if not unmatched_clients and not unmatched_categories:
-        process_jobs(df, client_name_map, job_category_map, session)
-
