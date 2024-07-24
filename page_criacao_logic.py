@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from common.models import DeliveryControl, Client, Users, JobCategoryEnum
+from common.models import DeliveryControl, Client, Users, JobCategoryEnum, DeliveryCategoryEnum
 from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
@@ -69,8 +69,9 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
             SELECT 
                 job_link, 
                 project, 
-                category, 
-                job_creation_date 
+                job_category, 
+                job_creation_date,
+                delivery_category
             FROM delivery_control
             WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
         """
@@ -78,33 +79,43 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
     logging.info(f"Dados obtidos: {df.shape[0]} registros encontrados")
     return df
 
-def debug_display_data(client, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+def debug_display_data(client, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories):
     logging.info("Exibindo dados para debug.")
     try:
         mandalecas_contratadas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_contratadas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
         mandalecas_usadas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_usadas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
         mandalecas_acumuladas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_acumuladas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
+
+        category_gauges = {}
         
         for category in JobCategoryEnum:
+            delivery_category = map_category_to_delivery_category(category)
             if (mandalecas_contratadas.get(category, 0) > 0 or 
                 mandalecas_usadas.get(category, 0) > 0 or 
-                mandalecas_acumuladas.get(category, 0) > 0):
-                st.write(f"Categoria: {category.value}")
-                st.write(f"Mandalecas Contratadas: {mandalecas_contratadas.get(category, 0)}")
-                st.write(f"Mandalecas Usadas: {mandalecas_usadas.get(category, 0)}")
-                st.write(f"Mandalecas Acumuladas: {mandalecas_acumuladas.get(category, 0)}")
+                mandalecas_acumuladas.get(category, 0) > 0) and delivery_category in selected_delivery_categories:
                 
-                # Exibir o gráfico gauge
+                if delivery_category not in category_gauges:
+                    category_gauges[delivery_category] = []
+
                 gauge_chart = display_gauge_chart(
                     title=category.value,
                     contracted=mandalecas_contratadas.get(category, 0),
                     used=mandalecas_usadas.get(category, 0),
                     accumulated=mandalecas_acumuladas.get(category, 0)
                 )
-                st.plotly_chart(gauge_chart)
+                category_gauges[delivery_category].append(gauge_chart)
+
+        for delivery_category, gauges in category_gauges.items():
+            st.subheader(delivery_category.value)
+            cols = st.columns(3)
+            for i, gauge in enumerate(gauges):
+                with cols[i % 3]:
+                    st.plotly_chart(gauge)
+
     except KeyError as e:
         logging.error(f"Erro ao exibir os dados: {e}")
         st.error(f"Erro ao exibir os dados: {e}")
+
 
 
 def get_last_month_date_range():
@@ -146,14 +157,21 @@ def page_criacao():
                 st.error(f"Erro ao processar o arquivo: {e}")
                 logging.error(f"Erro ao processar o arquivo: {e}", exc_info=True)
 
-    # Obter dados do DeliveryControl
-    delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
+        # Obter dados do DeliveryControl
+        delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
 
-    # Calcular mandalecas contratadas, usadas e acumuladas
-    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
+        # Calcular mandalecas contratadas, usadas e acumuladas
+        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
+
+        # Exibir caixas de seleção para categorias de entrega
+        st.header("Selecione as Categorias de Entrega")
+        selected_delivery_categories = []
+        for delivery_category in DeliveryCategoryEnum:
+            if st.checkbox(delivery_category.value, value=True):
+                selected_delivery_categories.append(delivery_category)
 
     # Exibir debug data para o cliente selecionado e intervalo de datas
-    debug_display_data(cliente_id, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    debug_display_data(cliente_id, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
 
 def calcular_mandalecas(cliente_id):
     session = Session()
@@ -200,3 +218,18 @@ def calcular_mandalecas(cliente_id):
 
     session.close()
     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+
+def map_category_to_delivery_category(job_category):
+    mapping = {
+        JobCategoryEnum.CRIACAO: DeliveryCategoryEnum.CRIACAO,
+        JobCategoryEnum.ADAPTACAO: DeliveryCategoryEnum.CRIACAO,
+        JobCategoryEnum.CONTENT_PRODUCTION: DeliveryCategoryEnum.CONTENT_PRODUCTION,
+        JobCategoryEnum.STORIES_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_LINKEDIN: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_TIKTOK: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.STORIES_REPOST_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.STATIC_TRAFEGO_PAGO: DeliveryCategoryEnum.TRAFEGO_PAGO,
+        JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: DeliveryCategoryEnum.TRAFEGO_PAGO
+    }
+    return mapping.get(job_category)

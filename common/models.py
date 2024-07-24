@@ -21,6 +21,48 @@ Base.metadata.create_all(bind=engine)
 # Agora você pode criar uma sessão e realizar operações no banco de dados
 db = SessionLocal()
 
+
+#Enums
+
+class JobCategoryEnum(str, Enum):
+    REELS_INSTAGRAM = 'Reels Instagram'
+    STORIES_INSTAGRAM = "Stories Instagram"
+    CAROUSEL_INSTAGRAM = "Carrossel Instagram"
+    FEED_INSTAGRAM = 'Feed Instagram'
+    FEED_TIKTOK = 'Feed Tiktok'
+    FEED_LINKEDIN = 'Feed Linkedin'
+    STORIES_REPOST_INSTAGRAM = 'Stories Repost'
+    CONTENT_PRODUCTION = 'Produção de Conteúdo'
+    CRIACAO = 'Criação'
+    ADAPTACAO = 'Adaptação'
+    STATIC_TRAFEGO_PAGO = "Material Estático Tráfego Pago"
+    ANIMATED_TRAFEGO_PAGO = "Material Animado Tráfego Pago"
+
+
+class DeliveryCategoryEnum(str, Enum):
+    CRIACAO = "Criação"
+    REDES_SOCIAIS = "Redes Sociais"
+    TRAFEGO_PAGO = "Tráfego Pago"
+    CONTENT_PRODUCTION = 'Produção de Conteúdo'
+
+def map_category_to_delivery_category(job_category):
+    mapping = {
+        JobCategoryEnum.CRIACAO: DeliveryCategoryEnum.CRIACAO,
+        JobCategoryEnum.ADAPTACAO: DeliveryCategoryEnum.CRIACAO,
+        JobCategoryEnum.CONTENT_PRODUCTION: DeliveryCategoryEnum.CONTENT_PRODUCTION,
+        JobCategoryEnum.STORIES_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_LINKEDIN: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_TIKTOK: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.STORIES_REPOST_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.FEED_INSTAGRAM: DeliveryCategoryEnum.REDES_SOCIAIS,
+        JobCategoryEnum.STATIC_TRAFEGO_PAGO: DeliveryCategoryEnum.TRAFEGO_PAGO,
+        JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: DeliveryCategoryEnum.TRAFEGO_PAGO
+    }
+    return mapping.get(job_category)
+
+
+
+
 # Tabelas associativas
 role_department_association = Table(
     'role_department', Base.metadata,
@@ -65,26 +107,6 @@ class ContractTypes(str, Enum):
     POR_JORNADA = "Por jornada"
 
 
-class JobCategoryEnum(str, Enum):
-    REELS_INSTAGRAM = 'Reels Instagram'
-    STORIES_INSTAGRAM = "Stories Instagram"
-    CAROUSEL_INSTAGRAM = "Carrossel Instagram"
-    FEED_INSTAGRAM = 'Feed Instagram'
-    FEED_TIKTOK = 'Feed Tiktok'
-    FEED_LINKEDIN = 'Feed Linkedin'
-    STORIES_REPOST_INSTAGRAM = 'Stories Repost'
-    CONTENT_PRODUCTION = 'Produção de Conteúdo'
-    CRIACAO = 'Criação'
-    ADAPTACAO = 'Adaptação'
-    STATIC_TRAFEGO_PAGO = "Material Estático Tráfego Pago"
-    ANIMATED_TRAFEGO_PAGO = "Material Animado Tráfego Pago"
-
-
-class DeliveryControlCategoryEnum(str, Enum):
-    SOCIAL = "Redes Sociais"
-    TRAFEGO_PAGO = 'Tráfego Pago'
-    CONTENT_PRODUCTION = 'Produção de Conteúdo'
-    CREATIVE = 'Criação'
 
 
 # Definições das classes
@@ -849,9 +871,7 @@ class ActionPlanAssessoria(Base):
     def __repr__(self):
         return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
 
-
 class DeliveryControl(Base):
-
     __tablename__ = 'delivery_control'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -862,8 +882,8 @@ class DeliveryControl(Base):
     client = relationship("Client", back_populates="delivery_controls")
     job_link = Column(String)
     project = Column(String)
-    category = Column(SQLAlchemyEnum(JobCategoryEnum))
-    delivery_control_category = Column(SQLAlchemyEnum(DeliveryControlCategoryEnum))
+    job_category = Column(SQLAlchemyEnum(JobCategoryEnum))
+    delivery_control_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum))
     job_title = Column(String)
     job_department = Column(String)
     used_creative_mandalecas = Column(Integer, default=0)
@@ -887,9 +907,7 @@ class DeliveryControl(Base):
     user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="delivery_controls_in_charge")
     requested_by_id = Column(Integer, ForeignKey('users.id'))
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="delivery_controls_requested")
+    delivery_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum), nullable=False)  # Novo campo
 
     def __repr__(self):
-
-
         return f"job='{self.job_title}', category='{self.category}')>"
-    

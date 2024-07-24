@@ -49,33 +49,32 @@ def extract_mandalecas(title):
         return float(mandalecas)
     return None
 
-def identificar_categoria(titulo, projeto):
+def identificar_categoria(titulo, projeto=None):
     titulo_lower = re.sub(r'[|<>]', '', str(titulo).lower()).strip()
     if 'stories' in titulo_lower and 'repost' in titulo_lower:
-        return JobCategoryEnum.STORIES_REPOST_INSTAGRAM.value
+        return JobCategoryEnum.STORIES_REPOST_INSTAGRAM
     elif 'reels' in titulo_lower:
-        return JobCategoryEnum.REELS_INSTAGRAM.value
+        return JobCategoryEnum.REELS_INSTAGRAM
     elif 'feed' in titulo_lower and 'instagram' in titulo_lower:
-        return JobCategoryEnum.FEED_INSTAGRAM.value
+        return JobCategoryEnum.FEED_INSTAGRAM
     elif 'feed' in titulo_lower and 'tiktok' in titulo_lower:
-        return JobCategoryEnum.FEED_TIKTOK.value
+        return JobCategoryEnum.FEED_TIKTOK
     elif 'feed' in titulo_lower and 'linkedin' in titulo_lower:
-        return JobCategoryEnum.FEED_LINKEDIN.value
+        return JobCategoryEnum.FEED_LINKEDIN
     elif 'stories' in titulo_lower:
-        return JobCategoryEnum.STORIES_INSTAGRAM.value
+        return JobCategoryEnum.STORIES_INSTAGRAM
     elif 'produção de conteúdo' in titulo_lower:
-        return JobCategoryEnum.CONTENT_PRODUCTION.value
+        return JobCategoryEnum.CONTENT_PRODUCTION
     elif 'criação' in titulo_lower:
-        return JobCategoryEnum.CRIACAO.value
+        return JobCategoryEnum.CRIACAO
     elif 'adaptação' in titulo_lower:
-        return JobCategoryEnum.ADAPTACAO.value
+        return JobCategoryEnum.ADAPTACAO
     elif 'tráfego pago' in titulo_lower and 'estático' in titulo_lower:
-        return JobCategoryEnum.STATIC_TRAFEGO_PAGO.value
+        return JobCategoryEnum.STATIC_TRAFEGO_PAGO
     elif 'tráfego pago' in titulo_lower and 'animado' in titulo_lower:
-        return JobCategoryEnum.ANIMATED_TRAFEGO_PAGO.value
+        return JobCategoryEnum.ANIMATED_TRAFEGO_PAGO
     else:
         return None
-
 def convert_to_date(date_value):
     if isinstance(date_value, pd.Timestamp):
         return date_value.date()
@@ -171,7 +170,7 @@ def process_jobs(df, client_name_map, job_category_map, session):
                 job_finish_date = convert_to_date(row['Data de Conclusão'])
 
                 # Função para atualizar ou inserir controle de entrega
-                upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, categoria)
+                upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, user_in_charge, requested_by, categoria)
 
                 # Consolidação das mandalecas usadas
                 delivery_control = session.query(DeliveryControl).filter_by(id=doc_id).first()
@@ -297,47 +296,25 @@ def handle_unmatched_entities(unmatched_clients, unmatched_categories, df, clien
     else:
         logging.error("Existem clientes ou categorias não correspondidos. Não é possível processar os trabalhos.")
 
-def process_xlsx_file(uploaded_file):
-    logging.info("Iniciando process_xlsx_file")
-    initialize_session_state()
-    session = Session()
-    try:
-        df = read_excel_file(uploaded_file)
-        
-        df = df.dropna(subset=['Cliente']).reset_index(drop=True)
-        df = df[df['Cliente'].str.strip().astype(bool)]
-        
-        st.session_state.df = df
+def process_xlsx_file(file):
+    # Código para abrir e ler o arquivo XLSX
+    df = pd.read_excel(file)
 
-        unmatched_clients, client_name_map = match_clients_in_dataframe(df, session)
-        unmatched_categories, job_category_map = match_categories_in_dataframe(df, client_name_map)
+    for index, row in df.iterrows():
+        job_category = identificar_categoria(row['Título'])  # Supondo que identificar_categoria retorna JobCategoryEnum
+        if job_category is None:
+            # Lógica para lidar com títulos não correspondidos
+            continue
 
-        st.session_state.unmatched_clients = unmatched_clients
-        st.session_state.client_name_map = client_name_map
-        st.session_state.unmatched_categories = unmatched_categories
-        st.session_state.job_category_map = job_category_map
-        st.session_state.session = session
+        delivery_category = map_category_to_delivery_category(job_category)
 
-        if unmatched_clients:
-            st.write("Clientes não encontrados no banco de dados:")
-            for idx, client in unmatched_clients:
-                st.write(f"Índice: {idx}, Cliente: {client}")
-        else:
-            st.write("Todos os clientes foram encontrados e correspondidos.")
+        new_delivery_control = DeliveryControl(
+            # ... outros campos extraídos da linha do arquivo
+            job_category=job_category,
+            delivery_category=delivery_category,
+            # ...
+        )
 
-        if unmatched_categories:
-            st.write("Categorias não encontradas no banco de dados:")
-            for idx, category in unmatched_categories:
-                st.write(f"Índice: {idx}, Categoria: {category}")
-        else:
-            st.write("Todas as categorias foram encontradas e correspondidas.")
-
-        handle_unmatched_entities(unmatched_clients, unmatched_categories, df, client_name_map, job_category_map, session)
-        logging.info("Arquivo processado com sucesso e dados inseridos no banco de dados.")
-        st.success("Arquivo processado com sucesso e dados inseridos no banco de dados.")
-
-    except Exception as e:
-        logging.error(f"Erro ao processar dados: {e}", exc_info=True)
-        st.error(f"Erro ao processar dados: {e}")
-    finally:
-        session.close()
+        session.add(new_delivery_control)
+    
+    session.commit()
