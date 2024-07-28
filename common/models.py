@@ -25,18 +25,20 @@ db = SessionLocal()
 #Enums
 
 class JobCategoryEnum(str, Enum):
+    STORIES_REPOST_INSTAGRAM = 'Stories Repost Instagram'
     REELS_INSTAGRAM = 'Reels Instagram'
-    STORIES_INSTAGRAM = "Stories Instagram"
-    CAROUSEL_INSTAGRAM = "Carrossel Instagram"
     FEED_INSTAGRAM = 'Feed Instagram'
     FEED_TIKTOK = 'Feed Tiktok'
     FEED_LINKEDIN = 'Feed Linkedin'
-    STORIES_REPOST_INSTAGRAM = 'Stories Repost'
+    STORIES_INSTAGRAM = 'Stories Instagram'
     CONTENT_PRODUCTION = 'Produção de Conteúdo'
     CRIACAO = 'Criação'
     ADAPTACAO = 'Adaptação'
-    STATIC_TRAFEGO_PAGO = "Material Estático Tráfego Pago"
-    ANIMATED_TRAFEGO_PAGO = "Material Animado Tráfego Pago"
+    STATIC_TRAFEGO_PAGO = 'Tráfego Pago Estático'
+    ANIMATED_TRAFEGO_PAGO = 'Tráfego Pago Animado'
+    CARD_INSTAGRAM = 'Card Instagram'
+    CAROUSEL_INSTAGRAM = 'Carrossel Instagram'
+
 
 
 class DeliveryCategoryEnum(str, Enum):
@@ -212,6 +214,7 @@ class Users(Base):
 
     def __repr__(self):
         return f"<Users(id={self.id}, name='{self.first_name} {self.last_name}')>"
+
 class Liaison(Base):
     __tablename__ = 'liaisons'
     id = Column(Integer, primary_key=True)
@@ -242,12 +245,15 @@ class Client(Base):
     cnpj = Column(String(18), unique=True)
     cpf = Column(String(11), unique=True)
     aliases = Column(JSON)
+    monthly_plan_deadline_day = Column(Integer, default=15)
     is_instagram_connected_facebook_page = Column(Boolean, default=False)
     is_active_impulsionamento_instagram = Column(Boolean, default=False)
     is_active_impulsionamento_linkedin = Column(Boolean, default=False)
     is_active_impulsionamento_tiktok = Column(Boolean, default=False)
-    is_active_instagram = Column(Boolean, default=False)
-    is_active_linkedin = Column(Boolean, default=False)
+    impulsionamento_budget = Column(Float, default=0)
+    is_active_redes_instagram = Column(Boolean, default=False)
+    is_active_redes_linkedin = Column(Boolean, default=False)
+    is_active_impulsionamento_linkedin = Column(Boolean, default=False)
     is_active_tiktok = Column(Boolean, default=False)
     is_active_google_ads = Column(Boolean, default=False)
     is_active_trafego_pago = Column(Boolean, default=False)
@@ -871,6 +877,7 @@ class ActionPlanAssessoria(Base):
     def __repr__(self):
         return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
 
+
 class DeliveryControl(Base):
     __tablename__ = 'delivery_control'
 
@@ -880,6 +887,8 @@ class DeliveryControl(Base):
     updated_by = relationship("Users", foreign_keys=[updated_by_id])
     client_id = Column(Integer, ForeignKey('clients.id'))
     client = relationship("Client", back_populates="delivery_controls")
+    next_month_plan_sent = Column(Boolean)
+    next_month_plant_sent_date = Column(Date)
     job_link = Column(String)
     project = Column(String)
     job_category = Column(SQLAlchemyEnum(JobCategoryEnum))

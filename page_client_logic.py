@@ -27,6 +27,7 @@ def update_cliente(cliente_id, updated_data):
                 n_monthly_contracted_stories_repost_instagram_mandalecas = ?, 
                 n_monthly_contracted_trafego_pago_static = ?, 
                 n_monthly_contracted_trafego_pago_animated = ?, 
+                n_monthly_contracted_feed_instagram_mandalecas = ?, 
                 accumulated_creative_mandalecas = ?, 
                 accumulated_format_adaptation_mandalecas = ?, 
                 accumulated_content_production_mandalecas = ?, 
@@ -47,6 +48,7 @@ def update_cliente(cliente_id, updated_data):
             updated_data['n_monthly_contracted_feed_linkedin_mandalecas'], 
             updated_data['n_monthly_contracted_feed_tiktok_mandalecas'], 
             updated_data['n_monthly_contracted_stories_repost_instagram_mandalecas'], 
+            updated_data['n_monthly_contracted_feed_instagram_mandalecas'],  # Adicionado o valor aqui
             updated_data['n_monthly_contracted_trafego_pago_static'], 
             updated_data['n_monthly_contracted_trafego_pago_animated'], 
             updated_data['accumulated_creative_mandalecas'], 
@@ -114,8 +116,6 @@ def update_instagram_profile(client_id, user_name, official_hashtags, insights):
             """, (client_id, user_name, json.dumps(official_hashtags), json.dumps(insights), datetime.now()))
         conn.commit()
 
-
-
 # Função para exibir os detalhes do cliente
 def show_cliente(cliente_id, start_date, end_date):
     df = get_clientes()
@@ -146,6 +146,8 @@ def show_cliente(cliente_id, start_date, end_date):
         n_monthly_contracted_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Mensais Contratadas", value=cliente['n_monthly_contracted_feed_tiktok_mandalecas'])
         n_monthly_contracted_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_repost_instagram_mandalecas'])
 
+        n_monthly_contracted_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_feed_instagram_mandalecas'])
+
         n_monthly_contracted_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_static'])
         n_monthly_contracted_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_animated'])
 
@@ -173,6 +175,7 @@ def show_cliente(cliente_id, start_date, end_date):
                     'n_monthly_contracted_feed_linkedin_mandalecas': n_monthly_contracted_feed_linkedin_mandalecas,
                     'n_monthly_contracted_feed_tiktok_mandalecas': n_monthly_contracted_feed_tiktok_mandalecas,
                     'n_monthly_contracted_stories_repost_instagram_mandalecas': n_monthly_contracted_stories_repost_instagram_mandalecas,
+                    'n_monthly_contracted_feed_instagram_mandalecas': n_monthly_contracted_feed_instagram_mandalecas,
                     'n_monthly_contracted_trafego_pago_static': n_monthly_contracted_trafego_pago_static,
                     'n_monthly_contracted_trafego_pago_animated': n_monthly_contracted_trafego_pago_animated,
                     'accumulated_creative_mandalecas': accumulated_creative_mandalecas,

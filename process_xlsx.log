@@ -1,8 +1,50 @@
-2024-07-24 09:02:04,370 - INFO - Obtendo dados de DeliveryControl para o cliente ID 1 entre 2024-06-01 e 2024-06-30
-2024-07-24 09:02:04,374 - INFO - Dados obtidos: 0 registros encontrados
-2024-07-24 09:06:52,331 - INFO - Obtendo dados de DeliveryControl para o cliente ID 1 entre 2024-06-01 e 2024-06-30
-2024-07-24 09:06:52,333 - INFO - Dados obtidos: 0 registros encontrados
-2024-07-24 09:06:52,431 - INFO - Exibindo dados para debug.
-2024-07-24 09:10:37,702 - INFO - Obtendo dados de DeliveryControl para o cliente ID 1 entre 2024-06-01 e 2024-06-30
-2024-07-24 09:10:37,705 - INFO - Dados obtidos: 0 registros encontrados
-2024-07-24 09:10:37,804 - INFO - Exibindo dados para debug.
+2024-07-28 18:58:32,424 - INFO - Obtendo dados de DeliveryControl para o cliente ID 1 entre 2024-06-01 e 2024-06-30
+2024-07-28 18:58:32,425 - INFO - Dados obtidos: 5 registros encontrados
+2024-07-28 18:58:32,430 - INFO - Exibindo dados para debug.
+2024-07-28 18:58:35,970 - INFO - Arquivo XLSX enviado. Iniciando processamento...
+2024-07-28 18:58:35,978 - INFO - Arquivo XLSX lido com sucesso. Colunas: ['Nº Doc', 'Tipo Doc', 'Título', 'Cliente', 'Projeto', 'Status', 'Situação', 'Data de criação', 'Data Início', 'Prazo', 'Data de Conclusão', 'Horário de conclusão', 'Concluído no prazo', 'Tarefas concluídas', 'Tarefas', 'Tempo Realizado', 'Tempo Realizado em Minutos', 'Tempo Estimado', 'Tempo Estimado em Minutos', 'Responsável']
+2024-07-28 18:58:35,978 - INFO - Número de linhas antes da remoção de NaN: 10
+2024-07-28 18:58:35,981 - INFO - Número de linhas após a remoção de NaN: 9
+2024-07-28 18:58:35,988 - INFO - Todos os clientes foram correspondidos com sucesso.
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'OGUNJÁ  Card instagram mdl 1']: Card Instagram
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'reels instagram Ogunjá mdl 1']: Reels Instagram
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'carrossel instagram   mdl 1']: Carrossel Instagram
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'Criação Crachás Ogunjá  Crachás Centro Logistico mdl 1']: Criação
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'Stories  instagram Ogunjá mdl 1']: Stories Instagram
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'feed linkedin Vídeo Institucional mdl 1']: Feed Linkedin
+2024-07-28 18:58:35,989 - INFO - Categoria identificada para título 'feed tiktok dia do evento mdl 1']: Feed Tiktok
+2024-07-28 18:58:35,990 - INFO - Categoria identificada para título 'carrossel instagram  Vídeo Instituciona  Roteiro (redação) mdl 1']: Carrossel Instagram
+2024-07-28 18:58:35,990 - INFO - Categoria identificada para título 'criação instagram dia do evento  1  Ficha Cerimonialista mdl 1']: Criação
+2024-07-28 18:58:35,990 - INFO - Todas as categorias foram correspondidas com sucesso.
+2024-07-28 18:58:35,990 - INFO - Iniciando processamento dos trabalhos. Número de linhas a processar: 9
+2024-07-28 18:58:35,992 - INFO - ID 2815 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:35,992 - INFO - Atualizando DeliveryControl com ID 2815. Campo used_card_instagram_mandalecas definido como 1.0.
+2024-07-28 18:58:36,000 - INFO - Dados comitados para DeliveryControl com ID 2815.
+2024-07-28 18:58:36,002 - INFO - ID 2818 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,004 - INFO - Atualizando DeliveryControl com ID 2818. Campo used_reels_instagram_mandalecas definido como 1.0.
+2024-07-28 18:58:36,010 - INFO - Dados comitados para DeliveryControl com ID 2818.
+2024-07-28 18:58:36,012 - INFO - ID 2818 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,014 - INFO - Atualizando DeliveryControl com ID 2818. Campo used_carousel_mandalecas definido como 1.0.
+2024-07-28 18:58:36,019 - INFO - Dados comitados para DeliveryControl com ID 2818.
+2024-07-28 18:58:36,021 - INFO - ID 2818 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,022 - INFO - Atualizando DeliveryControl com ID 2818. Campo used_creative_mandalecas definido como 1.0.
+2024-07-28 18:58:36,027 - INFO - Dados comitados para DeliveryControl com ID 2818.
+2024-07-28 18:58:36,029 - INFO - ID 2819 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,031 - INFO - Atualizando DeliveryControl com ID 2819. Campo used_stories_instagram_mandalecas definido como 1.0.
+2024-07-28 18:58:36,036 - INFO - Dados comitados para DeliveryControl com ID 2819.
+2024-07-28 18:58:36,037 - INFO - ID 2820 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,038 - INFO - Atualizando DeliveryControl com ID 2820. Campo used_feed_linkedin_mandalecas definido como 1.0.
+2024-07-28 18:58:36,042 - INFO - Dados comitados para DeliveryControl com ID 2820.
+2024-07-28 18:58:36,043 - INFO - ID 2820 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,045 - INFO - Atualizando DeliveryControl com ID 2820. Campo used_feed_tiktok_mandalecas definido como 1.0.
+2024-07-28 18:58:36,048 - INFO - Dados comitados para DeliveryControl com ID 2820.
+2024-07-28 18:58:36,050 - INFO - ID 52820 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,051 - INFO - Atualizando DeliveryControl com ID 52820. Campo used_carousel_mandalecas definido como 1.0.
+2024-07-28 18:58:36,057 - INFO - Dados comitados para DeliveryControl com ID 52820.
+2024-07-28 18:58:36,057 - INFO - ID 2820 já existe. Atualizando a entrada existente.
+2024-07-28 18:58:36,058 - INFO - Atualizando DeliveryControl com ID 2820. Campo used_creative_mandalecas definido como 1.0.
+2024-07-28 18:58:36,063 - INFO - Dados comitados para DeliveryControl com ID 2820.
+2024-07-28 18:58:36,063 - INFO - Processamento de trabalhos concluído.
+2024-07-28 18:58:36,064 - INFO - Obtendo dados de DeliveryControl para o cliente ID 1 entre 2024-06-01 e 2024-06-30
+2024-07-28 18:58:36,066 - INFO - Dados obtidos: 5 registros encontrados
+2024-07-28 18:58:36,069 - INFO - Exibindo dados para debug.

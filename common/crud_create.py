@@ -1,9 +1,9 @@
 import json
 from datetime import date
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from common.database import engine
-from common.models import Base, Department, Users, Role, Client, Liaison
+from common.models import Base, Department, Users, Role, Client, Liaison, DeliveryControl
 from .crud_logging import get_or_create, logger
 
 # Certifique-se de que todas as tabelas são criadas
@@ -218,46 +218,44 @@ def create_client(data):
             client.business_phone = data.get('business_phone')
             client.phone = data.get('phone')
             client.google_ads_account_id = data.get('google_ads_account_id')
-            client.fb_page_id = data.get('fb_page_id')
-            client.id_instagram = data.get('id_instagram')
-            client.hashtag_padrao = data.get('hashtag_padrao')
-            client.id_linkedin = data.get('id_linkedin')
+            client.facebook_page_id = data.get('facebook_page_id')
+            client.instagram_profile_id = data.get('instagram_profile_id')
+            client.hashtags = data.get('hashtags')
+            client.linkedin_profile_id = data.get('linkedin_profile_id')
             client. n_monthly_contracted_creative_mandalecas = data.get(' n_monthly_contracted_creative_mandalecas')
             client.n_monthly_contracted_content_production_mandalecas = data.get('n_monthly_contracted_producao_conteudo_mandalecas')
             client.n_monthly_contracted_format_adaptation_mandalecas = data.get('n_monthly_contracted_adaptacao_mandalecas')
-            client.n_monthly_contracted_stories_mandalecas = data.get('n_monthly_contracted_stories_mandalecas')
-            client.n_monthly_contracted_reels_mandalecas = data.get('n_monthly_contracted_reels_mandalecas')
-            client.n_monthly_contracted_stories_repost_mandalecas = data.get('n_monthly_contracted_stories_repost_mandalecas')
-            client.n_monthly_contracted_cards_mandalecas = data.get('n_monthly_contracted_cards_mandalecas')
+            client.n_monthly_contracted_stories_instagram_mandalecas = data.get('n_monthly_contracted_stories_instagram_mandalecas')
+            client.n_monthly_contracted_feed_instagram_mandalecas = data.get('n_monthly_contracted_feed_instagram_mandalecas')
             client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_monthly_contracted_feed_tiktok_mandalecas')
             client.n_monthly_contracted_feed_linkedin_mandalecas = data.get('n_monthly_contracted_feed_linkedin_mandalecas')
-            client.id_tiktok = data.get('id_tiktok')
-            client.normalized_name = data.get('normalized_name')
+            client.accumulated_feed_tiktok_mandalecas = data.get('accumulated_feed_tiktok_mandalecas')
+            client.name = data.get('name')
 
             # Campos contratuais
             client.n_monthly_contracted_creative_mandalecas = 6
             client.n_monthly_contracted_format_adaptation_mandalecas = 2
-            client.n_monthly_contracted_production_content_mandalecas = 5
+            client.n_monthly_contracted_feed_instagram_mandalecas = 5
 
             # Outros campos adicionais
-            client.marketing = data.get('marketing')
-            client.verba_mensal_impulsionamento = data.get('verba_mensal_impulsionamento')
+
+            client.impulsionamento_budget = data.get('impulsionamento_budget')
             client.copy = data.get('copy')
-            client.n_monthly_contracted_stories_mandalecas = data.get('n_posts_contratados_stories_instagram')
-            client.n_monthly_contracted_reels_mandalecas= data.get('n_posts_contratados_reels_instagram')
-            client.n_monthly_contracted_stories_repost_mandalecas = data.get('n_posts_contratados_feed_linkedin')
+            client.n_monthly_contracted_stories_instagram_mandalecas = data.get('n_posts_contratados_stories_instagram')
+            client.n_monthly_contracted_stories_repost_instagram_mandalecas = data.get('n_posts_contratados_feed_linkedin')
             client.n_monthly_contracted_feed_linkedin_mandalecas= data.get('n_posts_contratados_stories_instagram')
             client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_posts_contratados_feed_facebook')
             client.n_monthly_contracted_creative_mandalecas = data.get('n_posts_contratados_feed_tiktok')
-            client.url_img_logo = data.get('url_img_logo')
-            client.ativo = data.get('ativo')
-            client.impulsionamento = data.get('Impulsionamento')
-            client.trafego_pago = data.get('trafego_pago')
-            client.linkedin = data.get('linkedin')
-            client.permissoes = data.get('permissoes')
-            client.fb_ad_account_id = data.get('fb_ad_account_id')
-            client.redes_sociais = data.get('redes_sociais')
-            client.n_usuario_instagram = data.get('n_usuario_instagram')
+            client.logo_url = data.get('url_img_logo')
+            client.is_active_impulsionamento_instagram = data.get('is_active_impulsionamento_instagram')
+            client.is_active_impulsionamento_linkedin = data.get('is_active_impulsionamento_linkedin')
+            
+            client.is_active_trafego_pago = data.get('is_active_trafego_pago')
+            client.is_active_linkedin_ads = data.get('is_active_linkedin_ads')
+            client.is_active_tiktok_ads = data.get('is_active_tiktok_ads')
+            client.is_active_google_ads = data.get('is_active_google_ads')
+
+            
 
             session.add(client)
 
@@ -348,3 +346,19 @@ if __name__ == "__main__":
     json_filepath = '/home/debrito/Documentos/central/common/clientes.json'
     json_data = load_json(json_filepath)
     process_data(json_data)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    # Adicionar cliente de exemplo
+    client = Client(name="Ogunjá Revestimentos", monthly_plan_deadline_day=15)
+    session.add(client)
+    session.commit()
+
+    # Adicionar DeliveryControl de exemplo
+    delivery_control = DeliveryControl(
+        client_id=client.id,
+        next_month_plan_sent=True,
+        next_month_plan_sent_date=date(2024, 7, 10)
+    )
+    session.add(delivery_control)
+    session.commit()
