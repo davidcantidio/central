@@ -26,7 +26,6 @@ db = SessionLocal()
 
 class JobCategoryEnum(str, Enum):
     STORIES_REPOST_INSTAGRAM = 'Stories Repost Instagram'
-    REELS_INSTAGRAM = 'Reels Instagram'
     FEED_INSTAGRAM = 'Feed Instagram'
     FEED_TIKTOK = 'Feed Tiktok'
     FEED_LINKEDIN = 'Feed Linkedin'
@@ -38,6 +37,7 @@ class JobCategoryEnum(str, Enum):
     ANIMATED_TRAFEGO_PAGO = 'Tráfego Pago Animado'
     CARD_INSTAGRAM = 'Card Instagram'
     CAROUSEL_INSTAGRAM = 'Carrossel Instagram'
+    REELS_INSTAGRAM = 'Reels Instagram'
 
 
 
@@ -895,18 +895,7 @@ class DeliveryControl(Base):
     delivery_control_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum))
     job_title = Column(String)
     job_department = Column(String)
-    used_creative_mandalecas = Column(Integer, default=0)
-    used_format_adaptation_mandalecas = Column(Integer, default=0)
-    used_content_production_mandalecas = Column(Integer, default=0)
-    used_stories_instagram_mandalecas = Column(Integer, default=0)
-    used_feed_linkedin_mandalecas = Column(Integer, default=0)
-    used_feed_tiktok_mandalecas = Column(Integer, default=0)
-    used_stories_repost_instagram_mandalecas = Column(Integer, default=0)
-    used_reels_instagram_mandalecas = Column(Integer, default=0)
-    used_card_instagram_mandalecas = Column(Integer, default=0)
-    used_static_trafego_pago_mandalecas = Column(Integer, default=0)
-    used_animated_trafego_pago_mandalecas = Column(Integer, default=0)
-    used_carousel_mandalecas = Column(Integer, default=0)
+    used_mandalecas = Column(Float, default=0)
     job_creation_date = Column(Date)
     job_start_date = Column(Date)
     job_deadline_date = Column(Date)
@@ -916,7 +905,4 @@ class DeliveryControl(Base):
     user_in_charge = relationship("Users", foreign_keys=[user_in_charge_id], back_populates="delivery_controls_in_charge")
     requested_by_id = Column(Integer, ForeignKey('users.id'))
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="delivery_controls_requested")
-    delivery_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum), nullable=False)  # Novo campo
-
-    def __repr__(self):
-        return f"job='{self.job_title}', category='{self.category}')>"
+    delivery_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum), nullable=False)

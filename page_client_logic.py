@@ -69,25 +69,14 @@ def get_used_mandalecas(cliente_id, start_date, end_date):
     with sqlite3.connect('common/db_mandala.sqlite') as conn:
         query = """
             SELECT 
-                SUM(used_creative_mandalecas) as creative_mandalecas,
-                SUM(used_carousel_mandalecas) as carousel_mandalecas,
-                SUM(used_format_adaptation_mandalecas) as format_adaptation_mandalecas,
-                SUM(used_content_production_mandalecas) as content_production_mandalecas,
-                SUM(used_reels_instagram_mandalecas) as reels_instagram_mandalecas,
-                SUM(used_stories_instagram_mandalecas) as stories_instagram_mandalecas,
-                SUM(used_stories_repost_instagram_mandalecas) as stories_repost_instagram_mandalecas,
-                SUM(used_feed_linkedin_mandalecas) as feed_linkedin_mandalecas,
-                SUM(used_feed_tiktok_mandalecas) as feed_tiktok_mandalecas,
-                SUM(used_static_trafego_pago_mandalecas) as static_trafego_pago_mandalecas,
-                SUM(used_animated_trafego_pago_mandalecas) as animated_trafego_pago_mandalecas,
-                SUM(used_carousel_mandalecas) + SUM(used_card_instagram_mandalecas) + SUM(used_reels_instagram_mandalecas) as feed_instagram_mandalecas
+                job_category,
+                SUM(used_mandalecas) as total_used_mandalecas
             FROM delivery_control
             WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
+            GROUP BY job_category
         """
         df = pd.read_sql_query(query, conn, params=(cliente_id, start_date, end_date))
-    
     return df
-
 
 # Função para obter perfil do Instagram
 def get_instagram_profile(client_id):
@@ -120,7 +109,11 @@ def update_instagram_profile(client_id, user_name, official_hashtags, insights):
 def show_cliente(cliente_id, start_date, end_date):
     df = get_clientes()
     cliente = df[df["id"] == cliente_id].iloc[0]
-    used_mandalecas = get_used_mandalecas(cliente_id, start_date, end_date).iloc[0]
+    used_mandalecas_df = get_used_mandalecas(cliente_id, start_date, end_date)
+
+    # Agrupa as mandalecas usadas por categoria
+    used_mandalecas = used_mandalecas_df.set_index('job_category').to_dict()['total_used_mandalecas']
+
     instagram_profile = get_instagram_profile(cliente_id)
     
     st.title(f"Cliente: {cliente['name']}")
@@ -145,9 +138,7 @@ def show_cliente(cliente_id, start_date, end_date):
         n_monthly_contracted_feed_linkedin_mandalecas = st.number_input("Mandalecas de Feed LinkedIn Mensais Contratadas", value=cliente['n_monthly_contracted_feed_linkedin_mandalecas'])
         n_monthly_contracted_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Mensais Contratadas", value=cliente['n_monthly_contracted_feed_tiktok_mandalecas'])
         n_monthly_contracted_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_repost_instagram_mandalecas'])
-
         n_monthly_contracted_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_feed_instagram_mandalecas'])
-
         n_monthly_contracted_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_static'])
         n_monthly_contracted_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_animated'])
 
@@ -206,7 +197,7 @@ def show_cliente(cliente_id, start_date, end_date):
         dados = {
             "Cliente": [cliente['name']],
             "Mandalecas Contratadas Criação": [cliente['n_monthly_contracted_creative_mandalecas']],
-            "Mandalecas Usadas Criação": [used_mandalecas['creative_mandalecas']]
+            "Mandalecas Usadas Criação": [used_mandalecas.get(JobCategoryEnum.CRIACAO.value, 0)]
         }
         df_tabela = pd.DataFrame(dados)
         st.table(df_tabela)
@@ -219,6 +210,10 @@ def show_cliente(cliente_id, start_date, end_date):
     elif menu == "Campanhas":
         st.header("Campanhas")
         st.write("Conteúdo para Campanhas")
+
+# Código principal para executar a função show_cliente com exemplo de dados
+if __name__ == "__main__":
+    cliente_id = 1 
 
 # Código principal para executar a função show_cliente com exemplo de dados
 if __name__ == "__main__":

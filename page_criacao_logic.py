@@ -12,14 +12,13 @@ import logging
 import sqlite3
 from process_xlsx import identificar_categoria, process_xlsx_file
 import plotly.express as px
-import plotly.graph_objects as go
 
 # Configura o log
 logging.basicConfig(
-    filename='process_xlsx.log',  # Nome do arquivo de log
-    level=logging.INFO,           # Nível de log (INFO para registrar informações úteis)
+    filename='page_criacao_logic.log',  # Nome do arquivo de log
+    level=logging.DEBUG,  # Nível de log (DEBUG para registrar informações detalhadas)
     format='%(asctime)s - %(levelname)s - %(message)s',  # Formato das mensagens de log
-    datefmt='%Y-%m-%d %H:%M:%S'   # Formato da data e hora
+    datefmt='%Y-%m-%d %H:%M:%S'  # Formato da data e hora
 )
 
 # Crie uma sessão
@@ -52,13 +51,10 @@ def map_category_to_delivery_category(category):
     else:
         return None
 
-
 def create_timeline_chart(today, deadline_date, plan_sent_date):
-    # Lista de dias do mês
     days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=today.replace(day=28) + pd.offsets.MonthEnd(1))]
     x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
 
-    # Posicionando os eventos
     event_dates = [today.strftime('%Y-%m-%d'), deadline_date.strftime('%Y-%m-%d')]
     event_labels = ["Hoje", "Prazo"]
     event_colors = ["blue", "red"]
@@ -68,10 +64,8 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
         event_labels.append("Plano Enviado")
         event_colors.append("green")
 
-    # Criar a linha do tempo
     fig = go.Figure()
 
-    # Adicionar os dias do mês na linha do tempo
     fig.add_trace(go.Scatter(
         x=x_values,
         y=[1] * len(x_values),
@@ -82,7 +76,6 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
         hoverinfo='x'
     ))
 
-    # Adicionar os eventos na linha do tempo
     for date, label, color in zip(event_dates, event_labels, event_colors):
         fig.add_trace(go.Scatter(
             x=[date],
@@ -125,12 +118,10 @@ def display_client_plan_status():
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
         
-        # Imprimir na tela as datas para debug
         st.write(f"Dia Atual: {today.strftime('%Y-%m-%d')}")
         st.write(f"Dia do Deadline: {deadline_date.strftime('%Y-%m-%d')}")
         if plan_sent_date:
             st.write(f"Dia do Envio do Plano: {plan_sent_date.strftime('%Y-%m-%d')}")
-            st.write(f"Data de Envio: {plan_sent_date.strftime('%Y-%m-%d')}")
         else:
             st.write("Plano não enviado.")
 
@@ -169,7 +160,6 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
         }
     ))
 
-    # Atualizar layout para lidar com valores que excedem o limite
     fig.update_layout(
         height=180,
         margin=dict(l=20, r=20, t=50, b=20),
@@ -190,77 +180,78 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
     with sqlite3.connect('common/db_mandala.sqlite') as conn:
         query = """
             SELECT 
-                job_link, 
-                project, 
-                job_category, 
-                job_creation_date,
-                delivery_category,
-                used_reels_instagram_mandalecas,
-                used_carousel_mandalecas,
-                used_card_instagram_mandalecas
+                job_category,
+                used_mandalecas
             FROM delivery_control
             WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
         """
         df = pd.read_sql_query(query, conn, params=(cliente_id, start_date, end_date))
+        logging.info(f"Dados obtidos: {df}")
     logging.info(f"Dados obtidos: {df.shape[0]} registros encontrados")
     return df
 
-def debug_display_data(client_id, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories):
-    logging.info("Exibindo dados para debug.")
-    try:
-        mandalecas_contratadas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_contratadas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
-        mandalecas_usadas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_usadas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
-        mandalecas_acumuladas[JobCategoryEnum.FEED_INSTAGRAM] += mandalecas_acumuladas.pop(JobCategoryEnum.REELS_INSTAGRAM, 0)
+def debug_display_data(cliente_id, df, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories):
+    with Session(bind=engine) as session:
+        client = session.query(Client).filter(Client.id == cliente_id).first()
 
-        category_gauges = {}
-        social_media_data = {
-            "Carrossel Instagram": mandalecas_usadas.get(JobCategoryEnum.CAROUSEL_INSTAGRAM, 0),
-            "Reels Instagram": mandalecas_usadas.get(JobCategoryEnum.REELS_INSTAGRAM, 0),
-            "Card Instagram": mandalecas_usadas.get(JobCategoryEnum.CARD_INSTAGRAM, 0)
-        }
+        logging.info("Exibindo dados para debug.")
+        try:
+            logging.info(f"Mandalecas contratadas: {mandalecas_contratadas}")
+            logging.info(f"Mandalecas usadas: {mandalecas_usadas}")
+            logging.info(f"Mandalecas acumuladas: {mandalecas_acumuladas}")
 
-        for category in JobCategoryEnum:
-            delivery_category = map_category_to_delivery_category(category)
-            if (mandalecas_contratadas.get(category, 0) > 0 or 
-                mandalecas_usadas.get(category, 0) > 0 or 
-                mandalecas_acumuladas.get(category, 0) > 0) and delivery_category in selected_delivery_categories:
-                
-                if delivery_category not in category_gauges:
-                    category_gauges[delivery_category] = []
+            # Agregando os valores de used_mandalecas para as categorias específicas de redes sociais
+            social_media_data = {
+                "Carrossel Instagram": sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CAROUSEL_INSTAGRAM),
+                "Reels Instagram": sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.REELS_INSTAGRAM),
+                "Card Instagram": sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CARD_INSTAGRAM)
+            }
 
-                gauge_chart = display_gauge_chart(
-                    title=category.value,
-                    contracted=mandalecas_contratadas.get(category, 0),
-                    used=mandalecas_usadas.get(category, 0),
-                    accumulated=mandalecas_acumuladas.get(category, 0)
-                )
-                category_gauges[delivery_category].append(gauge_chart)
+            logging.info(f"Dados de redes sociais para gráfico de pizza: {social_media_data}")
 
-        for delivery_category, gauges in category_gauges.items():
-            st.subheader(delivery_category.value)
-            cols = st.columns(3)
-            for i, gauge in enumerate(gauges):
-                with cols[i % 3]:
-                    st.plotly_chart(gauge)
+            category_gauges = {}
+            for category in JobCategoryEnum:
+                delivery_category = map_category_to_delivery_category(category)
+                if (mandalecas_contratadas.get(category, 0) > 0 or 
+                    mandalecas_usadas.get(category, 0) > 0 or 
+                    mandalecas_acumuladas.get(category, 0) > 0) and delivery_category in selected_delivery_categories:
+                    
+                    if delivery_category not in category_gauges:
+                        category_gauges[delivery_category] = []
 
-            if delivery_category == DeliveryCategoryEnum.REDES_SOCIAIS:
-                pie_chart = create_pie_chart(social_media_data, "Distribuição Redes Sociais")
-                st.plotly_chart(pie_chart)
+                    gauge_chart = display_gauge_chart(
+                        title=category.value,
+                        contracted=mandalecas_contratadas.get(category, 0),
+                        used=mandalecas_usadas.get(category, 0),
+                        accumulated=mandalecas_acumuladas.get(category, 0)
+                    )
+                    category_gauges[delivery_category].append(gauge_chart)
 
-    except KeyError as e:
-        logging.error(f"Erro ao exibir os dados: {e}")
-        st.error(f"Erro ao exibir os dados: {e}")
+            for delivery_category, gauges in category_gauges.items():
+                st.subheader(delivery_category.value)
+                cols = st.columns(3)
+                for i, gauge in enumerate(gauges):
+                    with cols[i % 3]:
+                        st.plotly_chart(gauge)
 
+                if delivery_category == DeliveryCategoryEnum.REDES_SOCIAIS:
+                    pie_chart = create_pie_chart(social_media_data, "Distribuição Redes Sociais")
+                    st.plotly_chart(pie_chart)
+
+        except KeyError as e:
+            logging.error(f"Erro ao exibir os dados: {e}")
+            st.error(f"Erro ao exibir os dados: {e}")
+
+# Função auxiliar para criar um gráfico de pizza
 def create_pie_chart(data, title):
-    # Filtra valores nulos ou zero para não exibir fatias vazias
-    data = {k: v for k, v in data.items() if v > 0}
     labels = list(data.keys())
     values = list(data.values())
-
-    fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.3)])
     fig.update_layout(title_text=title)
-
     return fig
+
+# Certifique-se de que as funções `map_category_to_delivery_category` e `display_gauge_chart` estejam definidas
+
 
 def get_last_month_date_range():
     today = datetime.today()
@@ -269,7 +260,6 @@ def get_last_month_date_range():
     first_day_of_last_month = datetime(last_day_of_last_month.year, last_day_of_last_month.month, 1)
     return first_day_of_last_month, last_day_of_last_month
 
-# Função principal da página de criação (Entregas)
 def page_criacao():
     st.title("Entregas")
     display_client_plan_status()
@@ -309,7 +299,7 @@ def page_criacao():
             if st.checkbox(delivery_category.value, value=True):
                 selected_delivery_categories.append(delivery_category)
 
-    debug_display_data(cliente_id, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
+    debug_display_data(cliente_id, delivery_data, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
 
 def calcular_mandalecas(cliente_id):
     with Session(bind=engine) as session:
@@ -325,21 +315,33 @@ def calcular_mandalecas(cliente_id):
             JobCategoryEnum.STORIES_REPOST_INSTAGRAM: client.n_monthly_contracted_stories_repost_instagram_mandalecas,
             JobCategoryEnum.STATIC_TRAFEGO_PAGO: client.n_monthly_contracted_trafego_pago_static,
             JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: client.n_monthly_contracted_trafego_pago_animated,
-            JobCategoryEnum.FEED_INSTAGRAM: client.n_monthly_contracted_feed_instagram_mandalecas  # Ajustar esta linha para somar corretamente
+            JobCategoryEnum.FEED_INSTAGRAM: client.n_monthly_contracted_feed_instagram_mandalecas
         }
 
         mandalecas_usadas = {
-            JobCategoryEnum.CRIACAO: sum(job.used_creative_mandalecas for job in client.delivery_controls if job.used_creative_mandalecas is not None),
-            JobCategoryEnum.ADAPTACAO: sum(job.used_format_adaptation_mandalecas for job in client.delivery_controls if job.used_format_adaptation_mandalecas is not None),
-            JobCategoryEnum.CONTENT_PRODUCTION: sum(job.used_content_production_mandalecas for job in client.delivery_controls if job.used_content_production_mandalecas is not None),
-            JobCategoryEnum.STORIES_INSTAGRAM: sum(job.used_stories_instagram_mandalecas for job in client.delivery_controls if job.used_stories_instagram_mandalecas is not None),
-            JobCategoryEnum.FEED_LINKEDIN: sum(job.used_feed_linkedin_mandalecas for job in client.delivery_controls if job.used_feed_linkedin_mandalecas is not None),
-            JobCategoryEnum.FEED_TIKTOK: sum(job.used_feed_tiktok_mandalecas for job in client.delivery_controls if job.used_feed_tiktok_mandalecas is not None),
-            JobCategoryEnum.STORIES_REPOST_INSTAGRAM: sum(job.used_stories_repost_instagram_mandalecas for job in client.delivery_controls if job.used_stories_repost_instagram_mandalecas is not None),
-            JobCategoryEnum.STATIC_TRAFEGO_PAGO: sum(job.used_static_trafego_pago_mandalecas for job in client.delivery_controls if job.used_static_trafego_pago_mandalecas is not None),
-            JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: sum(job.used_animated_trafego_pago_mandalecas for job in client.delivery_controls if job.used_animated_trafego_pago_mandalecas is not None),
-            JobCategoryEnum.FEED_INSTAGRAM: sum(job.used_reels_instagram_mandalecas + job.used_carousel_mandalecas + job.used_card_instagram_mandalecas for job in client.delivery_controls if job.used_reels_instagram_mandalecas is not None)  # Ajustar esta linha para somar corretamente
+            JobCategoryEnum.CRIACAO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CRIACAO),
+            JobCategoryEnum.ADAPTACAO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.ADAPTACAO),
+            JobCategoryEnum.CONTENT_PRODUCTION: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CONTENT_PRODUCTION),
+            JobCategoryEnum.STORIES_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STORIES_INSTAGRAM),
+            JobCategoryEnum.FEED_LINKEDIN: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_LINKEDIN),
+            JobCategoryEnum.FEED_TIKTOK: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_TIKTOK),
+            JobCategoryEnum.STORIES_REPOST_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STORIES_REPOST_INSTAGRAM),
+            JobCategoryEnum.STATIC_TRAFEGO_PAGO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STATIC_TRAFEGO_PAGO),
+            JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO),
+            JobCategoryEnum.FEED_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_INSTAGRAM),
+            JobCategoryEnum.CARD_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CARD_INSTAGRAM),
+            JobCategoryEnum.CAROUSEL_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CAROUSEL_INSTAGRAM),
+            JobCategoryEnum.REELS_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.REELS_INSTAGRAM)
         }
+
+        # Somando as mandalecas usadas de REELS_INSTAGRAM, CAROUSEL_INSTAGRAM e CARD_INSTAGRAM para FEED_INSTAGRAM
+        mandalecas_usadas[JobCategoryEnum.FEED_INSTAGRAM] = (
+            mandalecas_usadas[JobCategoryEnum.CARD_INSTAGRAM] +
+            mandalecas_usadas[JobCategoryEnum.CAROUSEL_INSTAGRAM] +
+            mandalecas_usadas[JobCategoryEnum.REELS_INSTAGRAM]
+        )
+
+        logging.info(f"Mandalecas usadas calculadas: {mandalecas_usadas}")
 
         mandalecas_acumuladas = {
             JobCategoryEnum.CRIACAO: client.accumulated_creative_mandalecas,
@@ -351,7 +353,9 @@ def calcular_mandalecas(cliente_id):
             JobCategoryEnum.STORIES_REPOST_INSTAGRAM: client.accumulated_stories_repost_instagram_mandalecas,
             JobCategoryEnum.STATIC_TRAFEGO_PAGO: client.accumulated_trafego_pago_static,
             JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: client.accumulated_trafego_pago_animated,
-            JobCategoryEnum.FEED_INSTAGRAM: client.accumulated_feed_instagram_mandalecas  # Ajustar esta linha para somar corretamente
+            JobCategoryEnum.FEED_INSTAGRAM: client.accumulated_feed_instagram_mandalecas
         }
+
+        logging.info(f"Mandalecas acumuladas calculadas: {mandalecas_acumuladas}")
 
     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas

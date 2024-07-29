@@ -122,41 +122,14 @@ def map_category_to_delivery_category(category):
 def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, job_creation_date, job_start_date, job_finish_date, categoria):
     logging.debug(f"upsert_delivery_control chamada para doc_id {doc_id}")
     existing_entry = session.query(DeliveryControl).filter_by(id=doc_id).first()
-    mandaleca_field = None
-
-    if categoria == JobCategoryEnum.CRIACAO:
-        mandaleca_field = 'used_creative_mandalecas'
-    elif categoria == JobCategoryEnum.ADAPTACAO:
-        mandaleca_field = 'used_format_adaptation_mandalecas'
-    elif categoria == JobCategoryEnum.CONTENT_PRODUCTION:
-        mandaleca_field = 'used_content_production_mandalecas'
-    elif categoria == JobCategoryEnum.STORIES_INSTAGRAM:
-        mandaleca_field = 'used_stories_instagram_mandalecas'
-    elif categoria == JobCategoryEnum.FEED_LINKEDIN:
-        mandaleca_field = 'used_feed_linkedin_mandalecas'
-    elif categoria == JobCategoryEnum.FEED_TIKTOK:
-        mandaleca_field = 'used_feed_tiktok_mandalecas'
-    elif categoria == JobCategoryEnum.STORIES_REPOST_INSTAGRAM:
-        mandaleca_field = 'used_stories_repost_instagram_mandalecas'
-    elif categoria == JobCategoryEnum.REELS_INSTAGRAM:
-        mandaleca_field = 'used_reels_instagram_mandalecas'
-    elif categoria == JobCategoryEnum.CAROUSEL_INSTAGRAM:
-        mandaleca_field = 'used_carousel_mandalecas'
-    elif categoria == JobCategoryEnum.CARD_INSTAGRAM:
-        mandaleca_field = 'used_card_instagram_mandalecas'
-    elif categoria == JobCategoryEnum.STATIC_TRAFEGO_PAGO:
-        mandaleca_field = 'used_static_trafego_pago_mandalecas'
-    elif categoria == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO:
-        mandaleca_field = 'used_animated_trafego_pago_mandalecas'
 
     if existing_entry:
         existing_entry.client_id = client.id
         existing_entry.job_link = clean_data(job_link)
         existing_entry.job_title = row['Título']
         existing_entry.project = clean_data(row['Projeto']) if 'Projeto' in row else None
-        if mandaleca_field:
-            setattr(existing_entry, mandaleca_field, mandalecas)
-            logging.info(f"Atualizando DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
+        existing_entry.used_mandalecas = mandalecas
+        logging.info(f"Atualizando DeliveryControl com ID {doc_id}. Campo used_mandalecas definido como {mandalecas}.")
         existing_entry.job_creation_date = clean_data(job_creation_date)
         existing_entry.job_start_date = clean_data(job_start_date)
         existing_entry.job_finish_date = clean_data(job_finish_date)
@@ -193,11 +166,11 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
             'updated_by_id': clean_data(row['updated_by_id']) if 'updated_by_id' in row else None,
             'next_month_plan_sent': clean_data(row['next_month_plan_sent']) if 'next_month_plan_sent' in row else None,
             'next_month_plant_sent_date': clean_data(row['next_month_plant_sent_date']) if 'next_month_plant_sent_date' in row else None,
-            'requested_by_id': clean_data(row['requested_by_id']) if 'requested_by_id' in row else None
+            'requested_by_id': clean_data(row['requested_by_id']) if 'requested_by_id' in row else None,
+            'used_mandalecas': mandalecas
         }
-        if mandaleca_field:
-            new_entry_args[mandaleca_field] = mandalecas
-            logging.info(f"Criando nova entrada in DeliveryControl com ID {doc_id}. Campo {mandaleca_field} definido como {mandalecas}.")
+
+        logging.info(f"Criando nova entrada em DeliveryControl com ID {doc_id}. Campo used_mandalecas definido como {mandalecas}.")
         
         new_entry = DeliveryControl(**new_entry_args)
         session.add(new_entry)
