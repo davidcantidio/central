@@ -888,7 +888,7 @@ class DeliveryControl(Base):
     client_id = Column(Integer, ForeignKey('clients.id'))
     client = relationship("Client", back_populates="delivery_controls")
     next_month_plan_sent = Column(Boolean)
-    next_month_plant_sent_date = Column(Date)
+    next_month_plan_sent_date = Column(Date)
     job_link = Column(String)
     project = Column(String)
     job_category = Column(SQLAlchemyEnum(JobCategoryEnum))

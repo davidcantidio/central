@@ -129,15 +129,35 @@ def display_client_plan_status():
         st.plotly_chart(fig)
         
         if st.button("Confirmar Envio de Plano"):
-            plan_sent_date = st.date_input("Selecione a Data de Envio", value=today)
+            logging.info(f"Botão 'Confirmar Envio de Plano' pressionado para o cliente ID {cliente_id}.")
+            st.session_state['confirm_plan_send'] = True
+
+        if 'confirm_plan_send' in st.session_state and st.session_state['confirm_plan_send']:
+            plan_sent_date = st.date_input("Selecione a Data de Envio", value=today, key='plan_sent_date')
+            logging.info(f"Data de envio selecionada: {plan_sent_date.strftime('%Y-%m-%d')}")
+            
+            if plan_sent_date != today:
+                logging.info(f"A data de envio foi alterada: {plan_sent_date.strftime('%Y-%m-%d')}")
+                
             if st.button("Salvar Data de Envio"):
+                logging.info(f"Botão 'Salvar Data de Envio' pressionado para o cliente ID {cliente_id}.")
                 with Session(bind=engine) as session:
-                    delivery_control = session.query(DeliveryControl).filter(DeliveryControl.client_id == cliente_id).first()
-                    if delivery_control:
-                        delivery_control.next_month_plan_sent = True
-                        delivery_control.next_month_plant_sent_date = plan_sent_date
-                        session.commit()
-                        st.success("Data de envio do plano atualizada com sucesso.")
+                    try:
+                        delivery_control = session.query(DeliveryControl).filter(DeliveryControl.client_id == cliente_id).first()
+                        if delivery_control:
+                            logging.info(f"Registro de DeliveryControl encontrado para o cliente ID {cliente_id}.")
+                            delivery_control.next_month_plan_sent = True
+                            delivery_control.next_month_plan_sent_date = plan_sent_date
+                            session.commit()
+                            logging.info(f"Data de envio do plano atualizada com sucesso para {plan_sent_date.strftime('%Y-%m-%d')}.")
+                            st.success("Data de envio do plano atualizada com sucesso.")
+                        else:
+                            logging.warning(f"Não foi possível encontrar um registro de DeliveryControl para o cliente ID {cliente_id}.")
+                    except Exception as e:
+                        logging.error(f"Erro ao atualizar a data de envio do plano para o cliente ID {cliente_id}: {e}")
+                        st.error(f"Erro ao atualizar a data de envio do plano: {e}")
+                # Reset the state after saving
+                st.session_state['confirm_plan_send'] = False
 
 def display_gauge_chart(title, contracted, used, accumulated=0):
     max_value = contracted + accumulated
