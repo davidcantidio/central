@@ -142,8 +142,6 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
         existing_entry.delivery_control_category = clean_data(row['delivery_control_category']) if 'delivery_control_category' in row else None
         existing_entry.job_deadline_date = clean_data(row['job_deadline_date']) if 'job_deadline_date' in row else None
         existing_entry.updated_by_id = clean_data(row['updated_by_id']) if 'updated_by_id' in row else None
-        existing_entry.next_month_plan_sent = clean_data(row['next_month_plan_sent']) if 'next_month_plan_sent' in row else None
-        existing_entry.next_month_plan_sent_date = clean_data(row['next_month_plan_sent_date']) if 'next_month_plan_sent_date' in row else None
         existing_entry.requested_by_id = clean_data(row['requested_by_id']) if 'requested_by_id' in row else None
     else:
         new_entry_args = {
@@ -164,8 +162,6 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
             'delivery_control_category': clean_data(row['delivery_control_category']) if 'delivery_control_category' in row else None,
             'job_deadline_date': clean_data(row['job_deadline_date']) if 'job_deadline_date' in row else None,
             'updated_by_id': clean_data(row['updated_by_id']) if 'updated_by_id' in row else None,
-            'next_month_plan_sent': clean_data(row['next_month_plan_sent']) if 'next_month_plan_sent' in row else None,
-            'next_month_plan_sent_date': clean_data(row['next_month_plan_sent_date']) if 'next_month_plan_sent_date' in row else None,
             'requested_by_id': clean_data(row['requested_by_id']) if 'requested_by_id' in row else None,
             'used_mandalecas': mandalecas
         }
@@ -236,8 +232,6 @@ def process_jobs(df, client_name_map, job_category_map, session):
                 delivery_control_category=clean_data(row['delivery_control_category']) if 'delivery_control_category' in row else None,
                 job_deadline_date=clean_data(row['job_deadline_date']) if 'job_deadline_date' in row else None,
                 updated_by_id=clean_data(row['updated_by_id']) if 'updated_by_id' in row else None,
-                next_month_plan_sent=clean_data(row['next_month_plan_sent']) if 'next_month_plan_sent' in row else None,
-                next_month_plan_sent_date=clean_data(row['next_month_plan_sent_date']) if 'next_month_plan_sent_date' in row else None,
                 requested_by_id=clean_data(row['requested_by_id']) if 'requested_by_id' in row else None
             )
 

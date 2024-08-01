@@ -4,7 +4,7 @@ from utils import check_plan_status
 import pandas as pd
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
-from common.models import DeliveryControl, Client, Users, JobCategoryEnum, DeliveryCategoryEnum
+from common.models import DeliveryControl, Client, Users, JobCategoryEnum, DeliveryCategoryEnum, RedesSociaisPlan, RedesSociaisPlanStatusEnum
 from common.database import engine
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
@@ -103,61 +103,94 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
 
     return fig
 
+def determinar_status_plano(cliente, plano):
+    hoje = datetime.today()
+    prazo = datetime(hoje.year, hoje.month, cliente.monthly_plan_deadline_day)
+    logging.info(f"Data de hoje: {hoje}, Prazo: {prazo}")
+
+    if plano.sent_at is None:
+        logging.info("Plano ainda não foi enviado.")
+        if hoje > prazo:
+            return RedesSociaisPlanStatusEnum.DELAYED
+        else:
+            return RedesSociaisPlanStatusEnum.AWAITING
+    else:
+        logging.info(f"Plano enviado em: {plano.sent_at}")
+        if plano.sent_at <= prazo:
+            return RedesSociaisPlanStatusEnum.ON_TIME
+        else:
+            return RedesSociaisPlanStatusEnum.DELAYED
+
 def display_client_plan_status():
+    if 'confirm_plan_send' not in st.session_state:
+        st.session_state['confirm_plan_send'] = False
+    if 'plan_sent_date' not in st.session_state:
+        st.session_state['plan_sent_date'] = None
+
     clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
     cliente_id = st.selectbox("Selecione o Cliente", clientes_df['id'], format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0])
-    
+
     with Session(bind=engine) as session:
         client = session.query(Client).filter(Client.id == cliente_id).first()
-        delivery_controls = session.query(DeliveryControl).filter(DeliveryControl.client_id == cliente_id).all()
-        
-        plan_status, plan_sent_date = check_plan_status(client, delivery_controls)
-        
+        logging.info(f"Cliente selecionado: {client}")
+
+        redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
+        logging.info(f"Plano de redes sociais encontrado: {redes_sociais_plan}")
+
+        if redes_sociais_plan:
+            plan_status = determinar_status_plano(client, redes_sociais_plan)
+            st.session_state['plan_sent_date'] = redes_sociais_plan.sent_at or st.session_state['plan_sent_date']
+            logging.info(f"Status do plano: {plan_status}, Data de envio do plano: {st.session_state['plan_sent_date']}")
+        else:
+            plan_status = "Plano não encontrado"
+            st.session_state['plan_sent_date'] = None
+            logging.info("Plano de redes sociais não encontrado.")
+
         st.write(f"Status do Plano: {plan_status}")
-        
+
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
-        
+
         st.write(f"Dia Atual: {today.strftime('%Y-%m-%d')}")
         st.write(f"Dia do Deadline: {deadline_date.strftime('%Y-%m-%d')}")
-        if plan_sent_date:
-            st.write(f"Dia do Envio do Plano: {plan_sent_date.strftime('%Y-%m-%d')}")
+        if st.session_state['plan_sent_date']:
+            st.write(f"Dia do Envio do Plano: {st.session_state['plan_sent_date'].strftime('%Y-%m-%d')}")
         else:
             st.write("Plano não enviado.")
 
-        fig = create_timeline_chart(today, deadline_date, plan_sent_date)
+        fig = create_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
         st.plotly_chart(fig)
-        
+
         if st.button("Confirmar Envio de Plano"):
             logging.info(f"Botão 'Confirmar Envio de Plano' pressionado para o cliente ID {cliente_id}.")
             st.session_state['confirm_plan_send'] = True
+            st.session_state['plan_sent_date'] = today
+            st.rerun()
 
-        if 'confirm_plan_send' in st.session_state and st.session_state['confirm_plan_send']:
-            plan_sent_date = st.date_input("Selecione a Data de Envio", value=today, key='plan_sent_date')
-            logging.info(f"Data de envio selecionada: {plan_sent_date.strftime('%Y-%m-%d')}")
-            
-            if plan_sent_date != today:
-                logging.info(f"A data de envio foi alterada: {plan_sent_date.strftime('%Y-%m-%d')}")
-                
+        if st.session_state['confirm_plan_send']:
+            plan_sent_date = st.date_input("Selecione a Data de Envio", value=st.session_state['plan_sent_date'], key='plan_sent_date')
+            logging.info(f"Data de envio selecionada: {plan_sent_date}")
+
             if st.button("Salvar Data de Envio"):
                 logging.info(f"Botão 'Salvar Data de Envio' pressionado para o cliente ID {cliente_id}.")
                 with Session(bind=engine) as session:
                     try:
-                        delivery_control = session.query(DeliveryControl).filter(DeliveryControl.client_id == cliente_id).first()
-                        if delivery_control:
-                            logging.info(f"Registro de DeliveryControl encontrado para o cliente ID {cliente_id}.")
-                            delivery_control.next_month_plan_sent = True
-                            delivery_control.next_month_plan_sent_date = plan_sent_date
+                        redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
+                        if redes_sociais_plan:
+                            logging.info(f"Registro de RedesSociaisPlan encontrado para o cliente ID {cliente_id}.")
+                            redes_sociais_plan.sent_at = plan_sent_date
+                            redes_sociais_plan.status = determinar_status_plano(client, redes_sociais_plan)
                             session.commit()
                             logging.info(f"Data de envio do plano atualizada com sucesso para {plan_sent_date.strftime('%Y-%m-%d')}.")
                             st.success("Data de envio do plano atualizada com sucesso.")
                         else:
-                            logging.warning(f"Não foi possível encontrar um registro de DeliveryControl para o cliente ID {cliente_id}.")
+                            logging.warning(f"Não foi possível encontrar um registro de RedesSociaisPlan para o cliente ID {cliente_id}.")
                     except Exception as e:
+                        session.rollback()
                         logging.error(f"Erro ao atualizar a data de envio do plano para o cliente ID {cliente_id}: {e}")
                         st.error(f"Erro ao atualizar a data de envio do plano: {e}")
-                # Reset the state after saving
                 st.session_state['confirm_plan_send'] = False
+                st.rerun()
 
 def display_gauge_chart(title, contracted, used, accumulated=0):
     max_value = contracted + accumulated
@@ -320,7 +353,6 @@ def page_criacao():
                 selected_delivery_categories.append(delivery_category)
 
     debug_display_data(cliente_id, delivery_data, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
-
 def calcular_mandalecas(cliente_id):
     with Session(bind=engine) as session:
         client = session.query(Client).filter(Client.id == cliente_id).first()

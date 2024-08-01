@@ -6,6 +6,7 @@ from enum import Enum
 from sqlalchemy.types import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import declarative_base  # Importando a nova função
 
+
 Base = declarative_base()  # Usando a nova função
 
 
@@ -39,6 +40,10 @@ class JobCategoryEnum(str, Enum):
     CAROUSEL_INSTAGRAM = 'Carrossel Instagram'
     REELS_INSTAGRAM = 'Reels Instagram'
 
+class RedesSociaisPlanStatusEnum(str, Enum):
+    AWAITING = 'Aguardando'
+    DELAYED = 'Atrasado'
+    ON_TIME = 'No prazo'
 
 
 class DeliveryCategoryEnum(str, Enum):
@@ -211,6 +216,8 @@ class Users(Base):
     created_plans_trafego_pago = relationship("PlanTrafegoPago", back_populates="author")
     delivery_controls_in_charge = relationship("DeliveryControl", back_populates="user_in_charge", foreign_keys="[DeliveryControl.user_in_charge_id]")
     delivery_controls_requested = relationship("DeliveryControl", back_populates="requested_by", foreign_keys="[DeliveryControl.requested_by_id]")
+    authored_action_plans_assessoria = relationship("ActionPlanAssessoria", back_populates="author")
+    authored_plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="author")
 
     def __repr__(self):
         return f"<Users(id={self.id}, name='{self.first_name} {self.last_name}')>"
@@ -341,6 +348,9 @@ class Client(Base):
     account_executives = relationship("Users", secondary=client_account_executives_association)
     social_media = relationship("Users", secondary=client_social_media_association)
     copywriter = relationship("Users", secondary=client_copywriter_association)
+    action_plans_assessoria = relationship("ActionPlanAssessoria", back_populates="client")
+    plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="client")
+
 
     def __repr__(self):
         return f"<Client(id={self.id}, name='{self.name}', business_type='{self.business_type}')>"
@@ -587,22 +597,25 @@ class BriefingRedesSociais(Base):
     client = relationship("Client", back_populates="briefing_redes_sociais")
     author = relationship("Users", back_populates="briefing_redes_sociais", foreign_keys=[author_id])
     updater = relationship("Users", back_populates="briefing_redes_sociais_updates", foreign_keys=[last_updated_by])
+    plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="briefing", foreign_keys="[RedesSociaisPlan.briefing_id]")  # Adicionado relacionamento
 
-    def __repr__(self):
-        return f"<BriefingRedesSociais(id={self.id}, client_id={self.client_id}, main_objective='{self.main_social_media_objective}')>"
-
-class planoRedesSociais(Base):
-    __tablename__ = 'planos_redes_sociais'
+class RedesSociaisPlan(Base):
+    __tablename__ = 'plano_redes_sociais'
     id = Column(Integer, primary_key=True)
     client_id = Column(Integer, ForeignKey('clients.id'))
     author_id = Column(Integer, ForeignKey('users.id'))
-    last_updated_by = Column(Integer, ForeignKey('users.id'))
-    descritpion = Column(Text)
-    publication_date = Column(Date)
-    date_start = Column(Date)
-    date_finish = Column(Date)
-    date_sent = Column(Date)
-    briefing_id = Column(Integer, ForeignKey('briefings_redes_sociais.id'))
+    briefing_id = Column(Integer, ForeignKey('briefings_redes_sociais.id'))  # Adicionando a chave estrangeira aqui
+    sent_at = Column(TIMESTAMP, default=datetime.now)
+    status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
+    responsible_id = Column(Integer)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    send_date = Column(Date)
+    plan_status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
+
+    # Relacionamentos
+    client = relationship("Client", back_populates="plans_redes_sociais")
+    author = relationship("Users", back_populates="authored_plans_redes_sociais")
+    briefing = relationship("BriefingRedesSociais", back_populates="plans_redes_sociais")
 
 class Product(Base):
     __tablename__ = 'products'
@@ -873,10 +886,11 @@ class ActionPlanAssessoria(Base):
     status = Column(SQLAlchemyEnum("Aguardando início", "Em Andamento", "Em Criação", "Em Orçamento", "Em Aprovação", "Reprovado", "Aprovado", "Em Execução", "Concluído", "Cancelado", "Stand By", name="action_plan_assessoria_status"))
     responsible_id = Column(Integer)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    send_date = Column(Date)
 
-    def __repr__(self):
-        return f"<ActionPlanAssessoria(id={self.id}, client_id={self.client_id}, author_id={self.author_id})>"
-
+    # Adicionando relacionamentos
+    client = relationship("Client", back_populates="action_plans_assessoria")
+    author = relationship("Users", back_populates="authored_action_plans_assessoria")
 
 class DeliveryControl(Base):
     __tablename__ = 'delivery_control'
@@ -887,8 +901,6 @@ class DeliveryControl(Base):
     updated_by = relationship("Users", foreign_keys=[updated_by_id])
     client_id = Column(Integer, ForeignKey('clients.id'))
     client = relationship("Client", back_populates="delivery_controls")
-    next_month_plan_sent = Column(Boolean)
-    next_month_plan_sent_date = Column(Date)
     job_link = Column(String)
     project = Column(String)
     job_category = Column(SQLAlchemyEnum(JobCategoryEnum))

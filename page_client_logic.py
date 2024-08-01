@@ -214,10 +214,3 @@ def show_cliente(cliente_id, start_date, end_date):
 # Código principal para executar a função show_cliente com exemplo de dados
 if __name__ == "__main__":
     cliente_id = 1 
-
-# Código principal para executar a função show_cliente com exemplo de dados
-if __name__ == "__main__":
-    cliente_id = 1  # Exemplo de ID do cliente
-    start_date = '2023-01-01'  # Data de início de exemplo
-    end_date = '2023-12-31'  # Data de término de exemplo
-    show_cliente(cliente_id, start_date, end_date)
