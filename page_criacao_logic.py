@@ -13,6 +13,12 @@ import sqlite3
 from process_xlsx import identificar_categoria, process_xlsx_file
 import plotly.express as px
 from sqlalchemy.sql import func
+import calendar
+import locale
+
+# Configurar localidade para português
+locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+
 
 # Configura o log
 logging.basicConfig(
@@ -57,16 +63,15 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
     x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
 
     event_dates = [today.strftime('%Y-%m-%d'), deadline_date.strftime('%Y-%m-%d')]
-    event_labels = ["Hoje", "Prazo"]
     event_colors = ["blue", "red"]
 
     if plan_sent_date:
         event_dates.append(plan_sent_date.strftime('%Y-%m-%d'))
-        event_labels.append("Plano Enviado")
         event_colors.append("green")
 
     fig = go.Figure()
 
+    # Adiciona a linha do tempo com os dias do mês
     fig.add_trace(go.Scatter(
         x=x_values,
         y=[1] * len(x_values),
@@ -77,50 +82,35 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
         hoverinfo='x'
     ))
 
-    for date, label, color in zip(event_dates, event_labels, event_colors):
+    # Adiciona as bolinhas dos eventos
+    for date, color in zip(event_dates, event_colors):
         fig.add_trace(go.Scatter(
             x=[date],
             y=[1],
-            mode='markers+text',
+            mode='markers',
             marker=dict(color=color, size=12),
-            text=[label],
-            textposition='top center',
             showlegend=False,
-            hoverinfo='x+text'
+            hoverinfo='none'
         ))
 
     fig.update_layout(
-        title="Linha do Tempo do Plano Mensal",
         xaxis=dict(
             tickmode='array',
             tickvals=x_values,
-            ticktext=[day.strftime('%d') for day in days_in_month]
+            showline=False,  # Esconde a linha reta
+            showgrid=False,
+            zeroline=False,
+            showticklabels=False  # Remove a numeração dos dias do mês
         ),
         yaxis=dict(visible=False),
         showlegend=False,
-        height=200,
-        margin=dict(l=20, r=20, t=40, b=20)
+        height=100,  # Reduz a altura do gráfico
+        margin=dict(l=20, r=20, t=10, b=30),  # Ajusta as margens para posicionar as legendas
+        plot_bgcolor='rgba(0,0,0,0)',  # Torna o fundo transparente
+        paper_bgcolor='rgba(0,0,0,0)'  # Torna o fundo do papel transparente
     )
 
     return fig
-
-def determinar_status_plano(cliente, plano):
-    hoje = datetime.today()
-    prazo = datetime(hoje.year, hoje.month, cliente.monthly_plan_deadline_day)
-    logging.info(f"Data de hoje: {hoje}, Prazo: {prazo}")
-
-    if plano is None or plano.send_date is None:
-        logging.info("Plano ainda não foi enviado.")
-        if hoje > prazo:
-            return RedesSociaisPlanStatusEnum.DELAYED
-        else:
-            return RedesSociaisPlanStatusEnum.AWAITING
-    else:
-        logging.info(f"Plano enviado em: {plano.send_date}")
-        if plano.send_date <= prazo:
-            return RedesSociaisPlanStatusEnum.ON_TIME
-        else:
-            return RedesSociaisPlanStatusEnum.DELAYED
 
 def display_client_plan_status():
     if 'confirm_plan_send' not in st.session_state:
@@ -148,22 +138,121 @@ def display_client_plan_status():
             st.session_state['plan_sent_date'] = None
             logging.info("Plano de redes sociais não encontrado.")
 
-        st.write(f"Status do Plano: {plan_status}")
+        # Definindo o título com o nome do próximo mês em português
+        next_month = (datetime.now().replace(day=28) + timedelta(days=4)).strftime('%B')
+        title = f"Plano Redes Sociais: {next_month.capitalize()}"
 
+        # Formatação das tags
+        if plan_status == RedesSociaisPlanStatusEnum.ON_TIME:
+            status_tag = '<span class="status-tag" style="background-color: green;">No prazo</span>'
+        elif plan_status == RedesSociaisPlanStatusEnum.AWAITING:
+            status_tag = '<span class="status-tag" style="background-color: gray;">Aguardando</span>'
+        elif plan_status == RedesSociaisPlanStatusEnum.DELAYED:
+            status_tag = '<span class="status-tag" style="background-color: red;">Atrasado</span>'
+        else:
+            status_tag = '<span class="status-tag" style="background-color: gray;">Desconhecido</span>'
+
+        # Verificação se o plano foi enviado ou não
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
-
-        st.write(f"Dia Atual: {today.strftime('%Y-%m-%d')}")
-        st.write(f"Dia do Deadline: {deadline_date.strftime('%Y-%m-%d')}")
         if st.session_state['plan_sent_date']:
-            st.write(f"Dia do Envio do Plano: {st.session_state['plan_sent_date'].strftime('%Y-%m-%d')}")
+            sent_status_icon = '<span class="status-icon" style="color: green;">✔️</span>'
+        elif today <= deadline_date:
+            sent_status_icon = '<span class="status-icon" style="color: yellow;">⚠️</span>'
         else:
-            st.write("Plano não enviado.")
+            sent_status_icon = '<span class="status-icon" style="color: red;">❌</span>'
+
+        # CSS para alinhar os elementos na mesma linha
+        st.markdown("""
+            <style>
+            .status-container {
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+            }
+            .status-container h4 {
+                margin: 0;
+                margin-right: 10px;
+                font-size: 1.25em;
+            }
+            .status-tag, .status-icon {
+                font-size: 0.85em;
+                margin-left: 10px;
+                color: white;
+                padding: 3px;
+                border-radius: 10px;
+            }
+            .legend-container {
+                display: flex;
+                justify-content: flex-start;  /* Alinha à esquerda */
+                margin-bottom: 10px;
+                font-size: 0.85em;
+                margin-left: 10px;  /* Adiciona um pequeno espaço à esquerda */
+            }
+            .legend-item {
+                display: flex;
+                align-items: center;
+                margin-right: 15px;
+            }
+            .legend-item span {
+                display: inline-block;
+                width: 15px;
+                height: 2px;  /* Traço em vez de bolinha */
+                margin-right: 5px;
+            }
+            .legend-item-blue span { background-color: blue; }
+            .legend-item-red span { background-color: red; }
+            .legend-item-green span { background-color: green; }
+            .plotly-graph-div {
+                display: flex;
+                justify-content: flex-start;  /* Alinha à esquerda */
+                margin-left: 10px;  /* Adiciona um pequeno espaço à esquerda */
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        # Exibindo título e tags na mesma linha
+        st.markdown(f"""
+            <div class="status-container">
+                <h4>{title}</h4>
+                {sent_status_icon}
+                {status_tag}
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Adicionando a legenda acima do gráfico
+        legend_html = """
+            <div class="legend-container">
+                <div class="legend-item legend-item-blue"><span></span>Hoje</div>
+                <div class="legend-item legend-item-red"><span></span>Prazo</div>
+        """
+        if st.session_state['plan_sent_date']:
+            legend_html += '<div class="legend-item legend-item-green"><span></span>Plano Enviado</div>'
+        legend_html += '</div>'
+        st.markdown(legend_html, unsafe_allow_html=True)
 
         fig = create_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
-        st.plotly_chart(fig)
+        st.plotly_chart(fig, use_container_width=True)
 
         confirmar_envio_plano(cliente_id)
+
+def determinar_status_plano(cliente, plano):
+    hoje = datetime.today()
+    prazo = datetime(hoje.year, hoje.month, cliente.monthly_plan_deadline_day)
+    logging.info(f"Data de hoje: {hoje}, Prazo: {prazo}")
+
+    if plano is None or plano.send_date is None:
+        logging.info("Plano ainda não foi enviado.")
+        if hoje > prazo:
+            return RedesSociaisPlanStatusEnum.DELAYED
+        else:
+            return RedesSociaisPlanStatusEnum.AWAITING
+    else:
+        logging.info(f"Plano enviado em: {plano.send_date}")
+        if plano.send_date <= prazo:
+            return RedesSociaisPlanStatusEnum.ON_TIME
+        else:
+            return RedesSociaisPlanStatusEnum.DELAYED
 
 def confirmar_envio_plano(cliente_id):
     if st.button("Confirmar Envio de Plano"):
