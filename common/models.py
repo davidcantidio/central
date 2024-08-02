@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, DateTime, Column, DECIMAL, Integer, String, Boolean, ForeignKey, TIMESTAMP, Numeric, CheckConstraint, JSON, Date, Text, Float, Table, Index, event
+from sqlalchemy import create_engine, DateTime, Column, DECIMAL, Integer, String, Boolean, ForeignKey, TIMESTAMP, Numeric, CheckConstraint, JSON, Date, Text, Float, Table, Index, event, UniqueConstraint
 from sqlalchemy.ext.declarative import declared_attr
 from datetime import datetime
 from sqlalchemy.orm import relationship, sessionmaker
@@ -599,23 +599,30 @@ class BriefingRedesSociais(Base):
     updater = relationship("Users", back_populates="briefing_redes_sociais_updates", foreign_keys=[last_updated_by])
     plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="briefing", foreign_keys="[RedesSociaisPlan.briefing_id]")  # Adicionado relacionamento
 
+
 class RedesSociaisPlan(Base):
     __tablename__ = 'plano_redes_sociais'
     id = Column(Integer, primary_key=True)
     client_id = Column(Integer, ForeignKey('clients.id'))
     author_id = Column(Integer, ForeignKey('users.id'))
     briefing_id = Column(Integer, ForeignKey('briefings_redes_sociais.id'))  # Adicionando a chave estrangeira aqui
-    sent_at = Column(TIMESTAMP, default=datetime.now)
+    updated_at = Column(TIMESTAMP, default=datetime.now)
     status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
     responsible_id = Column(Integer)
     updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
-    send_date = Column(Date)
+    send_date = Column(TIMESTAMP)
     plan_status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('client_id', 'send_date', name='uix_1'),
+        Index('ix_client_id_send_date', 'client_id', 'send_date')
+    )
 
     # Relacionamentos
     client = relationship("Client", back_populates="plans_redes_sociais")
     author = relationship("Users", back_populates="authored_plans_redes_sociais")
     briefing = relationship("BriefingRedesSociais", back_populates="plans_redes_sociais")
+
 
 class Product(Base):
     __tablename__ = 'products'
