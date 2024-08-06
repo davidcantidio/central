@@ -237,8 +237,8 @@ def display_client_plan_status():
         confirmar_envio_plano(cliente_id)
 
 def determinar_status_plano(cliente, plano):
-    hoje = datetime.today()
-    prazo = datetime(hoje.year, hoje.month, cliente.monthly_plan_deadline_day)
+    hoje = datetime.today().date()  # Converter para datetime.date
+    prazo = datetime(hoje.year, hoje.month, cliente.monthly_plan_deadline_day).date()  # Converter para datetime.date
     logging.info(f"Data de hoje: {hoje}, Prazo: {prazo}")
 
     if plano is None or plano.send_date is None:
@@ -248,8 +248,11 @@ def determinar_status_plano(cliente, plano):
         else:
             return RedesSociaisPlanStatusEnum.AWAITING
     else:
-        logging.info(f"Plano enviado em: {plano.send_date}")
-        if plano.send_date <= prazo:
+        send_date = plano.send_date
+        if isinstance(send_date, datetime):
+            send_date = send_date.date()
+        logging.info(f"Plano enviado em: {send_date}")
+        if send_date <= prazo:
             return RedesSociaisPlanStatusEnum.ON_TIME
         else:
             return RedesSociaisPlanStatusEnum.DELAYED
@@ -272,6 +275,10 @@ def salvar_data_envio_plano(cliente_id, plan_sent_date):
     logging.info(f"Chamando salvar_data_envio_plano para cliente ID {cliente_id} com data {plan_sent_date}")
     with Session(bind=engine) as session:
         try:
+            # Converter plan_sent_date para datetime se necessário
+            if isinstance(plan_sent_date, datetime):
+                plan_sent_date = plan_sent_date.date()
+
             # Obter o primeiro dia do mês da data de envio do plano
             plan_month_start = plan_sent_date.replace(day=1)
 
