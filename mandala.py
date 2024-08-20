@@ -10,11 +10,6 @@ import logging
 # Configura o log
 logging.basicConfig(filename='process_xlsx.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Função para carregar o CSS
-def load_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
 # Função para exibir as páginas secundárias
 def show_secondary_page(page, cliente_id, start_date, end_date):
     if page == "Início":
@@ -40,8 +35,6 @@ def show_secondary_page(page, cliente_id, start_date, end_date):
 
 # Lógica principal
 def main():
-    # Carregar o CSS
-    load_css("assets/style.css")
 
     st.sidebar.title("Menu")
     menu = option_menu(

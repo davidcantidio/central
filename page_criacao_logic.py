@@ -15,7 +15,10 @@ import plotly.express as px
 from sqlalchemy.sql import func
 import calendar
 import locale
-from assets.style_loader import load_css
+
+from streamlit_modal import Modal
+from datetime import datetime
+
 
 # Configurar localidade para português
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
@@ -136,20 +139,51 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
 
     return fig
 
-def display_client_plan_status():
-    if 'confirm_plan_send' not in st.session_state:
-        st.session_state['confirm_plan_send'] = False
-    if 'plan_sent_date' not in st.session_state:
-        st.session_state['plan_sent_date'] = None
+def display_client_header(client, title):
+    st.subheader(f"{client.name} - {title}")
+
+def display_send_plan_modal(cliente_id):
+    modal = Modal("Data de Envio do Plano", key="enviar-plano-modal", max_width=800)
+    
+    # Botão para abrir o modal
+    if st.button("Enviar Plano"):
+        modal.open()
+
+    if modal.is_open():
+        with modal.container():
+            st.write("Selecione a Data de Envio do Plano")
+            selected_date = st.date_input("Data de Envio", value=datetime.today(), key="date_input_modal")
+
+            if st.button("Confirmar", key="confirmar_button_modal"):
+                salvar_data_envio_plano(cliente_id, selected_date)
+                st.session_state['plan_sent_date'] = selected_date
+                st.experimental_rerun()
+
+def display_plan_sent_date(cliente_id):
+    # Inicialize 'edit_date' se não estiver presente no session_state
     if 'edit_date' not in st.session_state:
         st.session_state['edit_date'] = False
 
-    clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
-    cliente_id = st.session_state.get("cliente_id")
+    # Verifique se a data de envio do plano está presente
+    if st.session_state['plan_sent_date']:
+        if st.session_state['edit_date']:
+            plan_sent_date = st.date_input("Edite a Data de Envio", value=st.session_state['plan_sent_date'], key="date_input")
+        else:
+            if st.button(st.session_state['plan_sent_date'].strftime('%d/%m/%Y'), key="edit_date_button"):
+                st.session_state['edit_date'] = True
 
+        if st.session_state['edit_date'] and st.button("Salvar Data de Envio"):
+            editar_data_envio_plano(cliente_id)
+            st.session_state['edit_date'] = False
+
+def render_timeline_chart(today, deadline_date, plan_sent_date):
+    fig = create_timeline_chart(today, deadline_date, plan_sent_date)
+    st.plotly_chart(fig, use_container_width=True)
+
+def display_client_plan_status():
+    cliente_id = st.session_state.get("cliente_id")
     with Session(bind=engine) as session:
         client = session.query(Client).filter(Client.id == cliente_id).first()
-
         redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
 
         if redes_sociais_plan:
@@ -166,22 +200,17 @@ def display_client_plan_status():
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
 
-        # Aplica a classe CSS ao gráfico de linha do tempo
-        st.markdown("<div class='timeline-chart'>", unsafe_allow_html=True)
+        # Exibir título e informações do cliente
+        display_client_header(client, title)
 
-        # Exibe o nome do cliente antes do título
-        st.subheader(f"{client.name} - {title}")
-        print("Renderizando gráfico de linha do tempo")
+        # Exibir botão e modal para envio do plano
+        display_send_plan_modal(cliente_id)
 
-        # Renderiza o gráfico da linha do tempo
-        fig = create_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
-        st.plotly_chart(fig, use_container_width=True)
+        # Exibir data de envio do plano e permitir edição
+        display_plan_sent_date(cliente_id)
 
-        # Fecha a div para o contêiner do gráfico
-        st.markdown("</div>", unsafe_allow_html=True)
-
-# Assegure-se de que a função create_timeline_chart esteja funcionando corretamente
-
+        # Renderizar gráfico de linha do tempo
+        render_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
 
 def confirmar_envio_plano(cliente_id):
     logging.info(f"Botão 'Enviar' pressionado para o cliente ID {cliente_id}.")
@@ -436,18 +465,19 @@ def page_criacao():
             st.error(f"Erro ao processar o arquivo: {e}")
             logging.error(f"Erro ao processar o arquivo: {e}", exc_info=True)
 
+    # Move a seleção das categorias de entrega para a barra lateral
+    st.sidebar.header("Selecione as Categorias de Entrega")
+    selected_delivery_categories = []
+    for delivery_category in DeliveryCategoryEnum:
+        if st.sidebar.checkbox(delivery_category.value, value=True):
+            selected_delivery_categories.append(delivery_category)
+
     display_client_plan_status()
 
     delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
-
     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
 
-    st.header("Selecione as Categorias de Entrega")
-    selected_delivery_categories = []
-    for delivery_category in DeliveryCategoryEnum:
-        if st.checkbox(delivery_category.value, value=True):
-            selected_delivery_categories.append(delivery_category)
-
+    # Debug display data permanece na página principal
     debug_display_data(cliente_id, delivery_data, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
 
 def calcular_mandalecas(cliente_id):
