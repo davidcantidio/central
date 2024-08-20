@@ -15,10 +15,12 @@ import plotly.express as px
 from sqlalchemy.sql import func
 import calendar
 import locale
+from assets.style_loader import load_css
 
 # Configurar localidade para português
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
+# load_css("assets/style.css")
 
 # Configura o log
 logging.basicConfig(
@@ -31,6 +33,17 @@ logging.basicConfig(
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
 session = Session()
+
+def editar_data_envio_plano(cliente_id):
+    plan_sent_date = st.session_state['date_input']
+    if plan_sent_date:
+        try:
+            salvar_data_envio_plano(cliente_id, plan_sent_date)
+            st.session_state['edit_date'] = False  # Fecha o input de data após a edição
+            st.success(f"Data de envio atualizada para {plan_sent_date.strftime('%d/%m/%Y')}")
+        except Exception as e:
+            st.error(f"Erro ao atualizar a data de envio: {e}")
+            logging.error(f"Erro ao atualizar a data de envio: {e}")
 
 def map_category_to_delivery_category(category):
     if category in [
@@ -62,52 +75,63 @@ def create_timeline_chart(today, deadline_date, plan_sent_date):
     days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=today.replace(day=28) + pd.offsets.MonthEnd(1))]
     x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
 
-    event_dates = [today.strftime('%Y-%m-%d'), deadline_date.strftime('%Y-%m-%d')]
-    event_colors = ["blue", "red"]
+    event_dates = [deadline_date.strftime('%Y-%m-%d')]
+    event_colors = ["red"]
+    event_texts = ["Deadline"]
 
     if plan_sent_date:
         event_dates.append(plan_sent_date.strftime('%Y-%m-%d'))
         event_colors.append("green")
+        event_texts.append("Enviado")
 
+    # Criando a figura
     fig = go.Figure()
 
-    # Adiciona a linha do tempo com os dias do mês
+    # Adicionando a linha do tempo com os dias do mês
     fig.add_trace(go.Scatter(
         x=x_values,
         y=[1] * len(x_values),
         mode='lines+markers',
         line=dict(color='lightgrey', width=2),
         marker=dict(color='lightgrey', size=6),
-        showlegend=False,
-        hoverinfo='x'
+        hoverinfo='x',
+        showlegend=False  # Não mostrar na legenda principal
     ))
 
-    # Adiciona as bolinhas dos eventos
-    for date, color in zip(event_dates, event_colors):
+    # Adicionando os eventos com as legendas
+    for date, color, text in zip(event_dates, event_colors, event_texts):
+        text_position = "top center" if text == "Enviado" else "bottom center"
         fig.add_trace(go.Scatter(
             x=[date],
             y=[1],
-            mode='markers',
+            mode='markers+text',
             marker=dict(color=color, size=12),
+            text=[text],
+            textposition=text_position,
             showlegend=False,
             hoverinfo='none'
         ))
 
+    # Configurações gerais do layout
     fig.update_layout(
         xaxis=dict(
             tickmode='array',
             tickvals=x_values,
-            showline=False,  # Esconde a linha reta
+            ticktext=[day.strftime('%d') for day in days_in_month],
+            showline=False,
             showgrid=False,
             zeroline=False,
-            showticklabels=False  # Remove a numeração dos dias do mês
+            tickfont=dict(size=10),
+            tickangle=0,
+            ticks='outside',
+            ticklen=4,
+            tickwidth=1,
         ),
         yaxis=dict(visible=False),
-        showlegend=False,
-        height=100,  # Reduz a altura do gráfico
-        margin=dict(l=20, r=20, t=10, b=30),  # Ajusta as margens para posicionar as legendas
-        plot_bgcolor='rgba(0,0,0,0)',  # Torna o fundo transparente
-        paper_bgcolor='rgba(0,0,0,0)'  # Torna o fundo do papel transparente
+        height=150,
+        margin=dict(l=20, r=20, t=10, b=10),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
     )
 
     return fig
@@ -117,124 +141,53 @@ def display_client_plan_status():
         st.session_state['confirm_plan_send'] = False
     if 'plan_sent_date' not in st.session_state:
         st.session_state['plan_sent_date'] = None
+    if 'edit_date' not in st.session_state:
+        st.session_state['edit_date'] = False
 
     clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
-    cliente_id = st.selectbox("Selecione o Cliente", clientes_df['id'], format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0])
+    cliente_id = st.session_state.get("cliente_id")
 
     with Session(bind=engine) as session:
         client = session.query(Client).filter(Client.id == cliente_id).first()
-        logging.info(f"Cliente selecionado: {client}")
 
         redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
-        logging.info(f"Plano de redes sociais encontrado: {redes_sociais_plan}")
 
         if redes_sociais_plan:
             plan_status = determinar_status_plano(client, redes_sociais_plan)
-            if redes_sociais_plan.send_date:
+            if 'plan_sent_date' not in st.session_state or not st.session_state['plan_sent_date']:
                 st.session_state['plan_sent_date'] = redes_sociais_plan.send_date
-            logging.info(f"Status do plano: {plan_status}, Data de envio do plano: {st.session_state['plan_sent_date']}")
         else:
             plan_status = "Plano não encontrado"
             st.session_state['plan_sent_date'] = None
-            logging.info("Plano de redes sociais não encontrado.")
 
-        # Definindo o título com o nome do próximo mês em português
         next_month = (datetime.now().replace(day=28) + timedelta(days=4)).strftime('%B')
-        title = f"Plano Redes Sociais: {next_month.capitalize()}"
+        title = f"Planejamento Redes Sociais: {next_month.capitalize()}"
 
-        # Formatação das tags
-        if plan_status == RedesSociaisPlanStatusEnum.ON_TIME:
-            status_tag = '<span class="status-tag" style="background-color: green;">No prazo</span>'
-        elif plan_status == RedesSociaisPlanStatusEnum.AWAITING:
-            status_tag = '<span class="status-tag" style="background-color: gray;">Aguardando</span>'
-        elif plan_status == RedesSociaisPlanStatusEnum.DELAYED:
-            status_tag = '<span class="status-tag" style="background-color: red;">Atrasado</span>'
-        else:
-            status_tag = '<span class="status-tag" style="background-color: gray;">Desconhecido</span>'
-
-        # Verificação se o plano foi enviado ou não
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
-        if st.session_state['plan_sent_date']:
-            sent_status_icon = '<span class="status-icon" style="color: green;">✔️</span>'
-        elif today <= deadline_date:
-            sent_status_icon = '<span class="status-icon" style="color: yellow;">⚠️</span>'
-        else:
-            sent_status_icon = '<span class="status-icon" style="color: red;">❌</span>'
 
-        # CSS para alinhar os elementos na mesma linha
-        st.markdown("""
-            <style>
-            .status-container {
-                display: flex;
-                align-items: center;
-                margin-bottom: 10px;
-            }
-            .status-container h4 {
-                margin: 0;
-                margin-right: 10px;
-                font-size: 1.25em;
-            }
-            .status-tag, .status-icon {
-                font-size: 0.85em;
-                margin-left: 10px;
-                color: white;
-                padding: 3px;
-                border-radius: 10px;
-            }
-            .legend-container {
-                display: flex;
-                justify-content: flex-start;  /* Alinha à esquerda */
-                margin-bottom: 10px;
-                font-size: 0.85em;
-                margin-left: 10px;  /* Adiciona um pequeno espaço à esquerda */
-            }
-            .legend-item {
-                display: flex;
-                align-items: center;
-                margin-right: 15px;
-            }
-            .legend-item span {
-                display: inline-block;
-                width: 15px;
-                height: 2px;  /* Traço em vez de bolinha */
-                margin-right: 5px;
-            }
-            .legend-item-blue span { background-color: blue; }
-            .legend-item-red span { background-color: red; }
-            .legend-item-green span { background-color: green; }
-            .plotly-graph-div {
-                display: flex;
-                justify-content: flex-start;  /* Alinha à esquerda */
-                margin-left: 10px;  /* Adiciona um pequeno espaço à esquerda */
-            }
-            </style>
-        """, unsafe_allow_html=True)
+        # Aplica a classe CSS ao gráfico de linha do tempo
+        st.markdown("<div class='timeline-chart'>", unsafe_allow_html=True)
 
-        # Exibindo título e tags na mesma linha
-        st.markdown(f"""
-            <div class="status-container">
-                <h4>{title}</h4>
-                {sent_status_icon}
-                {status_tag}
-            </div>
-        """, unsafe_allow_html=True)
+        # Exibe o nome do cliente antes do título
+        st.subheader(f"{client.name} - {title}")
+        print("Renderizando gráfico de linha do tempo")
 
-        # Adicionando a legenda acima do gráfico
-        legend_html = """
-            <div class="legend-container">
-                <div class="legend-item legend-item-blue"><span></span>Hoje</div>
-                <div class="legend-item legend-item-red"><span></span>Prazo</div>
-        """
-        if st.session_state['plan_sent_date']:
-            legend_html += '<div class="legend-item legend-item-green"><span></span>Plano Enviado</div>'
-        legend_html += '</div>'
-        st.markdown(legend_html, unsafe_allow_html=True)
-
+        # Renderiza o gráfico da linha do tempo
         fig = create_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
         st.plotly_chart(fig, use_container_width=True)
 
-        confirmar_envio_plano(cliente_id)
+        # Fecha a div para o contêiner do gráfico
+        st.markdown("</div>", unsafe_allow_html=True)
+
+# Assegure-se de que a função create_timeline_chart esteja funcionando corretamente
+
+
+def confirmar_envio_plano(cliente_id):
+    logging.info(f"Botão 'Enviar' pressionado para o cliente ID {cliente_id}.")
+    st.session_state['confirm_plan_send'] = True
+    st.session_state['plan_sent_date'] = datetime.today()
+    st.rerun()
 
 def determinar_status_plano(cliente, plano):
     hoje = datetime.today().date()  # Converter para datetime.date
@@ -275,14 +228,10 @@ def salvar_data_envio_plano(cliente_id, plan_sent_date):
     logging.info(f"Chamando salvar_data_envio_plano para cliente ID {cliente_id} com data {plan_sent_date}")
     with Session(bind=engine) as session:
         try:
-            # Converter plan_sent_date para datetime se necessário
             if isinstance(plan_sent_date, datetime):
                 plan_sent_date = plan_sent_date.date()
 
-            # Obter o primeiro dia do mês da data de envio do plano
             plan_month_start = plan_sent_date.replace(day=1)
-
-            # Verificar se já existe um plano para o cliente e o mês específico
             redes_sociais_plan = session.query(RedesSociaisPlan).filter(
                 RedesSociaisPlan.client_id == cliente_id,
                 func.strftime('%Y-%m', RedesSociaisPlan.send_date) == plan_month_start.strftime('%Y-%m')
@@ -291,32 +240,27 @@ def salvar_data_envio_plano(cliente_id, plan_sent_date):
             client = session.query(Client).filter(Client.id == cliente_id).first()
 
             if redes_sociais_plan:
-                logging.info(f"Registro de RedesSociaisPlan encontrado para o cliente ID {cliente_id}.")
                 redes_sociais_plan.send_date = plan_sent_date
                 redes_sociais_plan.updated_at = datetime.now()
                 redes_sociais_plan.status = determinar_status_plano(client, redes_sociais_plan)
             else:
-                logging.info(f"Não foi possível encontrar um registro de RedesSociaisPlan para o cliente ID {cliente_id} para o mês especificado. Criando um novo registro.")
                 redes_sociais_plan = RedesSociaisPlan(
                     client_id=cliente_id,
                     send_date=plan_sent_date,
                     updated_at=datetime.now(),
-                    status=determinar_status_plano(client, None),  # Passar None porque o registro ainda não existe
-                    plan_status=RedesSociaisPlanStatusEnum.AWAITING  # Inicializando com um status padrão
+                    status=determinar_status_plano(client, None),
+                    plan_status=RedesSociaisPlanStatusEnum.AWAITING
                 )
                 session.add(redes_sociais_plan)
 
             session.commit()
-            logging.info(f"Data de envio do plano atualizada com sucesso para {plan_sent_date.strftime('%Y-%m-%d')}.")
             st.success("Data de envio do plano atualizada com sucesso.")
             st.session_state['plan_sent_date'] = plan_sent_date
 
         except Exception as e:
             session.rollback()
-            logging.error(f"Erro ao atualizar a data de envio do plano para o cliente ID {cliente_id}: {e}")
             st.error(f"Erro ao atualizar a data de envio do plano: {e}")
-    st.session_state['confirm_plan_send'] = False
-    st.rerun()
+            logging.error(f"Erro ao atualizar a data de envio do plano: {e}")
 
 def display_gauge_chart(title, contracted, used, accumulated=0):
     max_value = contracted + accumulated
@@ -340,12 +284,18 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
     ))
 
     fig.update_layout(
-        height=180,
-        margin=dict(l=20, r=20, t=50, b=20),
+        height=220,  # Aumenta a altura do gráfico
+        margin=dict(l=20, r=20, t=50, b=50),  # Aumenta a margem inferior
         annotations=[
             dict(
-                x=0.5, y=0, xref='paper', yref='paper',
+                x=0.5, y=0.0, xref='paper', yref='paper',
                 text=f"Acumulado: {accumulated}",
+                showarrow=False,
+                font=dict(color="gray", size=12)
+            ),
+            dict(
+                x=0.5, y=-0.2, xref='paper', yref='paper',  # Ajuste menor na posição Y
+                text=f"Contratado: {contracted}",
                 showarrow=False,
                 font=dict(color="gray", size=12)
             )
@@ -388,15 +338,19 @@ def debug_display_data(cliente_id, df, mandalecas_contratadas, mandalecas_usadas
 
             logging.info(f"Dados de redes sociais para gráfico de pizza: {social_media_data}")
 
-            category_gauges = {}
+            category_gauges = {
+                "Instagram": [],
+                "Criação": [],
+                "Tráfego Pago": [],
+                "Produção de Conteúdo": [],
+                "Outras Redes": []
+            }
+
             for category in JobCategoryEnum:
                 delivery_category = map_category_to_delivery_category(category)
                 if (mandalecas_contratadas.get(category, 0) > 0 or 
                     mandalecas_usadas.get(category, 0) > 0 or 
                     mandalecas_acumuladas.get(category, 0) > 0) and delivery_category in selected_delivery_categories:
-                    
-                    if delivery_category not in category_gauges:
-                        category_gauges[delivery_category] = []
 
                     gauge_chart = display_gauge_chart(
                         title=category.value,
@@ -404,18 +358,36 @@ def debug_display_data(cliente_id, df, mandalecas_contratadas, mandalecas_usadas
                         used=mandalecas_usadas.get(category, 0),
                         accumulated=mandalecas_acumuladas.get(category, 0)
                     )
-                    category_gauges[delivery_category].append(gauge_chart)
 
-            for delivery_category, gauges in category_gauges.items():
-                st.subheader(delivery_category.value)
-                cols = st.columns(3)
-                for i, gauge in enumerate(gauges):
-                    with cols[i % 3]:
+                    if category in [JobCategoryEnum.FEED_INSTAGRAM, JobCategoryEnum.STORIES_INSTAGRAM]:
+                        category_gauges["Instagram"].append(gauge_chart)
+                    elif category in [JobCategoryEnum.CRIACAO, JobCategoryEnum.ADAPTACAO]:
+                        category_gauges["Criação"].append(gauge_chart)
+                    elif category in [JobCategoryEnum.STATIC_TRAFEGO_PAGO, JobCategoryEnum.ANIMATED_TRAFEGO_PAGO]:
+                        category_gauges["Tráfego Pago"].append(gauge_chart)
+                    elif category == JobCategoryEnum.CONTENT_PRODUCTION:
+                        category_gauges["Produção de Conteúdo"].append(gauge_chart)
+                    elif category not in [JobCategoryEnum.CARD_INSTAGRAM, JobCategoryEnum.REELS_INSTAGRAM, JobCategoryEnum.CAROUSEL_INSTAGRAM]:
+                        category_gauges["Outras Redes"].append(gauge_chart)
+
+            # Exibir gauges do Instagram
+            if category_gauges["Instagram"]:
+                st.subheader("Instagram")
+                cols = st.columns(2)
+                for i, gauge in enumerate(category_gauges["Instagram"]):
+                    with cols[i % 2]:
                         st.plotly_chart(gauge)
+                pie_chart = create_pie_chart(social_media_data, "Distribuição Instagram")
+                st.plotly_chart(pie_chart)
 
-                if delivery_category == DeliveryCategoryEnum.REDES_SOCIAIS:
-                    pie_chart = create_pie_chart(social_media_data, "Distribuição Redes Sociais")
-                    st.plotly_chart(pie_chart)
+            # Exibir gauges de outras categorias
+            for key in ["Criação", "Tráfego Pago", "Produção de Conteúdo", "Outras Redes"]:
+                if category_gauges[key]:
+                    st.subheader(key)
+                    cols = st.columns(3)
+                    for i, gauge in enumerate(category_gauges[key]):
+                        with cols[i % 3]:
+                            st.plotly_chart(gauge)
 
         except KeyError as e:
             logging.error(f"Erro ao exibir os dados: {e}")
@@ -440,46 +412,43 @@ def get_last_month_date_range():
     return first_day_of_last_month, last_day_of_last_month
 
 def page_criacao():
-    st.title("Entregas")
+    st.sidebar.header("Filtro de Cliente e Data")
+    clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
+    cliente_id = st.sidebar.selectbox("Selecione o Cliente", clientes_df['id'], format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], key='unique_select_box_id_1')
+
+    st.session_state["cliente_id"] = cliente_id
+
+    first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        data_inicio = st.sidebar.date_input("Data de início", value=first_day_of_last_month, key="data_inicio")
+    with col2:
+        data_fim = st.sidebar.date_input("Data de fim", value=last_day_of_last_month, key="data_fim")
+
+    uploaded_file = st.sidebar.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
+    if uploaded_file:
+        logging.info("Arquivo XLSX enviado. Iniciando processamento...")
+        try:
+            process_xlsx_file(uploaded_file)
+            st.success("Arquivo processado com sucesso e dados inseridos no banco de dados.")
+        except Exception as e:
+            st.error(f"Erro ao processar o arquivo: {e}")
+            logging.error(f"Erro ao processar o arquivo: {e}", exc_info=True)
+
     display_client_plan_status()
 
-    with st.sidebar:
-        st.header("Filtro de Cliente e Data")
-        clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
-        cliente_id = st.selectbox("Selecione o Cliente", clientes_df['id'], format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], key='unique_select_box_id_1')
+    delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
 
-        first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
 
-        col1, col2 = st.columns(2)
-        with col1:
-            data_inicio = st.date_input("Data de início", value=first_day_of_last_month, key="data_inicio")
-        with col2:
-            data_fim = st.date_input("Data de fim", value=last_day_of_last_month, key="data_fim")
-
-        st.session_state["cliente_id"] = cliente_id
-
-        uploaded_file = st.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
-        if uploaded_file:
-            logging.info("Arquivo XLSX enviado. Iniciando processamento...")
-            try:
-                process_xlsx_file(uploaded_file)
-                st.success("Arquivo processado com sucesso e dados inseridos no banco de dados.")
-            except Exception as e:
-                st.error(f"Erro ao processar o arquivo: {e}")
-                logging.error(f"Erro ao processar o arquivo: {e}", exc_info=True)
-
-        delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
-
-        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-
-        st.header("Selecione as Categorias de Entrega")
-        selected_delivery_categories = []
-        for delivery_category in DeliveryCategoryEnum:
-            if st.checkbox(delivery_category.value, value=True):
-                selected_delivery_categories.append(delivery_category)
+    st.header("Selecione as Categorias de Entrega")
+    selected_delivery_categories = []
+    for delivery_category in DeliveryCategoryEnum:
+        if st.checkbox(delivery_category.value, value=True):
+            selected_delivery_categories.append(delivery_category)
 
     debug_display_data(cliente_id, delivery_data, mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, selected_delivery_categories)
-
 
 def calcular_mandalecas(cliente_id):
     with Session(bind=engine) as session:

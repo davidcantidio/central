@@ -1,0 +1,23 @@
+/* style.css */
+
+/* Estilo para o fundo da página */
+body {
+    background-color: #f0f0f0; /* Cinza claro */
+}
+
+/* Estilo para contêineres de informações */
+.stContainer {
+    background-color: #ffffff; /* Branco */
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+/* Estilo específico para o gráfico de linha do tempo */
+.timeline-chart {
+    padding: 20px;
+    background-color: #ffffff; /* Fundo branco para o gráfico */
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}

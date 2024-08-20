@@ -4,29 +4,45 @@ from page_home_logic import home
 from page_criacao_logic import page_criacao
 from page_client_logic import show_cliente, get_clientes
 import pandas as pd
-from process_xlsx import process_xlsx_file  # Certifique-se de que o caminho está correto
+from process_xlsx import process_xlsx_file
 import logging
 
 # Configura o log
 logging.basicConfig(filename='process_xlsx.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Função para carregar o CSS
+def load_css(file_name):
+    with open(file_name) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
 # Função para exibir as páginas secundárias
 def show_secondary_page(page, cliente_id, start_date, end_date):
     if page == "Início":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         st.title("Início")
         st.write("Conteúdo para Início")
+        st.markdown("</div>", unsafe_allow_html=True)
     elif page == "Briefings":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         st.title("Briefings")
         st.write("Conteúdo para Briefings")
+        st.markdown("</div>", unsafe_allow_html=True)
     elif page == "Planos":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         st.title("Planos")
         st.write("Conteúdo para Planos")
+        st.markdown("</div>", unsafe_allow_html=True)
     elif page == "Campanhas":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         st.title("Campanhas")
         st.write("Conteúdo para Campanhas")
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # Lógica principal
 def main():
+    # Carregar o CSS
+    load_css("assets/style.css")
+
     st.sidebar.title("Menu")
     menu = option_menu(
         menu_title=None,
@@ -38,7 +54,9 @@ def main():
     )
 
     if menu == "Home":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         home()
+        st.markdown("</div>", unsafe_allow_html=True)
     elif menu == "Clientes":
         submenu = option_menu(
             menu_title="Clientes",
@@ -61,22 +79,17 @@ def main():
         st.session_state["cliente_id"] = cliente_id
 
         if submenu == "Início":
+            st.markdown("<div class='container'>", unsafe_allow_html=True)
             show_cliente(cliente_id, data_inicio, data_fim)
+            st.markdown("</div>", unsafe_allow_html=True)
         else:
+            st.markdown("<div class='container'>", unsafe_allow_html=True)
             show_secondary_page(submenu, cliente_id, data_inicio, data_fim)
+            st.markdown("</div>", unsafe_allow_html=True)
     elif menu == "Entregas":
+        st.markdown("<div class='container'>", unsafe_allow_html=True)
         page_criacao()
-        
-        # Upload do arquivo XLSX na página Entregas
-        # uploaded_file = st.sidebar.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
-        # if uploaded_file:
-        #     logging.info("Arquivo XLSX enviado. Iniciando processamento...")
-        #     try:
-        #         process_xlsx_file(uploaded_file)
-        #         st.success("Arquivo processado com sucesso e dados inseridos no banco de dados.")
-        #     except Exception as e:
-        #         st.error(f"Erro ao processar o arquivo: {e}")
-        #         logging.error(f"Erro ao processar o arquivo: {e}", exc_info=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
