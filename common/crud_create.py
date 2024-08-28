@@ -206,56 +206,36 @@ def create_department(name):
 
 def create_client(data):
     with Session(bind=engine) as session:
-        # Criação do cliente
         client, created = get_or_create(session, Client, cnpj=data.get('cnpj'))
         
         if created:
             client.cpf = data.get('cpf')
             client.legal_name = data.get('legal_name')
             client.name = data.get('name')
-            client.email = data.get('invoice_recipients_email')
+            client.email = data.get('invoice_recipients_email')  # Verifique se precisa de conversão para lista
             client.postal_code = data.get('CEP')
-            client.business_phone = data.get('business_phone')
-            client.phone = data.get('phone')
+            client.business_phone = data.get('legal_representative_phone')  # Ou `phone`, se preferir
             client.google_ads_account_id = data.get('google_ads_account_id')
-            client.facebook_page_id = data.get('facebook_page_id')
+            client.facebook_page_id = data.get('fb_page_id')
             client.instagram_profile_id = data.get('instagram_profile_id')
             client.hashtags = data.get('hashtags')
             client.linkedin_profile_id = data.get('linkedin_profile_id')
-            client. n_monthly_contracted_creative_mandalecas = data.get(' n_monthly_contracted_creative_mandalecas')
-            client.n_monthly_contracted_content_production_mandalecas = data.get('n_monthly_contracted_producao_conteudo_mandalecas')
-            client.n_monthly_contracted_format_adaptation_mandalecas = data.get('n_monthly_contracted_adaptacao_mandalecas')
-            client.n_monthly_contracted_stories_instagram_mandalecas = data.get('n_monthly_contracted_stories_instagram_mandalecas')
+            client.n_monthly_contracted_creative_mandalecas = data.get('n_monthly_contracted_creative_mandalecas')
+            client.n_monthly_contracted_content_production_mandalecas = data.get('n_monthly_contracted_content_mandalecas')
+            client.n_monthly_contracted_format_adaptation_mandalecas = data.get('n_monthly_contracted_format_adaptation_mandalecas')
+            client.n_monthly_contracted_stories_instagram_mandalecas = data.get('n_monthly_contracted_stories_mandalecas')
             client.n_monthly_contracted_feed_instagram_mandalecas = data.get('n_monthly_contracted_feed_instagram_mandalecas')
             client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_monthly_contracted_feed_tiktok_mandalecas')
             client.n_monthly_contracted_feed_linkedin_mandalecas = data.get('n_monthly_contracted_feed_linkedin_mandalecas')
-            client.accumulated_feed_tiktok_mandalecas = data.get('accumulated_feed_tiktok_mandalecas')
-            client.name = data.get('name')
-
-            # Campos contratuais
-            client.n_monthly_contracted_creative_mandalecas = 6
-            client.n_monthly_contracted_format_adaptation_mandalecas = 2
-            client.n_monthly_contracted_feed_instagram_mandalecas = 5
-
-            # Outros campos adicionais
 
             client.impulsionamento_budget = data.get('impulsionamento_budget')
-            client.copy = data.get('copy')
-            client.n_monthly_contracted_stories_instagram_mandalecas = data.get('n_posts_contratados_stories_instagram')
-            client.n_monthly_contracted_stories_repost_instagram_mandalecas = data.get('n_posts_contratados_feed_linkedin')
-            client.n_monthly_contracted_feed_linkedin_mandalecas= data.get('n_posts_contratados_stories_instagram')
-            client.n_monthly_contracted_feed_tiktok_mandalecas = data.get('n_posts_contratados_feed_facebook')
-            client.n_monthly_contracted_creative_mandalecas = data.get('n_posts_contratados_feed_tiktok')
-            client.logo_url = data.get('url_img_logo')
+            client.logo_url = data.get('logo_url')
             client.is_active_impulsionamento_instagram = data.get('is_active_impulsionamento_instagram')
             client.is_active_impulsionamento_linkedin = data.get('is_active_impulsionamento_linkedin')
-            
             client.is_active_trafego_pago = data.get('is_active_trafego_pago')
             client.is_active_linkedin_ads = data.get('is_active_linkedin_ads')
             client.is_active_tiktok_ads = data.get('is_active_tiktok_ads')
             client.is_active_google_ads = data.get('is_active_google_ads')
-
-            
 
             session.add(client)
 
@@ -263,50 +243,13 @@ def create_client(data):
         if data.get('legal_representative_full_name'):
             legal_representative = Liaison(
                 full_name=data.get('legal_representative_full_name'),
-                cpf=data.get('legal_representative_cpf'),
-                rg=data.get('legal_representative_rg'),
-                street_name=data.get('legal_representative_street_name'),
-                number=data.get('legal_representative_number'),
-                complement=data.get('legal_representative_complement'),
-                neighbourhood=data.get('legal_representative_neighbourhood'),
-                city=data.get('legal_representative_city'),
-                state=data.get('legal_representative_state'),
-                birthday=data.get('legal_representative_birth_date'),
-                postal_code=data.get('CEP'),
                 phone=data.get('legal_representative_phone'),
                 email=data.get('legal_representative_e_mail'),
-                position=data.get('legal_representative_position'),
-                title='Legal Representative',
-                legal_representative=True,
-                finances_representative=False
+                postal_code=data.get('CEP')
             )
             legal_representative.clients.append(client)
             session.add(legal_representative)
 
-        # Verificar e criar representantes financeiros
-        if data.get('finance_representative_full_name'):
-            finance_representative = Liaison(
-                full_name=data.get('finance_representative_full_name'),
-                cpf=data.get('finance_representative_cpf'),
-                rg=data.get('finance_representative_rg'),
-                street_name=data.get('finance_representative_street_name'),
-                number=data.get('finance_representative_number'),
-                complement=data.get('finance_representative_complement'),
-                neighbourhood=data.get('finance_representative_neighbourhood'),
-                city=data.get('finance_representative_city'),
-                state=data.get('finance_representative_state'),
-                birthday=data.get('finance_representative_birth_date'),
-                postal_code=data.get('CEP'),
-                phone=data.get('finance_representative_phone'),
-                email=data.get('finance_representative_e_mail'),
-                position=data.get('finance_representative_position'),
-                title='Financial Representative',
-                legal_representative=False,
-                finances_representative=True
-            )
-            finance_representative.clients.append(client)
-            session.add(finance_representative)
-        
         try:
             session.commit()
             logger.info(f"Cliente '{client.name}' criado com sucesso.")
@@ -319,7 +262,6 @@ def create_client(data):
         except Exception as e:
             session.rollback()
             logger.error(f"Erro desconhecido ao criar cliente: {e}")
-
 
 def process_data(json_data):
     for client_data in json_data:

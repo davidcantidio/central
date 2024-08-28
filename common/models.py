@@ -252,7 +252,8 @@ class Client(Base):
     cnpj = Column(String(18), unique=True)
     cpf = Column(String(11), unique=True)
     aliases = Column(JSON)
-    monthly_plan_deadline_day = Column(Integer, default=15)
+    monthly_plan_deadline_day = Column(Integer, default=20)
+    monthly_redes_guidance_deadline_day = Column(Integer, default=10)
     is_instagram_connected_facebook_page = Column(Boolean, default=False)
     is_active_impulsionamento_instagram = Column(Boolean, default=False)
     is_active_impulsionamento_linkedin = Column(Boolean, default=False)
@@ -266,6 +267,7 @@ class Client(Base):
     is_active_trafego_pago = Column(Boolean, default=False)
     is_active_tiktok_ads = Column(Boolean, default=False)
     is_active_linkedin_ads = Column(Boolean, default=False)
+    is_active_redes_tiktok = Column(Boolean, default=False)
     invoice_recipients_emails = Column(JSON)
     foundation_date = Column(Date)
     due_charge_date = Column(Date)
@@ -350,6 +352,8 @@ class Client(Base):
     copywriter = relationship("Users", secondary=client_copywriter_association)
     action_plans_assessoria = relationship("ActionPlanAssessoria", back_populates="client")
     plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="client")
+    content_productions = relationship("ContentProduction", back_populates="client")
+    attention_points = relationship('AttentionPoints', back_populates='client', cascade='all, delete-orphan')
 
 
     def __repr__(self):
@@ -420,7 +424,7 @@ class InstagramInsights(Base):
 class InstagramProfile(Base):
     __tablename__ = 'instagram_profiles'
     id = Column(String(60), primary_key=True)
-    user_name = Column(String(40), nullable=False)
+    username = Column(String(40), nullable=False)
     official_hashtags = Column(JSON)
     client_id = Column(Integer, ForeignKey('clients.id'), unique=True, nullable=False)
     updated_at = Column(TIMESTAMP, default=datetime.now)
@@ -599,6 +603,36 @@ class BriefingRedesSociais(Base):
     updater = relationship("Users", back_populates="briefing_redes_sociais_updates", foreign_keys=[last_updated_by])
     plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="briefing", foreign_keys="[RedesSociaisPlan.briefing_id]")  # Adicionado relacionamento
 
+class ContentProduction(Base):
+    __tablename__ = 'producao_conteudo'
+    
+    id = Column(Integer, primary_key=True, autoincrement=True)  # Chave primária
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    author_id = Column(Integer, ForeignKey('users.id'))
+    meeting_date = Column(TIMESTAMP)
+    meeting_subject = Column(Text)
+    notes = Column(Text)
+
+    client = relationship("Client", back_populates="content_productions")
+
+
+class RedesSociaisGuidance(Base):
+    __tablename__ = 'direcionamento_redes_sociais'
+    id = Column(Integer, primary_key=True)
+    client_id = Column(Integer, ForeignKey('clients.id'))
+    author_id = Column(Integer, ForeignKey('users.id'))
+    briefing_id = Column(Integer, ForeignKey('briefings_redes_sociais.id'))  # Adicionando a chave estrangeira aqui
+    updated_at = Column(TIMESTAMP, default=datetime.now)
+    status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
+    responsible_id = Column(Integer)
+    updated_at = Column(TIMESTAMP, default=datetime.now, onupdate=datetime.now)
+    send_date = Column(TIMESTAMP)
+    plan_status = Column(SQLAlchemyEnum(RedesSociaisPlanStatusEnum), nullable=False)
+
+    __table_args__ = (
+        UniqueConstraint('client_id', 'send_date', name='uix_guidance_client_id_send_date'),
+        Index('ix_guidance_client_id_send_date', 'client_id', 'send_date')  # Novo nome do índice
+    )
 
 class RedesSociaisPlan(Base):
     __tablename__ = 'plano_redes_sociais'
@@ -622,7 +656,6 @@ class RedesSociaisPlan(Base):
     client = relationship("Client", back_populates="plans_redes_sociais")
     author = relationship("Users", back_populates="authored_plans_redes_sociais")
     briefing = relationship("BriefingRedesSociais", back_populates="plans_redes_sociais")
-
 
 class Product(Base):
     __tablename__ = 'products'
@@ -900,6 +933,7 @@ class ActionPlanAssessoria(Base):
     author = relationship("Users", back_populates="authored_action_plans_assessoria")
 
 class DeliveryControl(Base):
+
     __tablename__ = 'delivery_control'
 
     id = Column(Integer, primary_key=True, index=True)
@@ -925,3 +959,13 @@ class DeliveryControl(Base):
     requested_by_id = Column(Integer, ForeignKey('users.id'))
     requested_by = relationship("Users", foreign_keys=[requested_by_id], back_populates="delivery_controls_requested")
     delivery_category = Column(SQLAlchemyEnum(DeliveryCategoryEnum), nullable=False)
+
+class AttentionPoints(Base):
+    __tablename__ = 'pontos_de_atencao'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    attention_point = Column(String)
+    date = Column(Date)
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+
+    client = relationship('Client', back_populates='attention_points')
