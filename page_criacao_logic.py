@@ -384,14 +384,17 @@ def display_client_plan_status():
         next_month = (datetime.now().replace(day=28) + timedelta(days=4)).strftime('%B')
         title = f"Planejamento Redes Sociais: {next_month.capitalize()}"
 
+        # Exibir o título fora do container com borda
+        display_client_header(client, title)
+
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
 
-        display_client_header(client, title)
+        # Agora entra no container com borda
+        with st.container(border=1):
+            display_plan_or_guidance_modal(cliente_id, RedesSociaisPlan, determinar_status, "Plano", "plan_sent_date")
 
-        display_plan_or_guidance_modal(cliente_id, RedesSociaisPlan, determinar_status, "Plano", "plan_sent_date")
-
-        render_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
+            render_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
 
 def display_redes_guidance_status():
     cliente_id = st.session_state.get("cliente_id")
@@ -412,12 +415,13 @@ def display_redes_guidance_status():
 
         today = datetime.today()
         deadline_date = datetime(today.year, today.month, client.monthly_redes_guidance_deadline_day)
-
         display_client_header(client, title)
 
-        display_plan_or_guidance_modal(cliente_id, RedesSociaisGuidance, determinar_status, "Direcionamento", "guidance_send_date")
+        with st.container(border=1):
+        
+            display_plan_or_guidance_modal(cliente_id, RedesSociaisGuidance, determinar_status, "Direcionamento", "guidance_send_date")
 
-        render_timeline_chart(today, deadline_date, st.session_state['guidance_send_date'])
+            render_timeline_chart(today, deadline_date, st.session_state['guidance_send_date'])
 
 def display_client_header(client, title):
     st.write(f"**{title}**")
@@ -483,115 +487,115 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
     return df
 
 def display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.subheader("Criação")
+    st.write("**Criação**")
+    with st.container(border=1):
+        gauge_chart = display_gauge_chart(
+            title="Criação",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
+        )
 
-    gauge_chart = display_gauge_chart(
-        title="Criação",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
-    )
-
-    st.plotly_chart(gauge_chart)
+        st.plotly_chart(gauge_chart)
 
 def display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.subheader("Tráfego Pago")
+    st.write("**Tráfego Pago**")
+    with st.container(border=1):
+        gauge_chart = display_gauge_chart(
+            title="Tráfego Pago",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
+                        mandalecas_contratadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
+                mandalecas_usadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
+                        mandalecas_acumuladas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0)
+        )
 
-    gauge_chart = display_gauge_chart(
-        title="Tráfego Pago",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-                    mandalecas_contratadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-              mandalecas_usadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-                    mandalecas_acumuladas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0)
-    )
-
-    st.plotly_chart(gauge_chart)
+        st.plotly_chart(gauge_chart)
 
 def display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.subheader("Instagram")
+    st.write("**Instagram**")
+    with st.container(border=1):
+        gauge_chart = display_gauge_chart(
+            title="Instagram",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_INSTAGRAM, 0)
+        )
 
-    gauge_chart = display_gauge_chart(
-        title="Instagram",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_INSTAGRAM, 0)
-    )
+        st.plotly_chart(gauge_chart)
 
-    st.plotly_chart(gauge_chart)
+        social_media_data = {
+            "Carrossel Instagram": mandalecas_usadas.get(JobCategoryEnum.CAROUSEL_INSTAGRAM, 0),
+            "Reels Instagram": mandalecas_usadas.get(JobCategoryEnum.REELS_INSTAGRAM, 0),
+            "Card Instagram": mandalecas_usadas.get(JobCategoryEnum.CARD_INSTAGRAM, 0)
+        }
 
-    social_media_data = {
-        "Carrossel Instagram": mandalecas_usadas.get(JobCategoryEnum.CAROUSEL_INSTAGRAM, 0),
-        "Reels Instagram": mandalecas_usadas.get(JobCategoryEnum.REELS_INSTAGRAM, 0),
-        "Card Instagram": mandalecas_usadas.get(JobCategoryEnum.CARD_INSTAGRAM, 0)
-    }
-
-    pie_chart = create_pie_chart(social_media_data, "Distribuição Instagram")
-    st.plotly_chart(pie_chart)
+        pie_chart = create_pie_chart(social_media_data, "Distribuição Instagram")
+        st.plotly_chart(pie_chart)
 
 def display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.subheader("Outras Redes")
+    st.write("**Outras Redes**")
+    with st.container(border=1):
+        linkedin_gauge = display_gauge_chart(
+            title="Feed LinkedIn",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_LINKEDIN, 0)
+        )
+        st.plotly_chart(linkedin_gauge)
 
-    linkedin_gauge = display_gauge_chart(
-        title="Feed LinkedIn",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_LINKEDIN, 0)
-    )
-    st.plotly_chart(linkedin_gauge)
-
-    tiktok_gauge = display_gauge_chart(
-        title="Feed TikTok",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_TIKTOK, 0)
-    )
-    st.plotly_chart(tiktok_gauge)
+        tiktok_gauge = display_gauge_chart(
+            title="Feed TikTok",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_TIKTOK, 0)
+        )
+        st.plotly_chart(tiktok_gauge)
 
 def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.subheader("Produção de Conteúdo")
+    st.write("**Produção de Conteúdo**")
+    with st.container(border=1):
+        gauge_chart = display_gauge_chart(
+            title="Produção de Conteúdo",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0)
+        )
 
-    gauge_chart = display_gauge_chart(
-        title="Produção de Conteúdo",
-        contracted=mandalecas_contratadas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0),
-        used=mandalecas_usadas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0),
-        accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CONTENT_PRODUCTION, 0)
-    )
-
-    st.plotly_chart(gauge_chart)
+        st.plotly_chart(gauge_chart)
 
 def display_content_production_table(cliente_id):
     st.write("**Histórico de Reuniões de Produção de Conteúdo**")
+    with st.container(border=1):
+        with Session(bind=engine) as session:
+            content_production_data = session.query(ContentProduction).filter(ContentProduction.client_id == cliente_id).all()
 
-    with Session(bind=engine) as session:
-        content_production_data = session.query(ContentProduction).filter(ContentProduction.client_id == cliente_id).all()
+            if not content_production_data:
+                content_production_df = pd.DataFrame(columns=['Data da Reunião', 'Assunto', 'Notas'])
+            else:
+                content_production_df = pd.DataFrame([{
+                    'Data da Reunião': row.meeting_date.strftime('%Y-%m-%d') if row.meeting_date else '',
+                    'Assunto': row.meeting_subject,
+                    'Notas': row.notes
+                } for row in content_production_data])
 
-        if not content_production_data:
-            content_production_df = pd.DataFrame(columns=['Data da Reunião', 'Assunto', 'Notas'])
-        else:
-            content_production_df = pd.DataFrame([{
-                'Data da Reunião': row.meeting_date.strftime('%Y-%m-%d') if row.meeting_date else '',
-                'Assunto': row.meeting_subject,
-                'Notas': row.notes
-            } for row in content_production_data])
+            st.table(content_production_df)
 
-        st.table(content_production_df)
+        modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
 
-    modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
+        if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
+            modal.open()
 
-    if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
-        modal.open()
+        if modal.is_open():
+            with modal.container():
+                meeting_date = st.date_input("Data da Reunião", value=datetime.today())
+                meeting_subject = st.text_input("Assunto")
+                notes = st.text_area("Notas")
 
-    if modal.is_open():
-        with modal.container():
-            meeting_date = st.date_input("Data da Reunião", value=datetime.today())
-            meeting_subject = st.text_input("Assunto")
-            notes = st.text_area("Notas")
-
-            if st.button("Salvar"):
-                save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
-                st.experimental_rerun()
+                if st.button("Salvar"):
+                    save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
+                    st.experimental_rerun()
                 
 def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
     with Session(bind=engine) as session:
@@ -607,33 +611,33 @@ def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes
 
 def display_attention_points_table(cliente_id):
     st.write("**Pontos de Atenção**")
+    with st.container(border=1):
+        with Session(bind=engine) as session:
+            attention_points_data = session.query(AttentionPoints).filter(AttentionPoints.client_id == cliente_id).all()
 
-    with Session(bind=engine) as session:
-        attention_points_data = session.query(AttentionPoints).filter(AttentionPoints.client_id == cliente_id).all()
+            if not attention_points_data:
+                attention_points_df = pd.DataFrame(columns=['Data', 'Ponto de Atenção'])
+            else:
+                attention_points_df = pd.DataFrame([{
+                    'Data': row.date.strftime('%Y-%m-%d') if row.date else '',
+                    'Ponto de Atenção': row.attention_point
+                } for row in attention_points_data])
 
-        if not attention_points_data:
-            attention_points_df = pd.DataFrame(columns=['Data', 'Ponto de Atenção'])
-        else:
-            attention_points_df = pd.DataFrame([{
-                'Data': row.date.strftime('%Y-%m-%d') if row.date else '',
-                'Ponto de Atenção': row.attention_point
-            } for row in attention_points_data])
+            st.table(attention_points_df)
 
-        st.table(attention_points_df)
+        modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar-ponto-atencao-modal", max_width=800)
 
-    modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar-ponto-atencao-modal", max_width=800)
+        if st.button("Adicionar Novo Ponto de Atenção"):
+            modal.open()
 
-    if st.button("Adicionar Novo Ponto de Atenção"):
-        modal.open()
+        if modal.is_open():
+            with modal.container():
+                attention_date = st.date_input("Data do Ponto de Atenção", value=datetime.today())
+                attention_point = st.text_area("Ponto de Atenção")
 
-    if modal.is_open():
-        with modal.container():
-            attention_date = st.date_input("Data do Ponto de Atenção", value=datetime.today())
-            attention_point = st.text_area("Ponto de Atenção")
-
-            if st.button("Salvar"):
-                save_new_attention_point(cliente_id, attention_date, attention_point)
-                st.experimental_rerun()
+                if st.button("Salvar"):
+                    save_new_attention_point(cliente_id, attention_date, attention_point)
+                    st.experimental_rerun()
 
 def save_new_attention_point(cliente_id, attention_date, attention_point):
     with Session(bind=engine) as session:
