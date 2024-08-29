@@ -94,6 +94,8 @@ def salvar_data_envio(cliente_id, data_envio, model_class, status_function):
 # ===========================================================
 
 def display_plan_or_guidance_modal(cliente_id, model_class, status_function, title_key, session_key):
+    # Inicializa o modal fora dos containers estilizados
+    modal = Modal(f"Data de Envio do {title_key}", key=f"enviar-{title_key.lower()}-modal", max_width=800)
     
     send_date = st.session_state.get(session_key)
 
@@ -102,10 +104,21 @@ def display_plan_or_guidance_modal(cliente_id, model_class, status_function, tit
     else:
         open_modal = st.button(f"Enviar {title_key}", key=f"send_{title_key.lower()}_button")
 
-    modal = create_modal(cliente_id, model_class, status_function, title_key, session_key)
-
     if open_modal:
+        logging.info(f"Usuário clicou no botão 'Enviar {title_key}' para o cliente ID {cliente_id}")
         modal.open()
+
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Data de Envio do {title_key}' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Envio", value=datetime.today())
+            if st.button("Confirmar"):
+                logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
+                salvar_data_envio(cliente_id, selected_date, model_class, status_function)
+                st.session_state[session_key] = selected_date
+                modal.close()
+                st.experimental_rerun()
 
 def create_modal(cliente_id, model_class, status_function, title_key, session_key):
     modal = Modal(f"Data de Envio do {title_key}", key=f"enviar-{title_key.lower()}-modal", max_width=800)
@@ -369,13 +382,17 @@ def get_last_month_date_range():
     return first_day_of_last_month, last_day_of_last_month
 
 def display_client_plan_status():
+    cliente_id = st.session_state.get("cliente_id")
+    
+    # Inicializa o modal fora dos containers estilizados
+    modal = Modal("Data de Envio do Plano", key="enviar-plano-modal", max_width=800)
+
     with stylable_container(key="plan_status", 
-                                css_styles="""
-                                {
-                                    padding-bottom: 45px;                               
-                                }
-                                """,):
-        cliente_id = st.session_state.get("cliente_id")
+                            css_styles="""
+                            {
+                                padding-bottom: 45px;                               
+                            }
+                            """,):
         with Session(bind=engine) as session:
             client = session.query(Client).filter(Client.id == cliente_id).first()
             redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
@@ -409,16 +426,34 @@ def display_client_plan_status():
                                     """,):
 
                 render_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
-            display_plan_or_guidance_modal(cliente_id, RedesSociaisPlan, determinar_status, "Plano", "plan_sent_date")
+
+        if st.button("Enviar Plano"):
+            logging.info(f"Usuário clicou no botão 'Enviar Plano' para o cliente ID {cliente_id}")
+            modal.open()
+
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Data de Envio do Plano' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Envio", value=datetime.today())
+            if st.button("Confirmar"):
+                logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
+                salvar_data_envio(cliente_id, selected_date, RedesSociaisPlan, determinar_status)
+                st.session_state['plan_sent_date'] = selected_date
+                st.experimental_rerun()
 
 def display_redes_guidance_status():
+    cliente_id = st.session_state.get("cliente_id")
+    
+    # Inicializa o modal fora dos containers estilizados
+    modal = Modal("Data de Envio do Direcionamento", key="enviar-direcionamento-modal", max_width=800)
+
     with stylable_container(key="redes_guidance_status", 
                             css_styles="""
                             {
                                 padding-bottom: 45px;
                             }
                             """):
-        cliente_id = st.session_state.get("cliente_id")
         with Session(bind=engine) as session:
             client = session.query(Client).filter(Client.id == cliente_id).first()
             redes_sociais_guidance = session.query(RedesSociaisGuidance).filter(RedesSociaisGuidance.client_id == cliente_id).first()
@@ -451,56 +486,24 @@ def display_redes_guidance_status():
                                     """):
                 render_timeline_chart(today, deadline_date, st.session_state['guidance_send_date'])
 
-            display_plan_or_guidance_modal(cliente_id, RedesSociaisGuidance, determinar_status, "Direcionamento", "guidance_send_date")
+        if st.button("Enviar Direcionamento"):
+            logging.info(f"Usuário clicou no botão 'Enviar Direcionamento' para o cliente ID {cliente_id}")
+            modal.open()
+
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Data de Envio do Direcionamento' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Envio", value=datetime.today())
+            if st.button("Confirmar"):
+                logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
+                salvar_data_envio(cliente_id, selected_date, RedesSociaisGuidance, determinar_status)
+                st.session_state['guidance_send_date'] = selected_date
+                st.experimental_rerun()
 
 def display_client_header(client, title):
     st.write(f"**{title}**")
 
-def page_criacao():
-    st.sidebar.header("Filtro de Cliente e Data")
-    clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
-    cliente_id = st.sidebar.selectbox(
-        "Selecione o Cliente", 
-        clientes_df['id'], 
-        format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], 
-        key='unique_select_box_id_1'
-    )
-
-    st.session_state["cliente_id"] = cliente_id
-
-    first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
-
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        data_inicio = st.sidebar.date_input("Data de início", value=first_day_of_last_month, key="data_inicio")
-    with col2:
-        data_fim = st.sidebar.date_input("Data de fim", value=last_day_of_last_month, key="data_fim")
-
-    uploaded_file = st.sidebar.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
-    if uploaded_file:
-        process_xlsx_file(uploaded_file)
-
-    # Exibir tabela interativa de pontos de atenção
-    display_attention_points_table(cliente_id)
-
-    # Exibir tabela interativa de produção de conteúdo
-    display_content_production_table(cliente_id)
-
-    # Exibir status do plano
-    display_client_plan_status()
-
-    # Exibir status do direcionamento de redes sociais
-    display_redes_guidance_status()
-
-    delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
-    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-
-    # Exibir gráficos de gauge para cada categoria
-    display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
 
 def get_delivery_control_data(cliente_id, start_date, end_date):
     logging.info(f"Obtendo dados de DeliveryControl para o cliente ID {cliente_id} entre {start_date} e {end_date}")
@@ -626,6 +629,9 @@ def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, 
         st.plotly_chart(gauge_chart)
 
 def display_content_production_table(cliente_id):
+    # Mantém o modal fora dos containers estilizados
+    modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
+
     with stylable_container(key="content_production", 
                             css_styles="""
                             {
@@ -655,21 +661,24 @@ def display_content_production_table(cliente_id):
 
                 st.table(content_production_df)
 
-            modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
-
         if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
+            logging.info(f"Usuário clicou no botão 'Adicionar Nova Reunião de Produção de Conteúdo' para o cliente ID {cliente_id}")
             modal.open()
 
-        if modal.is_open():
-            with modal.container():
-                meeting_date = st.date_input("Data da Reunião", value=datetime.today())
-                meeting_subject = st.text_input("Assunto")
-                notes = st.text_area("Notas")
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Nova Reunião' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            meeting_date = st.date_input("Data da Reunião", value=datetime.today())
+            meeting_subject = st.text_input("Assunto")
+            notes = st.text_area("Notas")
 
-                if st.button("Salvar"):
-                    save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
-                    st.experimental_rerun()
-            
+            if st.button("Salvar"):
+                logging.info(f"Tentando salvar uma nova reunião de produção de conteúdo para o cliente ID {cliente_id}")
+                save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
+                logging.info(f"Nova reunião de produção de conteúdo salva com sucesso para o cliente ID {cliente_id}")
+                st.experimental_rerun()
+           
 def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
     with Session(bind=engine) as session:
         new_entry = ContentProduction(
@@ -683,6 +692,9 @@ def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes
         st.success("Reunião de Produção de Conteúdo adicionada com sucesso!")
 
 def display_attention_points_table(cliente_id):
+    # Mantém o modal fora dos containers estilizados
+    modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar-ponto-atencao-modal", max_width=800)
+
     with stylable_container(key="attention_points", 
                                 css_styles="""
                                 {
@@ -712,19 +724,22 @@ def display_attention_points_table(cliente_id):
 
                 st.table(attention_points_df)
 
-            modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar-ponto-atencao-modal", max_width=800)
-
         if st.button("Adicionar Novo Ponto de Atenção"):
+            logging.info(f"Usuário clicou no botão 'Adicionar Novo Ponto de Atenção' para o cliente ID {cliente_id}")
             modal.open()
 
-            if modal.is_open():
-                with modal.container():
-                    attention_date = st.date_input("Data do Ponto de Atenção", value=datetime.today())
-                    attention_point = st.text_area("Ponto de Atenção")
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Novo Ponto de Atenção' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            attention_date = st.date_input("Data do Ponto de Atenção", value=datetime.today())
+            attention_point = st.text_area("Ponto de Atenção")
 
-                    if st.button("Salvar"):
-                        save_new_attention_point(cliente_id, attention_date, attention_point)
-                        st.experimental_rerun()
+            if st.button("Salvar"):
+                logging.info(f"Tentando salvar um novo ponto de atenção para o cliente ID {cliente_id}")
+                save_new_attention_point(cliente_id, attention_date, attention_point)
+                logging.info(f"Novo ponto de atenção salvo com sucesso para o cliente ID {cliente_id}")
+                st.experimental_rerun()
 
 def save_new_attention_point(cliente_id, attention_date, attention_point):
     with Session(bind=engine) as session:
@@ -736,3 +751,51 @@ def save_new_attention_point(cliente_id, attention_date, attention_point):
         session.add(new_entry)
         session.commit()
         st.success("Ponto de Atenção adicionado com sucesso!")
+
+
+
+def page_criacao():
+    st.sidebar.header("Filtro de Cliente e Data")
+    clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
+    cliente_id = st.sidebar.selectbox(
+        "Selecione o Cliente", 
+        clientes_df['id'], 
+        format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], 
+        key='unique_select_box_id_1'
+    )
+
+    st.session_state["cliente_id"] = cliente_id
+
+    first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+
+    col1, col2 = st.sidebar.columns(2)
+    with col1:
+        data_inicio = st.sidebar.date_input("Data de início", value=first_day_of_last_month, key="data_inicio")
+    with col2:
+        data_fim = st.sidebar.date_input("Data de fim", value=last_day_of_last_month, key="data_fim")
+
+    uploaded_file = st.sidebar.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
+    if uploaded_file:
+        process_xlsx_file(uploaded_file)
+
+    # Exibir tabela interativa de pontos de atenção
+    display_attention_points_table(cliente_id)
+
+    # Exibir tabela interativa de produção de conteúdo
+    display_content_production_table(cliente_id)
+
+    # Exibir status do plano
+    display_client_plan_status()
+
+    # Exibir status do direcionamento de redes sociais
+    display_redes_guidance_status()
+
+    delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
+    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
+
+    # Exibir gráficos de gauge para cada categoria
+    display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
