@@ -7,6 +7,8 @@ import pandas as pd
 from process_xlsx import process_xlsx_file
 import logging
 
+st.set_page_config(layout="wide")
+
 # Configura o log
 logging.basicConfig(filename='process_xlsx.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 

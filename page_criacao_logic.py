@@ -31,7 +31,7 @@ from streamlit_modal import Modal
 # ===========================================================
 # Configurações Iniciais e Utilidades
 # ===========================================================
-st.set_page_config(layout="wide")
+
 # Configurar localidade para português
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
@@ -338,7 +338,20 @@ def render_timeline_chart(today, deadline_date, event_date, event_name="Enviado"
     st.plotly_chart(fig, use_container_width=True)
 
 def display_gauge_chart(title, contracted, used, accumulated=0):
-    max_value = contracted + accumulated
+    if accumulated < 0:
+        max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
+        deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
+        steps = [
+            {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
+            {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
+        ]
+    else:
+        max_value = contracted + accumulated
+        steps = [
+            {'range': [0, contracted], 'color': "lightgray"},
+            {'range': [contracted, max_value], 'color': "orange"}
+        ]
+
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=used,
@@ -347,13 +360,7 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
         gauge={
             'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
             'bar': {'color': "green"},
-            'bgcolor': "white",
-            'borderwidth': 2,
-            'bordercolor': "gray",
-            'steps': [
-                {'range': [0, contracted], 'color': "lightgray"},
-                {'range': [contracted, max_value], 'color': "orange"}
-            ],
+            'steps': steps,
             'threshold': {
                 'line': {'color': "red", 'width': 4},
                 'thickness': 0.75,
@@ -364,27 +371,37 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
 
     fig.update_layout(
         autosize=False,
-        width=350,  # Mantém uma largura fixa para centralizar
-        height=300,  # Altura aumentada para acomodar os annotations
-        margin=dict(l=20, r=20, t=50, b=100),  # Ajuste as margens para dar espaço aos annotations
+        width=350,
+        height=300,
+        margin=dict(l=20, r=20, t=50, b=100),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
         annotations=[
             dict(
-                x=0.5, y=-0.2, xref='paper', yref='paper',
+                x=0.15, y=-0.05, xref='paper', yref='paper',
                 text=f"Contratado: {contracted}",
                 showarrow=False,
-                font=dict(color="gray", size=16),
+                font=dict(color="white", size=16),
                 xanchor='center',
-                yanchor='top'
+                yanchor='top',
+                bgcolor='green',
+                borderpad = 5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',  # Borda transparente
+                opacity=1  # Ajusta a opacidade para um efeito mais suave
             ),
             dict(
-                x=0.5, y=-0.4, xref='paper', yref='paper',
+                x=0.8, y=-0.05, xref='paper', yref='paper',
                 text=f"<b>Acumulado:</b> {accumulated}",
                 showarrow=False,
-                font=dict(color="gray", size=16),
+                font=dict(color="white", size=16),
                 xanchor='center',
-                yanchor='top'
+                yanchor='top',
+                bgcolor='orange',
+                borderpad = 5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',  # Borda transparente
+                opacity=1  # Ajusta a opacidade para um efeito mais suave
             )
         ]
     )
