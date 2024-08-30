@@ -31,7 +31,7 @@ from streamlit_modal import Modal
 # ===========================================================
 # Configurações Iniciais e Utilidades
 # ===========================================================
-
+st.set_page_config(layout="wide")
 # Configurar localidade para português
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
@@ -42,6 +42,8 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s',  # Formato das mensagens de log
     datefmt='%Y-%m-%d %H:%M:%S'  # Formato da data e hora
 )
+
+
 
 # Crie uma sessão
 Session = sessionmaker(bind=engine)
@@ -59,27 +61,40 @@ def salvar_data_envio(cliente_id, data_envio, model_class, status_function):
                 data_envio = data_envio.date()
 
             mes_inicio = data_envio.replace(day=1)
+            logging.debug(f"Buscando registro existente para cliente ID {cliente_id} no mês {mes_inicio.strftime('%Y-%m')}")
             record = session.query(model_class).filter(
                 model_class.client_id == cliente_id,
                 func.strftime('%Y-%m', model_class.send_date) == mes_inicio.strftime('%Y-%m')
             ).first()
 
             client = session.query(Client).filter(Client.id == cliente_id).first()
+            logging.debug(f"Cliente encontrado: {client}")
+
+            # Obter o deadline_day do cliente
+            if model_class == RedesSociaisPlan:
+                deadline_day = client.monthly_plan_deadline_day
+            elif model_class == RedesSociaisGuidance:
+                deadline_day = client.monthly_redes_guidance_deadline_day
+            else:
+                raise ValueError("Classe de modelo desconhecida para determinação do deadline_day")
 
             if record:
+                logging.debug(f"Registro encontrado, atualizando data de envio e status")
                 record.send_date = data_envio
                 record.updated_at = datetime.now()
-                record.status = status_function(client, record)
+                record.status = status_function(client, record, deadline_day)
             else:
+                logging.debug(f"Nenhum registro existente encontrado, criando novo registro")
                 record = model_class(
                     client_id=cliente_id,
                     send_date=data_envio,
                     updated_at=datetime.now(),
-                    status=status_function(client, None),
+                    status=status_function(client, None, deadline_day),
                     plan_status=RedesSociaisPlanStatusEnum.AWAITING
                 )
                 session.add(record)
 
+            logging.info(f"Commitando a transação no banco de dados")
             session.commit()
             st.success(f"Data de envio atualizada com sucesso.")
             st.session_state['send_date'] = data_envio
@@ -117,8 +132,9 @@ def display_plan_or_guidance_modal(cliente_id, model_class, status_function, tit
                 logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
                 salvar_data_envio(cliente_id, selected_date, model_class, status_function)
                 st.session_state[session_key] = selected_date
-                modal.close()
-                st.experimental_rerun()
+                modal.close()  # Fecha o modal
+                st.success(f"Data de envio do {title_key.lower()} atualizada com sucesso!")
+                st.rerun()  # Recarrega a página para refletir as mudanças
 
 def create_modal(cliente_id, model_class, status_function, title_key, session_key):
     modal = Modal(f"Data de Envio do {title_key}", key=f"enviar-{title_key.lower()}-modal", max_width=800)
@@ -130,7 +146,7 @@ def create_modal(cliente_id, model_class, status_function, title_key, session_ke
                 salvar_data_envio(cliente_id, selected_date, model_class, status_function)
                 st.session_state[session_key] = selected_date
                 modal.close()
-                st.experimental_rerun()
+                st.rerun()
 
     return modal
 
@@ -327,6 +343,7 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
         mode="gauge+number",
         value=used,
         title={'text': title},
+        number={'font': {'size': 40}},  # Diminui o tamanho da fonte do número central
         gauge={
             'axis': {'range': [0, max_value]},
             'bar': {'color': "green"},
@@ -343,20 +360,24 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
     ))
 
     fig.update_layout(
-        height=220,
-        margin=dict(l=20, r=20, t=50, b=50),
+        height=200,
+        margin=dict(l=0, r=0, t=50, b=50),
         annotations=[
             dict(
-                x=0.5, y=0.0, xref='paper', yref='paper',
-                text=f"Acumulado: {accumulated}",
-                showarrow=False,
-                font=dict(color="gray", size=12)
-            ),
-            dict(
-                x=0.5, y=-0.2, xref='paper', yref='paper',
+                x=0.5, y=-0.15, xref='paper', yref='paper',
                 text=f"Contratado: {contracted}",
                 showarrow=False,
-                font=dict(color="gray", size=12)
+                font=dict(color="gray", size=12),
+                xanchor='center',
+                yanchor='bottom'
+            ),
+             dict(
+                x=0.5, y=-0.3, xref='paper', yref='paper',
+                text=f"<b>Acumulado:</b> <b>{accumulated}</b>",  # Usa a tag <b> para colocar "Acumulado" em negrito
+                showarrow=False,
+                font=dict(color="gray", size=12),
+                xanchor='center',
+                yanchor='bottom'
             )
         ]
     )
@@ -418,7 +439,7 @@ def display_client_plan_status():
             with stylable_container(key="plan_timeline", 
                                     css_styles="""
                                     {
-                                        border: 1px  solid gray;
+                                        border: 1px  solid #d3d3d3;
                                         border-radius: 10px;
                                         padding: 15px;
                                     
@@ -440,7 +461,10 @@ def display_client_plan_status():
                 logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
                 salvar_data_envio(cliente_id, selected_date, RedesSociaisPlan, determinar_status)
                 st.session_state['plan_sent_date'] = selected_date
-                st.experimental_rerun()
+                modal.close()  # Fecha o modal
+                st.success("Data de envio do plano atualizada com sucesso!")
+                st.rerun()  # Recarrega a página para refletir as mudanças
+
 
 def display_redes_guidance_status():
     cliente_id = st.session_state.get("cliente_id")
@@ -479,7 +503,7 @@ def display_redes_guidance_status():
             with stylable_container(key="guidance_timeline", 
                                     css_styles="""
                                     {
-                                        border: 1px solid gray;
+                                        border: 1px solid #d3d3d3;
                                         border-radius: 10px;
                                         padding: 15px;
                                     }
@@ -499,7 +523,8 @@ def display_redes_guidance_status():
                 logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
                 salvar_data_envio(cliente_id, selected_date, RedesSociaisGuidance, determinar_status)
                 st.session_state['guidance_send_date'] = selected_date
-                st.experimental_rerun()
+                modal.close()  # Fecha o modal após salvar a data de envio
+                st.rerun()
 
 def display_client_header(client, title):
     st.write(f"**{title}**")
@@ -519,24 +544,48 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
         logging.info(f"Dados obtidos: {df.shape[0]} registros encontrados")
     return df
 
-def display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-    st.write("**Criação**")
-    with stylable_container(key="creation_gauge", 
-                            css_styles="""
-                            {
-                                border: 1px solid gray;
-                                border-radius: 10px;
-                                padding: 15px;
-                                margin-bottom: 45px;
-                            }
-                            """):
-        gauge_chart = display_gauge_chart(
-            title="Criação",
-            contracted=mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0),
-            used=mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0),
-            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
-        )
-        st.plotly_chart(gauge_chart)
+def display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Criação e Adaptação de Formato**")
+    
+    # Criar colunas para exibir os gráficos lado a lado
+    col1, col2 = st.columns(2)
+
+    with col1:
+        with stylable_container(key="creation_gauge", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin: 0 15px 45px 0;
+                                }
+                                """):
+            gauge_chart = display_gauge_chart(
+                title="Criação",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
+            )
+            st.plotly_chart(gauge_chart)
+
+    with col2:
+        with stylable_container(key="format_adaptation_gauge", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 45px;
+                                }
+                                """):
+            gauge_chart = display_gauge_chart(
+                title="Adaptação de Formato",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.ADAPTACAO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.ADAPTACAO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.ADAPTACAO, 0)
+            )
+            st.plotly_chart(gauge_chart)
+
 
 def display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     st.write("**Tráfego Pago**")
@@ -558,7 +607,7 @@ def display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandaleca
     with stylable_container(key="instagram_gauge", 
                             css_styles="""
                             {
-                                border: 1px solid gray;
+                                border: 1px solid #d3d3d3;
                                 border-radius: 10px;
                                 padding: 15px;
                                 margin-bottom: 45px;
@@ -587,7 +636,7 @@ def display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mand
     with stylable_container(key="other_networks_gauge", 
                             css_styles="""
                             {
-                                border: 1px solid gray;
+                                border: 1px solid #d3d3d3;
                                 border-radius: 10px;
                                 padding: 15px;
                                 margin-bottom: 45px;
@@ -609,12 +658,16 @@ def display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mand
         )
         st.plotly_chart(tiktok_gauge)
 
-def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, cliente_id):
     st.write("**Produção de Conteúdo**")
+    
+    # Mantém o modal fora dos containers estilizados
+    modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
+    
     with stylable_container(key="content_production_gauge", 
                             css_styles="""
                             {
-                                border: 1px solid gray;
+                                border: 1px solid #d3d3d3;
                                 border-radius: 10px;
                                 padding: 15px;
                                 margin-bottom: 45px;
@@ -628,6 +681,40 @@ def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, 
         )
         st.plotly_chart(gauge_chart)
 
+        # Exibir a tabela de produção de conteúdo dentro do mesmo container do gauge
+        st.write("**Histórico de Reuniões de Produção de Conteúdo**")
+        with Session(bind=engine) as session:
+            content_production_data = session.query(ContentProduction).filter(ContentProduction.client_id == cliente_id).all()
+
+            if not content_production_data:
+                content_production_df = pd.DataFrame(columns=['Data da Reunião', 'Assunto', 'Notas'])
+            else:
+                content_production_df = pd.DataFrame([{
+                    'Data da Reunião': row.meeting_date.strftime('%Y-%m-%d') if row.meeting_date else '',
+                    'Assunto': row.meeting_subject,
+                    'Notas': row.notes
+                } for row in content_production_data])
+
+            st.table(content_production_df)
+
+    # Botão para adicionar nova reunião de produção de conteúdo fora do container
+    if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
+        logging.info(f"Usuário clicou no botão 'Adicionar Nova Reunião de Produção de Conteúdo' para o cliente ID {cliente_id}")
+        modal.open()
+
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Nova Reunião' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            meeting_date = st.date_input("Data da Reunião", value=datetime.today())
+            meeting_subject = st.text_input("Assunto")
+            notes = st.text_area("Notas")
+
+            if st.button("Salvar"):
+                logging.info(f"Tentando salvar uma nova reunião de produção de conteúdo para o cliente ID {cliente_id}")
+                save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
+                logging.info(f"Nova reunião de produção de conteúdo salva com sucesso para o cliente ID {cliente_id}")
+                st.rerun()
 def display_content_production_table(cliente_id):
     # Mantém o modal fora dos containers estilizados
     modal = Modal("Adicionar Nova Reunião", key="adicionar-reuniao-modal", max_width=800)
@@ -642,7 +729,7 @@ def display_content_production_table(cliente_id):
         with stylable_container(key="content_production_table", 
                                 css_styles="""
                                 {
-                                    border: 1px solid gray;
+                                    border: 1px solid #d3d3d3;
                                     border-radius: 10px;
                                     padding: 15px;
                                 }
@@ -677,7 +764,7 @@ def display_content_production_table(cliente_id):
                 logging.info(f"Tentando salvar uma nova reunião de produção de conteúdo para o cliente ID {cliente_id}")
                 save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
                 logging.info(f"Nova reunião de produção de conteúdo salva com sucesso para o cliente ID {cliente_id}")
-                st.experimental_rerun()
+                st.rerun()
            
 def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
     with Session(bind=engine) as session:
@@ -705,7 +792,7 @@ def display_attention_points_table(cliente_id):
         with stylable_container(key="plan_timeline", 
                                 css_styles="""
                                 {
-                                    border: 1px  solid gray;
+                                    border: 1px  solid #d3d3d3;
                                     border-radius: 10px;
                                     padding: 15px;
                                 
@@ -739,7 +826,7 @@ def display_attention_points_table(cliente_id):
                 logging.info(f"Tentando salvar um novo ponto de atenção para o cliente ID {cliente_id}")
                 save_new_attention_point(cliente_id, attention_date, attention_point)
                 logging.info(f"Novo ponto de atenção salvo com sucesso para o cliente ID {cliente_id}")
-                st.experimental_rerun()
+                st.rerun()
 
 def save_new_attention_point(cliente_id, attention_date, attention_point):
     with Session(bind=engine) as session:
@@ -753,7 +840,7 @@ def save_new_attention_point(cliente_id, attention_date, attention_point):
         st.success("Ponto de Atenção adicionado com sucesso!")
 
 
-
+# Ajuste na função principal para passar o cliente_id corretamente
 def page_criacao():
     st.sidebar.header("Filtro de Cliente e Data")
     clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
@@ -781,9 +868,6 @@ def page_criacao():
     # Exibir tabela interativa de pontos de atenção
     display_attention_points_table(cliente_id)
 
-    # Exibir tabela interativa de produção de conteúdo
-    display_content_production_table(cliente_id)
-
     # Exibir status do plano
     display_client_plan_status()
 
@@ -792,10 +876,8 @@ def page_criacao():
 
     delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-
-    # Exibir gráficos de gauge para cada categoria
-    display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, cliente_id)
     display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
