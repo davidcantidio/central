@@ -342,11 +342,14 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
         value=used,
-        title={'text': title},
-        number={'font': {'size': 40}},  # Diminui o tamanho da fonte do número central
+        title={'text': title, 'font': {'size': 20}},
+        number={'font': {'size': 40}},
         gauge={
-            'axis': {'range': [0, max_value]},
+            'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
             'bar': {'color': "green"},
+            'bgcolor': "white",
+            'borderwidth': 2,
+            'bordercolor': "gray",
             'steps': [
                 {'range': [0, contracted], 'color': "lightgray"},
                 {'range': [contracted, max_value], 'color': "orange"}
@@ -360,24 +363,28 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
     ))
 
     fig.update_layout(
-        height=200,
-        margin=dict(l=0, r=0, t=50, b=50),
+        autosize=False,
+        width=350,  # Mantém uma largura fixa para centralizar
+        height=300,  # Altura aumentada para acomodar os annotations
+        margin=dict(l=20, r=20, t=50, b=100),  # Ajuste as margens para dar espaço aos annotations
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
         annotations=[
             dict(
-                x=0.5, y=-0.15, xref='paper', yref='paper',
+                x=0.5, y=-0.2, xref='paper', yref='paper',
                 text=f"Contratado: {contracted}",
                 showarrow=False,
-                font=dict(color="gray", size=12),
+                font=dict(color="gray", size=16),
                 xanchor='center',
-                yanchor='bottom'
+                yanchor='top'
             ),
-             dict(
-                x=0.5, y=-0.3, xref='paper', yref='paper',
-                text=f"<b>Acumulado:</b> <b>{accumulated}</b>",  # Usa a tag <b> para colocar "Acumulado" em negrito
+            dict(
+                x=0.5, y=-0.4, xref='paper', yref='paper',
+                text=f"<b>Acumulado:</b> {accumulated}",
                 showarrow=False,
-                font=dict(color="gray", size=12),
+                font=dict(color="gray", size=16),
                 xanchor='center',
-                yanchor='bottom'
+                yanchor='top'
             )
         ]
     )
@@ -544,48 +551,42 @@ def get_delivery_control_data(cliente_id, start_date, end_date):
         logging.info(f"Dados obtidos: {df.shape[0]} registros encontrados")
     return df
 
+
 def display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     st.write("**Criação e Adaptação de Formato**")
-    
-    # Criar colunas para exibir os gráficos lado a lado
-    col1, col2 = st.columns(2)
 
-    with col1:
-        with stylable_container(key="creation_gauge", 
-                                css_styles="""
-                                {
-                                    border: 1px solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                    margin: 0 15px 45px 0;
-                                }
-                                """):
+    # Criar um único container para ambos os gráficos
+    with stylable_container(key="creation_and_adaptation_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #fff;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                                max-width: 800px;
+                            }
+                            """):
+        
+        # Criar colunas internas para os dois gráficos
+        col1, col2 = st.columns(2)
+
+        with col1:
             gauge_chart = display_gauge_chart(
                 title="Criação",
                 contracted=mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0),
                 used=mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0),
                 accumulated=mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
             )
-            st.plotly_chart(gauge_chart)
+            st.plotly_chart(gauge_chart, use_container_width=True)
 
-    with col2:
-        with stylable_container(key="format_adaptation_gauge", 
-                                css_styles="""
-                                {
-                                    border: 1px solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                    margin-bottom: 45px;
-                                }
-                                """):
+        with col2:
             gauge_chart = display_gauge_chart(
                 title="Adaptação de Formato",
                 contracted=mandalecas_contratadas.get(JobCategoryEnum.ADAPTACAO, 0),
                 used=mandalecas_usadas.get(JobCategoryEnum.ADAPTACAO, 0),
                 accumulated=mandalecas_acumuladas.get(JobCategoryEnum.ADAPTACAO, 0)
             )
-            st.plotly_chart(gauge_chart)
-
+            st.plotly_chart(gauge_chart, use_container_width=True)
 
 def display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     st.write("**Tráfego Pago**")
@@ -868,15 +869,55 @@ def page_criacao():
     # Exibir tabela interativa de pontos de atenção
     display_attention_points_table(cliente_id)
 
-    # Exibir status do plano
-    display_client_plan_status()
+    # Criar colunas lado a lado para status do plano e direcionamento de redes sociais
+    col1, col2 = st.columns(2)
 
-    # Exibir status do direcionamento de redes sociais
-    display_redes_guidance_status()
+    with col1:
+        with stylable_container(key="plan_status_container", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                }
+                                """):
+            # Exibir status do plano
+            display_client_plan_status()
+
+    with col2:
+        with stylable_container(key="guidance_status_container", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                }
+                                """):
+            # Exibir status do direcionamento
+            display_redes_guidance_status()
 
     delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-    display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    
+    # Criar colunas lado a lado para criação e adaptação de formato
+    col1, col2 = st.columns(2)
+
+    with col1:
+        with stylable_container(key="creation_and_adaptation_gauge_container", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                }
+                                """):
+            # Exibir gauges de criação e adaptação de formato
+            display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+
+    # Exibir outros gauges normalmente
     display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, cliente_id)
