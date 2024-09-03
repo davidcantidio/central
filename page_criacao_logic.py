@@ -13,7 +13,9 @@ from common.models import (
     JobCategoryEnum, 
     DeliveryCategoryEnum, 
     RedesSociaisPlan, 
-    RedesSociaisPlanStatusEnum
+    RedesSociaisPlanStatusEnum,
+    WebsiteMaintenance,
+    BlogText
 )
 from common.database import engine
 import plotly.graph_objects as go
@@ -325,7 +327,7 @@ def create_timeline_chart(today, deadline_date, event_date, event_name="Enviado"
             tickwidth=1,
         ),
         yaxis=dict(visible=False),
-        height=150,
+        height=95,
         margin=dict(l=20, r=20, t=10, b=10),
         plot_bgcolor='rgba(0,0,0,0)',
         paper_bgcolor='rgba(0,0,0,0)',
@@ -345,12 +347,14 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
             {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
             {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
         ]
+        accumulated_color = 'red'
     else:
         max_value = contracted + accumulated
         steps = [
             {'range': [0, contracted], 'color': "lightgray"},
             {'range': [contracted, max_value], 'color': "orange"}
         ]
+        accumulated_color = 'orange'
 
     fig = go.Figure(go.Indicator(
         mode="gauge+number",
@@ -372,7 +376,7 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
     fig.update_layout(
         autosize=False,
         width=350,
-        height=300,
+        height=250,
         margin=dict(l=20, r=20, t=50, b=100),
         paper_bgcolor='rgba(0,0,0,0)',
         plot_bgcolor='rgba(0,0,0,0)',
@@ -381,27 +385,27 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
                 x=0.15, y=-0.05, xref='paper', yref='paper',
                 text=f"Contratado: {contracted}",
                 showarrow=False,
-                font=dict(color="white", size=16),
+                font=dict(color="white", size=12),
                 xanchor='center',
                 yanchor='top',
                 bgcolor='green',
-                borderpad = 5,
+                borderpad=5,
                 borderwidth=2,
-                bordercolor='rgba(0,0,0,0)',  # Borda transparente
-                opacity=1  # Ajusta a opacidade para um efeito mais suave
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
             ),
             dict(
                 x=0.8, y=-0.05, xref='paper', yref='paper',
                 text=f"<b>Acumulado:</b> {accumulated}",
                 showarrow=False,
-                font=dict(color="white", size=16),
+                font=dict(color="white", size=12),
                 xanchor='center',
                 yanchor='top',
-                bgcolor='orange',
-                borderpad = 5,
+                bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
+                borderpad=5,
                 borderwidth=2,
-                bordercolor='rgba(0,0,0,0)',  # Borda transparente
-                opacity=1  # Ajusta a opacidade para um efeito mais suave
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
             )
         ]
     )
@@ -607,18 +611,38 @@ def display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_us
 
 def display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     st.write("**Tráfego Pago**")
-    with st.container(border=1):
-        gauge_chart = display_gauge_chart(
-            title="Tráfego Pago",
-            contracted=mandalecas_contratadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-                        mandalecas_contratadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
-            used=mandalecas_usadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-                mandalecas_usadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
-            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0) +
-                        mandalecas_acumuladas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0)
-        )
+    
+    with stylable_container(key="paid_traffic_gauge_container", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                                max-width: 800px;
+                            }
+                            """):
+        
+        # Criar colunas internas para os gráficos de tráfego pago
+        col1, col2 = st.columns(2)
 
-        st.plotly_chart(gauge_chart)
+        with col1:
+            gauge_chart = display_gauge_chart(
+                title="Tráfego Pago (Estático)",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0)
+            )
+            st.plotly_chart(gauge_chart, use_container_width=True)
+
+        with col2:
+            gauge_chart = display_gauge_chart(
+                title="Tráfego Pago (Animado)",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0)
+            )
+            st.plotly_chart(gauge_chart, use_container_width=True)
 
 def display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     st.write("**Instagram**")
@@ -856,11 +880,111 @@ def save_new_attention_point(cliente_id, attention_date, attention_point):
         session.add(new_entry)
         session.commit()
         st.success("Ponto de Atenção adicionado com sucesso!")
+def display_website_maintenance_gauge_and_timeline(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, maintenance_dates):
+    st.write("**Manutenção de Website**")
+    
+    # Criar colunas lado a lado para o gauge e a linha do tempo
+    col1, col2 = st.columns([1, 2])
 
+    with col1:
+        gauge_chart = display_gauge_chart(
+            title="Manutenção de Website",
+            contracted=mandalecas_contratadas,
+            used=mandalecas_usadas,
+            accumulated=mandalecas_acumuladas
+        )
+        st.plotly_chart(gauge_chart, use_container_width=True)
 
-# Ajuste na função principal para passar o cliente_id corretamente
+    with col2:
+        today = datetime.today()
+        deadline_date = today.replace(day=1) + timedelta(days=calendar.monthrange(today.year, today.month)[1] - 1)
+        render_timeline_chart_with_multiple_events(today, deadline_date, maintenance_dates)
+
+def render_timeline_chart_with_multiple_events(today, deadline_date, event_dates):
+    days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=deadline_date)]
+    x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
+
+    fig = go.Figure()
+
+    # Adicionando a linha do tempo com os dias do mês
+    fig.add_trace(go.Scatter(
+        x=x_values,
+        y=[1] * len(x_values),
+        mode='lines+markers',
+        line=dict(color='lightgrey', width=2),
+        marker=dict(color='lightgrey', size=6),
+        hoverinfo='x',
+        showlegend=False
+    ))
+
+    # Adicionando os eventos de manutenção
+    for date in event_dates:
+        fig.add_trace(go.Scatter(
+            x=[date.strftime('%Y-%m-%d')],
+            y=[1],
+            mode='markers+text',
+            marker=dict(color='green', size=12),
+            text=["Manutenção"],
+            textposition="top center",
+            showlegend=False,
+            hoverinfo='none'
+        ))
+
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='array',
+            tickvals=x_values,
+            ticktext=[day.strftime('%d') for day in days_in_month],
+            showline=False,
+            showgrid=False,
+            zeroline=False,
+            tickfont=dict(size=10),
+            tickangle=0,
+            ticks='outside',
+            ticklen=4,
+            tickwidth=1,
+        ),
+        yaxis=dict(visible=False),
+        height=150,
+        margin=dict(l=20, r=20, t=10, b=10),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+def display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Texto de Blog**")
+    with stylable_container(key="blog_text_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        gauge_chart = display_gauge_chart(
+            title="Texto de Blog",
+            contracted=mandalecas_contratadas.get('BlogText', 0),
+            used=mandalecas_usadas.get('BlogText', 0),
+            accumulated=mandalecas_acumuladas.get('BlogText', 0)
+        )
+        st.plotly_chart(gauge_chart)
+
+def get_website_maintenance_dates(cliente_id, start_date, end_date):
+    with Session(bind=engine) as session:
+        maintenance_records = session.query(WebsiteMaintenance).filter(
+            WebsiteMaintenance.client_id == cliente_id,
+            WebsiteMaintenance.date.between(start_date, end_date)
+        ).all()
+        maintenance_dates = [record.date for record in maintenance_records]
+    return maintenance_dates
+
 def page_criacao():
     st.sidebar.header("Filtro de Cliente e Data")
+    
+    # Obtenha a lista de clientes e a data atual
     clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
     cliente_id = st.sidebar.selectbox(
         "Selecione o Cliente", 
@@ -868,7 +992,6 @@ def page_criacao():
         format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], 
         key='unique_select_box_id_1'
     )
-
     st.session_state["cliente_id"] = cliente_id
 
     first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
@@ -915,7 +1038,7 @@ def page_criacao():
             # Exibir status do direcionamento
             display_redes_guidance_status()
 
-    delivery_data = get_delivery_control_data(cliente_id, data_inicio, data_fim)
+    # Calcular mandalecas para o cliente
     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
     
     # Criar colunas lado a lado para criação e adaptação de formato
@@ -934,8 +1057,45 @@ def page_criacao():
             # Exibir gauges de criação e adaptação de formato
             display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
 
+    with col2:
+        with stylable_container(key="blog_text_gauge_container", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                }
+                                """):
+            # Exibir o gauge para "Texto de Blog"
+            display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+
     # Exibir outros gauges normalmente
     display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
     display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, cliente_id)
     display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+
+    # Obter as datas de manutenção do website
+    maintenance_dates = get_website_maintenance_dates(cliente_id, data_inicio, data_fim)
+
+    # Exibir gauge e timeline para manutenção de website
+    col1, col2 = st.columns(2)
+
+    with col1:
+        with stylable_container(key="website_maintenance_gauge_container", 
+                                css_styles="""
+                                {
+                                    border: 1px solid #d3d3d3;
+                                    border-radius: 10px;
+                                    padding: 15px;
+                                    margin-bottom: 15px;
+                                }
+                                """):
+            # Exibir o gauge para manutenção de website
+            display_website_maintenance_gauge_and_timeline(
+                mandalecas_contratadas.get('WebsiteMaintenance', 0),
+                mandalecas_usadas.get('WebsiteMaintenance', 0),
+                mandalecas_acumuladas.get('WebsiteMaintenance', 0),
+                maintenance_dates
+            )

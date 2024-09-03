@@ -61,11 +61,11 @@ def identificar_categoria(titulo, projeto=None):
         return JobCategoryEnum.STORIES_REPOST_INSTAGRAM
     elif 'reels' in titulo_lower:
         return JobCategoryEnum.REELS_INSTAGRAM
-    elif 'feed' in titulo_lower and  'instagram' in titulo_lower:
+    elif 'feed' in titulo_lower and 'instagram' in titulo_lower:
         return JobCategoryEnum.FEED_INSTAGRAM
-    elif 'feed' in titulo_lower and  'tiktok' in titulo_lower:
+    elif 'feed' in titulo_lower and 'tiktok' in titulo_lower:
         return JobCategoryEnum.FEED_TIKTOK
-    elif 'feed' in titulo_lower and  'linkedin' in titulo_lower:
+    elif 'feed' in titulo_lower and 'linkedin' in titulo_lower:
         return JobCategoryEnum.FEED_LINKEDIN
     elif 'stories' in titulo_lower:
         return JobCategoryEnum.STORIES_INSTAGRAM
@@ -75,14 +75,18 @@ def identificar_categoria(titulo, projeto=None):
         return JobCategoryEnum.CRIACAO
     elif 'adaptação' in titulo_lower:
         return JobCategoryEnum.ADAPTACAO
-    elif 'tráfego pago' in titulo_lower and  'estático' in titulo_lower:
+    elif 'tráfego pago' in titulo_lower and 'estático' in titulo_lower:
         return JobCategoryEnum.STATIC_TRAFEGO_PAGO
-    elif 'tráfego pago' in titulo_lower and  'animado' in titulo_lower:
+    elif 'tráfego pago' in titulo_lower and 'animado' in titulo_lower:
         return JobCategoryEnum.ANIMATED_TRAFEGO_PAGO
-    elif 'card' in titulo_lower and  'instagram' in titulo_lower:
+    elif 'card' in titulo_lower and 'instagram' in titulo_lower:
         return JobCategoryEnum.CARD_INSTAGRAM
-    elif 'carrossel' in titulo_lower and  'instagram' in titulo_lower:
+    elif 'carrossel' in titulo_lower and 'instagram' in titulo_lower:
         return JobCategoryEnum.CAROUSEL_INSTAGRAM
+    elif 'website' in titulo_lower and 'manutenção' in titulo_lower:
+        return 'WEBSITE_MAINTENANCE'
+    elif 'texto' in titulo_lower and 'blog' in titulo_lower:
+        return 'BLOG_TEXT'
     else:
         return None
 
@@ -166,7 +170,7 @@ def upsert_delivery_control(session, doc_id, client, row, job_link, mandalecas, 
             'used_mandalecas': mandalecas
         }
 
-        logging.info(f"Criando nova entrada em DeliveryControl com ID {doc_id}. Campo used_mandalecas definido como {mandalecas}.")
+        logging.info(f"Criando nova entrada in DeliveryControl com ID {doc_id}. Campo used_mandalecas definido como {mandalecas}.")
         
         new_entry = DeliveryControl(**new_entry_args)
         session.add(new_entry)
@@ -264,6 +268,8 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     mandalecas_contratadas_feed_instagram = numero_meses * (client.n_monthly_contracted_feed_instagram_mandalecas or 0)
     mandalecas_contratadas_static_trafego_pago = numero_meses * (client.n_monthly_contracted_trafego_pago_static or 0)
     mandalecas_contratadas_animated_trafego_pago = numero_meses * (client.n_monthly_contracted_trafego_pago_animated or 0)
+    mandalecas_contratadas_website_manutencao = numero_meses * (client.n_monthly_contracted_website_maintenance_mandalecas or 0)
+    mandalecas_contratadas_blog_text = numero_meses * (client.n_monthly_contracted_blog_text_mandalecas or 0)
 
     entregas = session.query(DeliveryControl).filter_by(client_id=client.id).all()
     mandalecas_usadas_criacao = sum((entrega.used_creative_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.CRIACAO)
@@ -276,6 +282,8 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     mandalecas_usadas_feed_instagram = sum((entrega.used_feed_instagram_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.FEED_INSTAGRAM)
     mandalecas_usadas_static_trafego_pago = sum((entrega.used_static_trafego_pago_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.STATIC_TRAFEGO_PAGO)
     mandalecas_usadas_animated_trafego_pago = sum((entrega.used_animated_trafego_pago_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO)
+    mandalecas_usadas_website_manutencao = sum((entrega.used_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == 'WEBSITE_MAINTENANCE')
+    mandalecas_usadas_blog_text = sum((entrega.used_mandalecas or 0) for entrega in entregas if identificar_categoria(entrega.job_title, entrega.project) == 'BLOG_TEXT')
 
     client.accumulated_creative_mandalecas = mandalecas_contratadas_criacao - mandalecas_usadas_criacao
     client.accumulated_format_adaptation_mandalecas = mandalecas_contratadas_adaptacao - mandalecas_usadas_adaptacao
@@ -287,6 +295,8 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
     client.accumulated_feed_instagram_mandalecas = mandalecas_contratadas_feed_instagram - mandalecas_usadas_feed_instagram
     client.accumulated_static_trafego_pago = mandalecas_contratadas_static_trafego_pago - mandalecas_usadas_static_trafego_pago
     client.accumulated_animated_trafego_pago = mandalecas_contratadas_animated_trafego_pago - mandalecas_usadas_animated_trafego_pago
+    client.accumulated_website_maintenance_mandalecas = mandalecas_contratadas_website_manutencao - mandalecas_usadas_website_manutencao
+    client.accumulated_blog_text_mandalecas = mandalecas_contratadas_blog_text - mandalecas_usadas_blog_text
 
     logging.info(f"Valores atualizados para o cliente {client.name}: "
                  f"Criação: {client.accumulated_creative_mandalecas}, "
@@ -298,10 +308,12 @@ def calcular_e_atualizar_mandalecas_acumuladas(client, session):
                  f"Stories Repost: {client.accumulated_stories_repost_mandalecas}, "
                  f"Feed Instagram: {client.accumulated_feed_instagram_mandalecas}, "
                  f"Static Tráfego Pago: {client.accumulated_static_trafego_pago}, "
-                 f"Animated Tráfego Pago: {client.accumulated_animated_trafego_pago}")
+                 f"Animated Tráfego Pago: {client.accumulated_animated_trafego_pago}, "
+                 f"Website Manutenção: {client.accumulated_website_maintenance_mandalecas}, "
+                 f"Texto Blog: {client.accumulated_blog_text_mandalecas}")
 
     session.commit()
-    session.close()  # Fecha a sessão após commit
+    session.close()
 
 def read_excel_file(uploaded_file):
     df = pd.read_excel(uploaded_file)

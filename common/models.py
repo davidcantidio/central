@@ -279,10 +279,16 @@ class Client(Base):
     n_monthly_contracted_stories_instagram_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_linkedin_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_tiktok_mandalecas = Column(Float, default=0)
+    
+
     n_monthly_contracted_stories_repost_instagram_mandalecas = Column(Float, default=0)
     n_monthly_contracted_feed_instagram_mandalecas = Column(Float, default=0)
     n_monthly_contracted_trafego_pago_static =  Column(Float, default=0)
     n_monthly_contracted_trafego_pago_animated =  Column(Float, default=0)
+    n_monthly_contracted_blog_text_mandalecas = Column(Float, default=0)
+    n_monthly_contracted_website_maintenance_mandalecas = Column(Float, default=0)
+    accumulated_blog_text_mandalecas = Column(Float, default=0)
+    accumulated_website_maintenance_mandalecas = Column(Float, default=0)
     accumulated_trafego_pago_static =  Column(Float, default=0)
     accumulated_trafego_pago_animated =  Column(Float, default=0)
     accumulated_creative_mandalecas = Column(Float, default=0)
@@ -354,7 +360,8 @@ class Client(Base):
     plans_redes_sociais = relationship("RedesSociaisPlan", back_populates="client")
     content_productions = relationship("ContentProduction", back_populates="client")
     attention_points = relationship('AttentionPoints', back_populates='client', cascade='all, delete-orphan')
-
+    manutencao_site = relationship('WebsiteMaintenance', back_populates='client', cascade='all, delete-orphan')
+    texto_blog = relationship('BlogText', back_populates='client', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"<Client(id={self.id}, name='{self.name}', business_type='{self.business_type}')>"
@@ -969,3 +976,26 @@ class AttentionPoints(Base):
     client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
 
     client = relationship('Client', back_populates='attention_points')
+
+
+class WebsiteMaintenance(Base):
+    __tablename__ = 'manutencao_site'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    notes = Column(String)
+    date = Column(Date)
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+
+    client = relationship('Client', back_populates='manutencao_site')
+
+class BlogText(Base):
+    __tablename__ = 'texto_blog'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    text = Column(String)
+    author = Column(String)
+    creation_date = Column(Date)
+    update_date = Column(Date)
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+
+    client = relationship('Client', back_populates='texto_blog')

@@ -142,6 +142,10 @@ def show_cliente(cliente_id, start_date, end_date):
         n_monthly_contracted_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_static'])
         n_monthly_contracted_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_animated'])
 
+        # Novos campos adicionados aqui
+        n_monthly_contracted_blog_text_mandalecas = st.number_input("Mandalecas de Texto de Blog Mensais Contratadas", value=cliente['n_monthly_contracted_blog_text_mandalecas'])
+        n_monthly_contracted_website_maintenance_mandalecas = st.number_input("Mandalecas de Manutenção de Website Mensais Contratadas", value=cliente['n_monthly_contracted_website_maintenance_mandalecas'])
+
         accumulated_creative_mandalecas = st.number_input("Mandalecas Criativas Acumuladas", value=cliente['accumulated_creative_mandalecas'])
         accumulated_format_adaptation_mandalecas = st.number_input("Mandalecas de Adaptação de Formato Acumuladas", value=cliente['accumulated_format_adaptation_mandalecas'])
         accumulated_content_production_mandalecas = st.number_input("Mandalecas de Produção de Conteúdo Acumuladas", value=cliente['accumulated_content_production_mandalecas'])
@@ -152,6 +156,10 @@ def show_cliente(cliente_id, start_date, end_date):
         accumulated_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Acumuladas", value=cliente['accumulated_feed_instagram_mandalecas'])
         accumulated_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Acumuladas", value=cliente['accumulated_trafego_pago_static'])
         accumulated_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Acumuladas", value=cliente['accumulated_trafego_pago_animated'])
+
+        # Novos campos adicionados aqui
+        accumulated_blog_text_mandalecas = st.number_input("Mandalecas de Texto de Blog Acumuladas", value=cliente['accumulated_blog_text_mandalecas'])
+        accumulated_website_maintenance_mandalecas = st.number_input("Mandalecas de Manutenção de Website Acumuladas", value=cliente['accumulated_website_maintenance_mandalecas'])
 
         if st.button("Atualizar"):
             if not name:
@@ -169,6 +177,8 @@ def show_cliente(cliente_id, start_date, end_date):
                     'n_monthly_contracted_feed_instagram_mandalecas': n_monthly_contracted_feed_instagram_mandalecas,
                     'n_monthly_contracted_trafego_pago_static': n_monthly_contracted_trafego_pago_static,
                     'n_monthly_contracted_trafego_pago_animated': n_monthly_contracted_trafego_pago_animated,
+                    'n_monthly_contracted_blog_text_mandalecas': n_monthly_contracted_blog_text_mandalecas,
+                    'n_monthly_contracted_website_maintenance_mandalecas': n_monthly_contracted_website_maintenance_mandalecas,
                     'accumulated_creative_mandalecas': accumulated_creative_mandalecas,
                     'accumulated_format_adaptation_mandalecas': accumulated_format_adaptation_mandalecas,
                     'accumulated_content_production_mandalecas': accumulated_content_production_mandalecas,
@@ -179,6 +189,8 @@ def show_cliente(cliente_id, start_date, end_date):
                     'accumulated_feed_instagram_mandalecas': accumulated_feed_instagram_mandalecas,
                     'accumulated_trafego_pago_static': accumulated_trafego_pago_static,
                     'accumulated_trafego_pago_animated': accumulated_trafego_pago_animated,
+                    'accumulated_blog_text_mandalecas': accumulated_blog_text_mandalecas,
+                    'accumulated_website_maintenance_mandalecas': accumulated_website_maintenance_mandalecas
                 }
 
                 update_cliente(cliente_id, updated_data)
