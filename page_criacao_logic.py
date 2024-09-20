@@ -15,7 +15,10 @@ from common.models import (
     RedesSociaisPlan, 
     RedesSociaisPlanStatusEnum,
     WebsiteMaintenance,
-    BlogText
+    BlogText,
+    Meetings,
+    PlanningDeliveredCopy,
+    MarketingPlanningReview
 )
 from common.database import engine
 import plotly.graph_objects as go
@@ -210,62 +213,29 @@ def map_category_to_delivery_category(category):
         return None
 
 def calcular_mandalecas(cliente_id):
-    with Session(bind=engine) as session:
-        client = session.query(Client).filter(Client.id == cliente_id).first()
-
-        mandalecas_contratadas = {
-            JobCategoryEnum.CRIACAO: client.n_monthly_contracted_creative_mandalecas,
-            JobCategoryEnum.ADAPTACAO: client.n_monthly_contracted_format_adaptation_mandalecas,
-            JobCategoryEnum.CONTENT_PRODUCTION: client.n_monthly_contracted_content_production_mandalecas,
-            JobCategoryEnum.STORIES_INSTAGRAM: client.n_monthly_contracted_stories_instagram_mandalecas,
-            JobCategoryEnum.FEED_LINKEDIN: client.n_monthly_contracted_feed_linkedin_mandalecas,
-            JobCategoryEnum.FEED_TIKTOK: client.n_monthly_contracted_feed_tiktok_mandalecas,
-            JobCategoryEnum.STORIES_REPOST_INSTAGRAM: client.n_monthly_contracted_stories_repost_instagram_mandalecas,
-            JobCategoryEnum.STATIC_TRAFEGO_PAGO: client.n_monthly_contracted_trafego_pago_static,
-            JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: client.n_monthly_contracted_trafego_pago_animated,
-            JobCategoryEnum.FEED_INSTAGRAM: client.n_monthly_contracted_feed_instagram_mandalecas
-        }
-
-        mandalecas_usadas = {
-            JobCategoryEnum.CRIACAO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CRIACAO),
-            JobCategoryEnum.ADAPTACAO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.ADAPTACAO),
-            JobCategoryEnum.CONTENT_PRODUCTION: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CONTENT_PRODUCTION),
-            JobCategoryEnum.STORIES_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STORIES_INSTAGRAM),
-            JobCategoryEnum.FEED_LINKEDIN: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_LINKEDIN),
-            JobCategoryEnum.FEED_TIKTOK: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_TIKTOK),
-            JobCategoryEnum.STORIES_REPOST_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STORIES_REPOST_INSTAGRAM),
-            JobCategoryEnum.STATIC_TRAFEGO_PAGO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.STATIC_TRAFEGO_PAGO),
-            JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.ANIMATED_TRAFEGO_PAGO),
-            JobCategoryEnum.FEED_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.FEED_INSTAGRAM),
-            JobCategoryEnum.CARD_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CARD_INSTAGRAM),
-            JobCategoryEnum.CAROUSEL_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.CAROUSEL_INSTAGRAM),
-            JobCategoryEnum.REELS_INSTAGRAM: sum(job.used_mandalecas for job in client.delivery_controls if job.job_category == JobCategoryEnum.REELS_INSTAGRAM)
-        }
-
-        # Somando as mandalecas usadas de REELS_INSTAGRAM, CAROUSEL_INSTAGRAM e CARD_INSTAGRAM para FEED_INSTAGRAM
-        mandalecas_usadas[JobCategoryEnum.FEED_INSTAGRAM] = (
-            mandalecas_usadas[JobCategoryEnum.CARD_INSTAGRAM] +
-            mandalecas_usadas[JobCategoryEnum.CAROUSEL_INSTAGRAM] +
-            mandalecas_usadas[JobCategoryEnum.REELS_INSTAGRAM]
-        )
-
-        logging.info(f"Mandalecas usadas calculadas: {mandalecas_usadas}")
-
-        mandalecas_acumuladas = {
-            JobCategoryEnum.CRIACAO: client.accumulated_creative_mandalecas,
-            JobCategoryEnum.ADAPTACAO: client.accumulated_format_adaptation_mandalecas,
-            JobCategoryEnum.CONTENT_PRODUCTION: client.accumulated_content_production_mandalecas,
-            JobCategoryEnum.STORIES_INSTAGRAM: client.accumulated_stories_instagram_mandalecas,
-            JobCategoryEnum.FEED_LINKEDIN: client.accumulated_feed_linkedin_mandalecas,
-            JobCategoryEnum.FEED_TIKTOK: client.accumulated_feed_tiktok_mandalecas,
-            JobCategoryEnum.STORIES_REPOST_INSTAGRAM: client.accumulated_stories_repost_instagram_mandalecas,
-            JobCategoryEnum.STATIC_TRAFEGO_PAGO: client.accumulated_trafego_pago_static,
-            JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: client.accumulated_trafego_pago_animated,
-            JobCategoryEnum.FEED_INSTAGRAM: client.accumulated_feed_instagram_mandalecas
-        }
-
-        logging.info(f"Mandalecas acumuladas calculadas: {mandalecas_acumuladas}")
-
+    # Exemplo de lógica para calcular mandalecas
+    mandalecas_contratadas = {
+        'Creation': 100,
+        'Adaptation': 50,
+        'BlogText': 20,
+        'WebsiteMaintenance': 30,
+        # Adicione outras categorias conforme necessário
+    }
+    mandalecas_usadas = {
+        'Creation': 60,
+        'Adaptation': 30,
+        'BlogText': 10,
+        'WebsiteMaintenance': 15,
+        # Adicione outras categorias conforme necessário
+    }
+    mandalecas_acumuladas = {
+        'Creation': 40,
+        'Adaptation': 20,
+        'BlogText': 10,
+        'WebsiteMaintenance': 15,
+        # Adicione outras categorias conforme necessário
+    }
+    
     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
 
 # ===========================================================
@@ -820,56 +790,116 @@ def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes
         session.commit()
         st.success("Reunião de Produção de Conteúdo adicionada com sucesso!")
 
-def display_attention_points_table(cliente_id):
-    # Mantém o modal fora dos containers estilizados
-    modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar-ponto-atencao-modal", max_width=800)
 
-    with stylable_container(key="attention_points", 
-                                css_styles="""
-                                {
-                                    padding-bottom: 45px;                               
-                                }
-                                """,):
-        st.write("**Pontos de Atenção**")
-        with stylable_container(key="plan_timeline", 
-                                css_styles="""
-                                {
-                                    border: 1px  solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                
-                                }
-                                """,):
-            with Session(bind=engine) as session:
-                attention_points_data = session.query(AttentionPoints).filter(AttentionPoints.client_id == cliente_id).all()
+def display_attention_points_table(cliente_id, data_inicio, data_fim):
+    try:
+        # Query para buscar pontos de atenção no banco de dados
+        query = f"""
+            SELECT * FROM pontos_de_atencao 
+            WHERE client_id = {cliente_id} 
+            AND date BETWEEN '{data_inicio}' AND '{data_fim}'
+        """
+        attention_points_df = pd.read_sql_query(query, engine)
+        st.table(attention_points_df)
+        logging.info("Tabela de pontos de atenção exibida corretamente.")
 
-                if not attention_points_data:
-                    attention_points_df = pd.DataFrame(columns=['Data', 'Ponto de Atenção'])
-                else:
-                    attention_points_df = pd.DataFrame([{
-                        'Data': row.date.strftime('%Y-%m-%d') if row.date else '',
-                        'Ponto de Atenção': row.attention_point
-                    } for row in attention_points_data])
+        # Chamar o modal ao clicar no botão "Adicionar Ponto de Atenção"
+        if st.button("Adicionar Ponto de Atenção"):
+            logging.info(f"Usuário clicou no botão 'Adicionar Ponto de Atenção' para o cliente ID {cliente_id}")
+            st.session_state["open_attention_modal"] = True
+            logging.info(f"Flag 'open_attention_modal' setada para True")
 
-                st.table(attention_points_df)
+    except Exception as e:
+        st.error(f"Erro ao carregar pontos de atenção: {e}")
+        logging.error(f"Erro ao carregar pontos de atenção: {e}")
 
-        if st.button("Adicionar Novo Ponto de Atenção"):
-            logging.info(f"Usuário clicou no botão 'Adicionar Novo Ponto de Atenção' para o cliente ID {cliente_id}")
-            modal.open()
+# Função que abre o modal para adicionar um novo ponto de atenção
+def modal_attention_point_open():
+    cliente_id = st.session_state.get("cliente_id")
+    logging.debug(f"modal_attention_point_open() chamado para o cliente ID {cliente_id}")
 
-    # Verifica e abre o modal fora do container
+    # Inicializa o modal para pontos de atenção com uma chave única
+    modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
+    logging.debug("Modal criado com sucesso.")
+
+    # Verifica se a flag no session state está habilitada e se o modal foi criado
+    if st.session_state.get("open_attention_modal", False):
+        logging.info(f"Abrindo o modal 'Adicionar Ponto de Atenção' para o cliente ID {cliente_id}")
+        modal.open()
+
+    # Verifica se o modal foi realmente aberto
     if modal.is_open():
-        logging.info(f"Modal 'Adicionar Novo Ponto de Atenção' foi aberto para o cliente ID {cliente_id}")
+        logging.info(f"Modal 'Adicionar Ponto de Atenção' está aberto para o cliente ID {cliente_id}.")
         with modal.container():
-            attention_date = st.date_input("Data do Ponto de Atenção", value=datetime.today())
-            attention_point = st.text_area("Ponto de Atenção")
+            # Campos de entrada para o novo ponto de atenção
+            selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
+            attention_description = st.text_area("Descrição do Ponto de Atenção")
+            logging.debug("Campos de entrada exibidos.")
 
+            # Botão para salvar o ponto de atenção
             if st.button("Salvar"):
-                logging.info(f"Tentando salvar um novo ponto de atenção para o cliente ID {cliente_id}")
-                save_new_attention_point(cliente_id, attention_date, attention_point)
-                logging.info(f"Novo ponto de atenção salvo com sucesso para o cliente ID {cliente_id}")
-                st.rerun()
+                logging.info("Botão 'Salvar' foi clicado.")
+                if attention_description:  # Verifica se a descrição não está vazia
+                    save_new_attention_point(cliente_id, selected_date, attention_description)
+                    logging.info(f"Salvando novo ponto de atenção para o cliente ID {cliente_id} com data {selected_date}")
+                    st.session_state["open_attention_modal"] = False  # Fecha o modal após salvar
+                    modal.close()  # Fecha o modal após salvar
+                    logging.info(f"Ponto de atenção salvo e modal fechado para o cliente ID {cliente_id}.")
+                    st.rerun()  # Recarrega a página para refletir as mudanças
+                else:
+                    st.error("A descrição do ponto de atenção não pode estar vazia.")
+                    logging.warning("Tentativa de salvar ponto de atenção sem descrição.")
+    else:
+        logging.debug("Modal 'Adicionar Ponto de Atenção' não foi aberto.")
 
+# Função para salvar o novo ponto de atenção no banco de dados
+def save_new_attention_point(cliente_id, attention_date, attention_point):
+    try:
+        with Session(bind=engine) as session:
+            new_entry = AttentionPoints(
+                client_id=cliente_id,
+                date=attention_date,
+                attention_point=attention_point
+            )
+            session.add(new_entry)
+            session.commit()
+            st.success("Ponto de Atenção adicionado com sucesso!")
+            logging.info(f"Novo ponto de atenção salvo no banco de dados para o cliente ID {cliente_id}.")
+    except Exception as e:
+        logging.error(f"Erro ao salvar o ponto de atenção: {e}")
+        st.error(f"Erro ao salvar o ponto de atenção: {e}")
+
+# Função que abre o modal para adicionar um novo ponto de atenção
+def modal_attention_point_open():
+    cliente_id = st.session_state.get("cliente_id")
+    logging.debug(f"modal_attention_point_open() chamado para o cliente ID {cliente_id}")
+
+    # Inicializa o modal para pontos de atenção com uma chave única
+    modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
+    logging.debug("Modal criado com sucesso.")
+
+    # Verifica se o modal está aberto e apresenta o formulário
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Ponto de Atenção' está aberto para o cliente ID {cliente_id}.")
+        with modal.container():
+            # Campos de entrada para o novo ponto de atenção
+            selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
+            attention_description = st.text_area("Descrição do Ponto de Atenção")
+            logging.debug("Campos de entrada exibidos.")
+
+            # Botão para salvar o ponto de atenção
+            if st.button("Salvar"):
+                logging.info("Botão 'Salvar' foi clicado.")
+                if attention_description:  # Verifica se a descrição não está vazia
+                    save_new_attention_point(cliente_id, selected_date, attention_description)
+                    modal.close()  # Fecha o modal após salvar
+                    logging.info(f"Ponto de atenção salvo com sucesso para o cliente ID {cliente_id}.")
+                    st.rerun()  # Recarrega a página para refletir as mudanças
+                else:
+                    st.error("A descrição do ponto de atenção não pode estar vazia.")
+                    logging.warning("Tentativa de salvar ponto de atenção sem descrição.")
+    else:
+        logging.debug("Modal 'Adicionar Ponto de Atenção' não foi aberto.")
 def save_new_attention_point(cliente_id, attention_date, attention_point):
     with Session(bind=engine) as session:
         new_entry = AttentionPoints(
@@ -880,11 +910,26 @@ def save_new_attention_point(cliente_id, attention_date, attention_point):
         session.add(new_entry)
         session.commit()
         st.success("Ponto de Atenção adicionado com sucesso!")
+        logging.info(f"Novo ponto de atenção salvo para o cliente ID {cliente_id}.")
+
+# Função para salvar o novo ponto de atenção no banco de dados
+def save_new_attention_point(cliente_id, attention_date, attention_point):
+    with Session(bind=engine) as session:
+        new_entry = AttentionPoints(
+            client_id=cliente_id,
+            date=attention_date,
+            attention_point=attention_point
+        )
+        session.add(new_entry)
+        session.commit()
+        st.success("Ponto de Atenção adicionado com sucesso!")
+
 def display_website_maintenance_gauge_and_timeline(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, maintenance_dates):
     st.write("**Manutenção de Website**")
-    
-    # Criar colunas lado a lado para o gauge e a linha do tempo
-    col1, col2 = st.columns([1, 2])
+
+    # Criar colunas para o gauge e a linha do tempo
+    # Aqui, usamos apenas uma única coluna para garantir que ocupe toda a largura da página
+    col1 = st.container()
 
     with col1:
         gauge_chart = display_gauge_chart(
@@ -895,10 +940,36 @@ def display_website_maintenance_gauge_and_timeline(mandalecas_contratadas, manda
         )
         st.plotly_chart(gauge_chart, use_container_width=True)
 
-    with col2:
-        today = datetime.today()
-        deadline_date = today.replace(day=1) + timedelta(days=calendar.monthrange(today.year, today.month)[1] - 1)
-        render_timeline_chart_with_multiple_events(today, deadline_date, maintenance_dates)
+    # Agora exibir a timeline ocupando toda a largura
+    today = datetime.today()
+    deadline_date = today.replace(day=1) + timedelta(days=calendar.monthrange(today.year, today.month)[1] - 1)
+    render_timeline_chart_with_multiple_events(today, deadline_date, maintenance_dates)
+
+    # Adicionar botão para abrir modal de adicionar nova data de manutenção
+    if st.button("Adicionar Data de Manutenção"):
+        modal_website_maintenance_open()
+
+def modal_website_maintenance_open():
+    cliente_id = st.session_state.get("cliente_id")
+    modal = Modal("Adicionar Data de Manutenção de Website", key="adicionar-manutencao-modal", max_width=800)
+
+    if modal.is_open():
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Manutenção", value=datetime.today())
+            if st.button("Salvar"):
+                save_website_maintenance_date(cliente_id, selected_date)
+                modal.close()
+                st.rerun()
+
+def save_website_maintenance_date(cliente_id, selected_date):
+    with Session(bind=engine) as session:
+        new_entry = WebsiteMaintenance(
+            client_id=cliente_id,
+            date=selected_date
+        )
+        session.add(new_entry)
+        session.commit()
+        st.success("Data de manutenção adicionada com sucesso!")
 
 def render_timeline_chart_with_multiple_events(today, deadline_date, event_dates):
     days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=deadline_date)]
@@ -981,33 +1052,113 @@ def get_website_maintenance_dates(cliente_id, start_date, end_date):
         maintenance_dates = [record.date for record in maintenance_records]
     return maintenance_dates
 
-def page_criacao():
-    st.sidebar.header("Filtro de Cliente e Data")
-    
-    # Obtenha a lista de clientes e a data atual
-    clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
-    cliente_id = st.sidebar.selectbox(
-        "Selecione o Cliente", 
-        clientes_df['id'], 
-        format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], 
-        key='unique_select_box_id_1'
+def get_client_logo_url(client_id):
+    # Função para obter a URL do logo do cliente com base no ID
+    client = clientes_df[clientes_df['id'] == client_id].iloc[0]
+    return client['logo_url']
+
+def render_meetings_dashboard():
+    # Código para gerar o gráfico de 'Reuniões'
+    render_timeline_chart(
+        title="Reuniões",
+        data_source="meetings_data_source",  # Fonte de dados correspondente
+        deadline_field="deadline",           # Campo do deadline
+        delivery_date_field="delivery_date", # Campo da data de entrega
+        button_action="send_meeting_report"  # Ação do botão de envio
     )
-    st.session_state["cliente_id"] = cliente_id
 
-    first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+def render_planning_copy_dashboard():
+    # Código para gerar o gráfico de 'Planejamento Entregue pelo Copy'
+    render_timeline_chart(
+        title="Planejamento Entregue pelo Copy",
+        data_source="planning_copy_data_source",  # Fonte de dados correspondente
+        deadline_field="deadline",                # Campo do deadline
+        delivery_date_field="delivery_date",      # Campo da data de entrega
+        button_action="send_planning_copy_report" # Ação do botão de envio
+    )
 
-    col1, col2 = st.sidebar.columns(2)
-    with col1:
-        data_inicio = st.sidebar.date_input("Data de início", value=first_day_of_last_month, key="data_inicio")
-    with col2:
-        data_fim = st.sidebar.date_input("Data de fim", value=last_day_of_last_month, key="data_fim")
+def render_marketing_review_dashboard():
+    # Código para gerar o gráfico de 'Avaliação do Planejamento pelo MKT'
+    render_timeline_chart(
+        title="Avaliação do Planejamento pelo MKT",
+        data_source="marketing_review_data_source",  # Fonte de dados correspondente
+        deadline_field="deadline",                   # Campo do deadline
+        delivery_date_field="delivery_date",         # Campo da data de entrega
+        button_action="send_marketing_review_report" # Ação do botão de envio
+    )
+def render_dashboards():
+    # Linha 1: Gráficos de reuniões e planejamento entregue pelo copy
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            render_meetings_dashboard()
+        with col2:
+            render_planning_copy_dashboard()
 
-    uploaded_file = st.sidebar.file_uploader("Upload de arquivo XLSX", type=["xlsx"], key="unique_file_uploader_key")
-    if uploaded_file:
-        process_xlsx_file(uploaded_file)
+    # Linha 2: Gráfico de avaliação de planejamento pelo MKT
+    with st.container():
+        col1, col2 = st.columns(2)
+        with col1:
+            render_marketing_review_dashboard()
+        # Adicionar outros gráficos aqui se necessário
 
-    # Exibir tabela interativa de pontos de atenção
-    display_attention_points_table(cliente_id)
+
+def page_criacao():
+    # Criar uma área fixa no topo da página para o seletor de cliente e datas
+    placeholder = st.empty()  # Usar um placeholder para posicionar os elementos no topo
+    
+    with placeholder.container():  # Isso garante que os elementos fiquem no topo
+        col1, col2, col3 = st.columns([3, 2, 2])  # Ajuste os tamanhos das colunas conforme necessário
+
+        # Cliente selecionado
+        with col1:
+            clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
+
+            if 'cliente_id' not in st.session_state:
+                st.session_state["cliente_id"] = clientes_df['id'][0]  # Se não houver histórico, selecione o primeiro cliente
+
+            cliente_id = st.selectbox(
+                "Selecione o Cliente", 
+                clientes_df['id'], 
+                format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0], 
+                key='unique_select_box_id_1',
+                index=clientes_df['id'].tolist().index(st.session_state["cliente_id"])
+            )
+            st.session_state["cliente_id"] = cliente_id
+
+        # Obter as datas padrão (último mês)
+        first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+
+        # Configurar `st.session_state` antes de criar os widgets
+        if 'data_inicio' not in st.session_state:
+            st.session_state["data_inicio"] = first_day_of_last_month
+
+        if 'data_fim' not in st.session_state:
+            st.session_state["data_fim"] = last_day_of_last_month
+
+        # Criar os widgets com os valores de `st.session_state`
+        with col2:
+            data_inicio = st.date_input("Data de início", value=st.session_state["data_inicio"], key="data_inicio")
+
+        with col3:
+            data_fim = st.date_input("Data de fim", value=st.session_state["data_fim"], key="data_fim")
+
+    # Exibir a seção de pontos de atenção dentro de um container estilizado
+    with stylable_container(key="attention_points_container", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 15px;
+                            }
+                            """):
+        st.write("**Pontos de Atenção**")
+        display_attention_points_table(st.session_state['cliente_id'], st.session_state['data_inicio'], st.session_state['data_fim'])
+
+    # Verifica se o modal foi solicitado
+    if st.session_state.get("open_attention_modal", False):
+        modal_attention_point_open()  # Aqui garantimos que o modal será aberto
 
     # Criar colunas lado a lado para status do plano e direcionamento de redes sociais
     col1, col2 = st.columns(2)
@@ -1038,64 +1189,29 @@ def page_criacao():
             # Exibir status do direcionamento
             display_redes_guidance_status()
 
-    # Calcular mandalecas para o cliente
-    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-    
-    # Criar colunas lado a lado para criação e adaptação de formato
-    col1, col2 = st.columns(2)
+    # Exibir gauges e gráficos de redes sociais
+    mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(st.session_state['cliente_id'])
 
-    with col1:
-        with stylable_container(key="creation_and_adaptation_gauge_container", 
-                                css_styles="""
-                                {
-                                    border: 1px solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                    margin-bottom: 15px;
-                                }
-                                """):
-            # Exibir gauges de criação e adaptação de formato
-            display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+    # Exibir gráficos de Criação e Adaptação
+    display_creation_and_adaptation_gauges(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
 
-    with col2:
-        with stylable_container(key="blog_text_gauge_container", 
-                                css_styles="""
-                                {
-                                    border: 1px solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                    margin-bottom: 15px;
-                                }
-                                """):
-            # Exibir o gauge para "Texto de Blog"
-            display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-
-    # Exibir outros gauges normalmente
+    # Exibir gráficos de Tráfego Pago
     display_paid_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+
+    # Exibir gráficos de Instagram
     display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, cliente_id)
+
+    # Exibir gráficos de Outras Redes (LinkedIn e TikTok)
     display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
 
-    # Obter as datas de manutenção do website
-    maintenance_dates = get_website_maintenance_dates(cliente_id, data_inicio, data_fim)
+    # Exibir gráfico e tabela de Produção de Conteúdo
+    display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, st.session_state['cliente_id'])
 
-    # Exibir gauge e timeline para manutenção de website
-    col1, col2 = st.columns(2)
+    # Exibir gráfico e timeline de Manutenção de Website
+    maintenance_dates = get_website_maintenance_dates(st.session_state['cliente_id'], st.session_state["data_inicio"], st.session_state["data_fim"])
+    display_website_maintenance_gauge_and_timeline(mandalecas_contratadas['WebsiteMaintenance'], mandalecas_usadas['WebsiteMaintenance'], mandalecas_acumuladas['WebsiteMaintenance'], maintenance_dates)
 
-    with col1:
-        with stylable_container(key="website_maintenance_gauge_container", 
-                                css_styles="""
-                                {
-                                    border: 1px solid #d3d3d3;
-                                    border-radius: 10px;
-                                    padding: 15px;
-                                    margin-bottom: 15px;
-                                }
-                                """):
-            # Exibir o gauge para manutenção de website
-            display_website_maintenance_gauge_and_timeline(
-                mandalecas_contratadas.get('WebsiteMaintenance', 0),
-                mandalecas_usadas.get('WebsiteMaintenance', 0),
-                mandalecas_acumuladas.get('WebsiteMaintenance', 0),
-                maintenance_dates
-            )
+    # Exibir gráfico de Texto de Blog
+    display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+
+    # Restante do conteúdo e funcionalidades da página

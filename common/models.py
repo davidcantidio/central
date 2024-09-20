@@ -362,6 +362,9 @@ class Client(Base):
     attention_points = relationship('AttentionPoints', back_populates='client', cascade='all, delete-orphan')
     manutencao_site = relationship('WebsiteMaintenance', back_populates='client', cascade='all, delete-orphan')
     texto_blog = relationship('BlogText', back_populates='client', cascade='all, delete-orphan')
+    meetings = relationship('Meetings', back_populates='client')
+    plannings_delivered_copy = relationship('PlanningDeliveredCopy', back_populates='client')
+    marketing_planning_reviews = relationship('MarketingPlanningReview', back_populates='client')
 
     def __repr__(self):
         return f"<Client(id={self.id}, name='{self.name}', business_type='{self.business_type}')>"
@@ -974,8 +977,8 @@ class AttentionPoints(Base):
     attention_point = Column(String)
     date = Column(Date)
     client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
-
     client = relationship('Client', back_populates='attention_points')
+
 
 
 class WebsiteMaintenance(Base):
@@ -999,3 +1002,32 @@ class BlogText(Base):
     client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
 
     client = relationship('Client', back_populates='texto_blog')
+
+class Meetings(Base):
+    __tablename__ = 'reunioes'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    delivery_date = Column(Date, nullable=False)  # Dia que foi entregue
+    deadline = Column(Date, nullable=False)  # Deadline até o dia 5
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+    client = relationship('Client', back_populates='meetings')
+
+
+class PlanningDeliveredCopy(Base):
+    __tablename__ = 'planejamento_entregue_copy'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    delivery_date = Column(Date, nullable=False)  # Dia que foi entregue
+    deadline = Column(Date, nullable=False)  # Deadline pode ser até o dia 15 ou até o dia 25
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+    client = relationship('Client', back_populates='plannings_delivered_copy')
+
+
+class MarketingPlanningReview(Base):
+    __tablename__ = 'avaliacao_planejamento_mkt'
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    delivery_date = Column(Date, nullable=False)  # Dia que foi entregue
+    deadline = Column(Date, nullable=False)  # Deadline entre o dia 15 a 20
+    client_id = Column(Integer, ForeignKey('clients.id'), nullable=False)
+    client = relationship('Client', back_populates='marketing_planning_reviews')

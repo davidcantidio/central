@@ -1,0 +1,1321 @@
+# . - page_entregas.py
+
+import streamlit as st
+from page_entregas.attention_points.attention_points_table import display_attention_points_table
+from page_entregas.attention_points.attention_points_modal import modal_attention_point_open
+from page_entregas.blog_text.blog_gauge import display_blog_text_gauge
+from page_entregas.content_production.content_production_gauge import display_content_production_gauge
+from page_entregas.content_production.content_production_modal import modal_content_production_open
+from page_entregas.content_production.content_production_table import display_content_production_table
+from page_entregas.creation_and_adaptation.creation_gauge import display_creation_gauge
+from page_entregas.creation_and_adaptation.adaptation_gauge import display_adaptation_gauge
+from page_entregas.guidance_status.guidance_modal import display_guidance_modal
+from page_entregas.guidance_status.guidance_timeline import display_guidance_timeline
+from page_entregas.paid_traffic.traffic_gauge import display_traffic_gauge
+from page_entregas.plan_status.plan_modal import display_plan_modal
+from page_entregas.plan_status.plan_timeline import display_plan_timeline
+from page_entregas.social_media.social_media_gauges import display_instagram_gauge, display_other_networks_gauge
+from page_entregas.website_maintenance.website_gauge_timeline import display_website_maintenance_gauge_and_timeline
+from common.database import engine
+from page_entregas.utils.assessoria_plan_utils import get_last_month_date_range
+import pandas as pd
+from sqlalchemy.orm import sessionmaker
+
+# Configuração de sessão com o SQLAlchemy
+Session = sessionmaker(bind=engine)
+
+# Função principal que organiza a página
+def main_page():
+    # Área fixa no topo para o seletor de cliente e datas
+    placeholder = st.empty()
+    
+    with placeholder.container():
+        col1, col2, col3 = st.columns([3, 2, 2])
+
+        with col1:
+            # Abrindo uma sessão para a consulta ao banco de dados
+            with Session() as session:
+                clientes_df = pd.read_sql_query("SELECT * FROM clients", engine)
+                
+            if clientes_df.empty:
+                st.error("Nenhum cliente encontrado no banco de dados.")
+                return
+
+            if 'cliente_id' not in st.session_state:
+                st.session_state["cliente_id"] = clientes_df['id'][0]
+
+            cliente_id = st.selectbox(
+                "Selecione o Cliente",
+                clientes_df['id'],
+                format_func=lambda x: clientes_df[clientes_df['id'] == x]['name'].values[0],
+                index=clientes_df['id'].tolist().index(st.session_state["cliente_id"])
+            )
+            st.session_state["cliente_id"] = cliente_id
+
+        # Definindo o range de datas (último mês)
+        first_day_of_last_month, last_day_of_last_month = get_last_month_date_range()
+
+        if 'data_inicio' not in st.session_state:
+            st.session_state["data_inicio"] = first_day_of_last_month
+
+        if 'data_fim' not in st.session_state:
+            st.session_state["data_fim"] = last_day_of_last_month
+
+        with col2:
+            data_inicio = st.date_input("Data de início", value=st.session_state["data_inicio"], key="data_inicio")
+
+        with col3:
+            data_fim = st.date_input("Data de fim", value=st.session_state["data_fim"], key="data_fim")
+
+    # Debugging
+    st.write("Cliente ID selecionado:", st.session_state['cliente_id'])
+    st.write("Data de Início:", st.session_state["data_inicio"])
+    st.write("Data de Fim:", st.session_state["data_fim"])
+
+    # Seção de pontos de atenção
+    with st.container():
+        st.write("**Pontos de Atenção**")
+        display_attention_points_table(st.session_state['cliente_id'], st.session_state['data_inicio'], st.session_state['data_fim'])
+        
+        if st.session_state.get("open_attention_modal", False):
+            modal_attention_point_open()
+
+    # Colunas para status do plano e direcionamento de redes sociais
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.write("**Status do Plano**")
+        display_plan_timeline(st.session_state['cliente_id'], st.session_state["data_inicio"], st.session_state["data_fim"])
+        display_plan_modal(st.session_state['cliente_id'])
+
+    with col2:
+        st.write("**Direcionamento Redes Sociais**")
+        display_guidance_timeline(st.session_state['cliente_id'], st.session_state["data_inicio"], st.session_state["data_fim"])
+        display_guidance_modal(st.session_state['cliente_id'])
+
+    # Exibição de gauges para criação e adaptação
+    st.write("**Criação e Adaptação de Formato**")
+    display_creation_gauge(st.session_state['cliente_id'])
+    display_adaptation_gauge(st.session_state['cliente_id'])
+
+    # Exibição de gauge de tráfego pago
+    st.write("**Tráfego Pago**")
+    display_traffic_gauge(st.session_state['cliente_id'])
+
+    # Exibição de gauges das redes sociais
+    st.write("**Redes Sociais**")
+    display_instagram_gauge(st.session_state['cliente_id'])
+    display_other_networks_gauge(st.session_state['cliente_id'])
+
+    # Exibição de gauge e linha do tempo para manutenção de website
+    st.write("**Manutenção de Website**")
+    display_website_maintenance_gauge_and_timeline(st.session_state['cliente_id'], st.session_state["data_inicio"], st.session_state["data_fim"])
+
+    # Exibição de gauge de texto de blog
+    st.write("**Texto de Blog**")
+    display_blog_text_gauge(st.session_state['cliente_id'])
+
+    # Exibição da produção de conteúdo e seu histórico
+    st.write("**Produção de Conteúdo**")
+    display_content_production_gauge(st.session_state['cliente_id'])
+    display_content_production_table(st.session_state['cliente_id'])
+
+    if st.session_state.get("open_content_production_modal", False):
+        modal_content_production_open()
+
+# Executar a página principal
+if __name__ == "__main__":
+    main_page()
+
+
+# blog_text - blog_gauge.py
+
+import streamlit as st
+from plotly.graph_objects import Figure
+from streamlit_extras.stylable_container import stylable_container
+from page_entregas.utils.gauge import display_gauge_chart
+
+# ===========================================================
+# Funções para Exibição do Gauge de Texto de Blog
+# ===========================================================
+
+def display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    """
+    Exibe o gauge (gráfico de medidor) de uso de mandalecas para texto de blog.
+    """
+    st.write("**Texto de Blog**")
+
+    with stylable_container(key="blog_text_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        # Exibir o gráfico de gauge para o texto de blog
+        gauge_chart = display_gauge_chart(
+            title="Texto de Blog",
+            contracted=mandalecas_contratadas.get('BlogText', 0),
+            used=mandalecas_usadas.get('BlogText', 0),
+            accumulated=mandalecas_acumuladas.get('BlogText', 0)
+        )
+        st.plotly_chart(gauge_chart)
+
+
+
+# blog_text - __init__.py
+
+
+
+# attention_points - attention_points_table.py
+
+import streamlit as st
+import pandas as pd
+import logging
+
+
+# ===========================================================
+# Funções para Exibição da Tabela de Pontos de Atenção
+# ===========================================================
+
+def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
+    """
+    Exibe a tabela de pontos de atenção para um cliente específico, em um intervalo de datas.
+    """
+    try:
+        # Query para buscar pontos de atenção no banco de dados
+        with engine.connect() as conn:
+            query = f"""
+                SELECT * FROM pontos_de_atencao 
+                WHERE client_id = {cliente_id} 
+                AND date BETWEEN '{data_inicio}' AND '{data_fim}'
+            """
+            attention_points_df = pd.read_sql_query(query, conn)
+
+        if attention_points_df.empty:
+            st.info("Nenhum ponto de atenção encontrado para o período selecionado.")
+        else:
+            st.table(attention_points_df)
+
+        logging.info("Tabela de pontos de atenção exibida corretamente.")
+
+        # Chamar o modal ao clicar no botão "Adicionar Ponto de Atenção"
+        if st.button("Adicionar Ponto de Atenção"):
+            logging.info(f"Usuário clicou no botão 'Adicionar Ponto de Atenção' para o cliente ID {cliente_id}")
+            st.session_state["open_attention_modal"] = True
+            logging.info(f"Flag 'open_attention_modal' setada para True")
+
+    except Exception as e:
+        st.error(f"Erro ao carregar pontos de atenção: {e}")
+        logging.error(f"Erro ao carregar pontos de atenção: {e}")
+
+
+
+# attention_points - __init__.py
+
+
+
+# attention_points - attention_points_modal.py
+
+import streamlit as st
+from datetime import datetime
+from sqlalchemy.orm import Session
+from common.models import AttentionPoints
+from streamlit_modal import Modal
+import logging
+
+# ===========================================================
+# Funções para Pontos de Atenção (Attention Points)
+# ===========================================================
+
+def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
+    """
+    Exibe a tabela de pontos de atenção para um cliente, em um intervalo de datas.
+    """
+    try:
+        with engine.connect() as conn:
+            query = f"""
+                SELECT * FROM pontos_de_atencao 
+                WHERE client_id = {cliente_id} 
+                AND date BETWEEN '{data_inicio}' AND '{data_fim}'
+            """
+            attention_points_df = pd.read_sql_query(query, conn)
+            st.table(attention_points_df)
+            logging.info("Tabela de pontos de atenção exibida corretamente.")
+
+        # Chamar o modal ao clicar no botão "Adicionar Ponto de Atenção"
+        if st.button("Adicionar Ponto de Atenção"):
+            logging.info(f"Usuário clicou no botão 'Adicionar Ponto de Atenção' para o cliente ID {cliente_id}")
+            st.session_state["open_attention_modal"] = True
+            logging.info(f"Flag 'open_attention_modal' setada para True")
+
+    except Exception as e:
+        st.error(f"Erro ao carregar pontos de atenção: {e}")
+        logging.error(f"Erro ao carregar pontos de atenção: {e}")
+
+
+def modal_attention_point_open(engine):
+    """
+    Abre o modal para adicionar um novo ponto de atenção.
+    """
+    cliente_id = st.session_state.get("cliente_id")
+    logging.debug(f"modal_attention_point_open() chamado para o cliente ID {cliente_id}")
+
+    # Inicializa o modal para pontos de atenção com uma chave única
+    modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
+    logging.debug("Modal criado com sucesso.")
+
+    # Verifica se a flag no session state está habilitada e se o modal foi criado
+    if st.session_state.get("open_attention_modal", False):
+        logging.info(f"Abrindo o modal 'Adicionar Ponto de Atenção' para o cliente ID {cliente_id}")
+        modal.open()
+
+    # Verifica se o modal foi realmente aberto
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Ponto de Atenção' está aberto para o cliente ID {cliente_id}.")
+        with modal.container():
+            # Campos de entrada para o novo ponto de atenção
+            selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
+            attention_description = st.text_area("Descrição do Ponto de Atenção")
+            logging.debug("Campos de entrada exibidos.")
+
+            # Botão para salvar o ponto de atenção
+            if st.button("Salvar"):
+                logging.info("Botão 'Salvar' foi clicado.")
+                if attention_description:  # Verifica se a descrição não está vazia
+                    save_new_attention_point(cliente_id, selected_date, attention_description, engine)
+                    logging.info(f"Salvando novo ponto de atenção para o cliente ID {cliente_id} com data {selected_date}")
+                    st.session_state["open_attention_modal"] = False  # Fecha o modal após salvar
+                    modal.close()  # Fecha o modal após salvar
+                    logging.info(f"Ponto de atenção salvo e modal fechado para o cliente ID {cliente_id}.")
+                    st.rerun()  # Recarrega a página para refletir as mudanças
+                else:
+                    st.error("A descrição do ponto de atenção não pode estar vazia.")
+                    logging.warning("Tentativa de salvar ponto de atenção sem descrição.")
+    else:
+        logging.debug("Modal 'Adicionar Ponto de Atenção' não foi aberto.")
+
+
+def save_new_attention_point(cliente_id, attention_date, attention_point, engine):
+    """
+    Salva um novo ponto de atenção no banco de dados.
+    """
+    try:
+        with Session(bind=engine) as session:
+            new_entry = AttentionPoints(
+                client_id=cliente_id,
+                date=attention_date,
+                attention_point=attention_point
+            )
+            session.add(new_entry)
+            session.commit()
+            st.success("Ponto de Atenção adicionado com sucesso!")
+            logging.info(f"Novo ponto de atenção salvo no banco de dados para o cliente ID {cliente_id}.")
+    except Exception as e:
+        logging.error(f"Erro ao salvar o ponto de atenção: {e}")
+        st.error(f"Erro ao salvar o ponto de atenção: {e}")
+
+
+
+# paid_traffic - __init__.py
+
+
+
+# paid_traffic - traffic_gauge.py
+
+import streamlit as st
+from page_entregas.utils.gauge import display_gauge_chart
+from common.models import JobCategoryEnum
+
+# Função para exibir os gráficos de gauge de tráfego pago
+def display_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Tráfego Pago**")
+    
+    with st.container():
+        # Criar colunas internas para os gráficos de tráfego pago
+        col1, col2 = st.columns(2)
+
+        # Gauge para Tráfego Pago Estático
+        with col1:
+            gauge_chart_static = display_gauge_chart(
+                title="Tráfego Pago (Estático)",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.STATIC_TRAFEGO_PAGO, 0)
+            )
+            st.plotly_chart(gauge_chart_static, use_container_width=True)
+
+        # Gauge para Tráfego Pago Animado
+        with col2:
+            gauge_chart_animated = display_gauge_chart(
+                title="Tráfego Pago (Animado)",
+                contracted=mandalecas_contratadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+                used=mandalecas_usadas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0),
+                accumulated=mandalecas_acumuladas.get(JobCategoryEnum.ANIMATED_TRAFEGO_PAGO, 0)
+            )
+            st.plotly_chart(gauge_chart_animated, use_container_width=True)
+
+
+# creation_and_adaptation - adaptation_gauge.py
+
+import streamlit as st
+from plotly.graph_objects import Figure
+from common.models import JobCategoryEnum
+from page_entregas.utils.gauge import display_gauge_chart
+
+
+# Função para exibir o gráfico de Adaptação
+def display_adaptation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Adaptação de Formato**")
+    
+    # Container estilizado para o gráfico gauge
+    with st.container():
+        # Obter dados de mandalecas contratadas, usadas e acumuladas para adaptação de formato
+        contracted = mandalecas_contratadas.get(JobCategoryEnum.ADAPTACAO, 0)
+        used = mandalecas_usadas.get(JobCategoryEnum.ADAPTACAO, 0)
+        accumulated = mandalecas_acumuladas.get(JobCategoryEnum.ADAPTACAO, 0)
+
+        # Gerar o gráfico gauge de adaptação usando a função utilitária
+        gauge_chart = display_gauge_chart(
+            title="Adaptação de Formato",
+            contracted=contracted,
+            used=used,
+            accumulated=accumulated
+        )
+
+        # Exibir o gráfico
+        st.plotly_chart(gauge_chart, use_container_width=True)
+
+
+# creation_and_adaptation - __init__.py
+
+
+
+# creation_and_adaptation - creation_gauge.py
+
+import streamlit as st
+from plotly.graph_objects import Figure
+from common.models import JobCategoryEnum
+from page_entregas.utils.gauge import display_gauge_chart
+
+
+# Função para exibir o gráfico de Criação
+def display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Criação**")
+    
+    # Container estilizado para o gráfico gauge
+    with st.container():
+        # Obter dados de mandalecas contratadas, usadas e acumuladas para criação
+        contracted = mandalecas_contratadas.get(JobCategoryEnum.CRIACAO, 0)
+        used = mandalecas_usadas.get(JobCategoryEnum.CRIACAO, 0)
+        accumulated = mandalecas_acumuladas.get(JobCategoryEnum.CRIACAO, 0)
+
+        # Gerar o gráfico gauge de criação usando a função utilitária
+        gauge_chart = display_gauge_chart(
+            title="Criação",
+            contracted=contracted,
+            used=used,
+            accumulated=accumulated
+        )
+
+        # Exibir o gráfico
+        st.plotly_chart(gauge_chart, use_container_width=True)
+
+
+# social_media - social_media_gauges.py
+
+import streamlit as st
+from page_entregas.utils.gauge import display_gauge_chart
+from common.models import JobCategoryEnum
+from streamlit_extras.stylable_container import stylable_container
+import plotly.graph_objects as go  # Importação para criar gráficos com Plotly
+
+
+# Função para exibir o medidor do Instagram
+def display_instagram_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Instagram**")
+    with stylable_container(key="instagram_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        gauge_chart = display_gauge_chart(
+            title="Instagram",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_INSTAGRAM, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_INSTAGRAM, 0)
+        )
+        st.plotly_chart(gauge_chart)
+
+        # Distribuição do uso de conteúdo no Instagram
+        social_media_data = {
+            "Carrossel Instagram": mandalecas_usadas.get(JobCategoryEnum.CAROUSEL_INSTAGRAM, 0),
+            "Reels Instagram": mandalecas_usadas.get(JobCategoryEnum.REELS_INSTAGRAM, 0),
+            "Card Instagram": mandalecas_usadas.get(JobCategoryEnum.CARD_INSTAGRAM, 0)
+        }
+
+        pie_chart = create_pie_chart(social_media_data, "Distribuição Instagram")
+        st.plotly_chart(pie_chart)
+
+
+# Função para exibir o medidor de outras redes (LinkedIn, TikTok)
+def display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    st.write("**Outras Redes**")
+    with stylable_container(key="other_networks_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        linkedin_gauge = display_gauge_chart(
+            title="Feed LinkedIn",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_LINKEDIN, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_LINKEDIN, 0)
+        )
+        st.plotly_chart(linkedin_gauge)
+
+        tiktok_gauge = display_gauge_chart(
+            title="Feed TikTok",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.FEED_TIKTOK, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.FEED_TIKTOK, 0)
+        )
+        st.plotly_chart(tiktok_gauge)
+
+
+def create_pie_chart(data, title):
+    labels = list(data.keys())
+    values = list(data.values())
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values, hole=.3)])
+    fig.update_layout(title_text=title)
+    return fig
+
+# social_media - __init__.py
+
+
+
+# website_maintenance - website_gauge_timeline.py
+
+import streamlit as st
+from page_entregas.utils.gauge import display_gauge_chart
+from page_entregas.utils.timeline import render_timeline_chart_with_multiple_events
+from common.models import JobCategoryEnum
+from streamlit_extras.stylable_container import stylable_container
+from page_entregas.website_maintenance.website_modal  import modal_website_maintenance_open
+from datetime import datetime, timedelta
+import calendar
+
+# Função para exibir o medidor e a linha do tempo para manutenção de websites
+def display_website_maintenance_gauge_and_timeline(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, maintenance_dates):
+    st.write("**Manutenção de Website**")
+
+    # Criar colunas para o medidor e a linha do tempo
+    col1 = st.container()
+
+    with col1:
+        gauge_chart = display_gauge_chart(
+            title="Manutenção de Website",
+            contracted=mandalecas_contratadas.get(JobCategoryEnum.WEBSITE_MAINTENANCE, 0),
+            used=mandalecas_usadas.get(JobCategoryEnum.WEBSITE_MAINTENANCE, 0),
+            accumulated=mandalecas_acumuladas.get(JobCategoryEnum.WEBSITE_MAINTENANCE, 0)
+        )
+        st.plotly_chart(gauge_chart, use_container_width=True)
+
+    # Renderizar a linha do tempo de manutenção de websites
+    today = datetime.today()
+    deadline_date = today.replace(day=1) + timedelta(days=calendar.monthrange(today.year, today.month)[1] - 1)
+    render_timeline_chart_with_multiple_events(today, deadline_date, maintenance_dates)
+
+    # Adicionar botão para abrir o modal e adicionar uma nova data de manutenção
+    if st.button("Adicionar Data de Manutenção"):
+        modal_website_maintenance_open()
+
+
+# website_maintenance - __init__.py
+
+
+
+# website_maintenance - website_modal.py
+
+import streamlit as st
+from datetime import datetime
+from streamlit_modal import Modal
+from sqlalchemy.orm import Session
+from common.models import WebsiteMaintenance
+from common.database import engine
+import logging
+
+def modal_website_maintenance_open():
+    cliente_id = st.session_state.get("cliente_id")
+
+    # Inicializa o modal para adicionar manutenção de website
+    modal = Modal("Adicionar Data de Manutenção de Website", key="adicionar-manutencao-modal", max_width=800)
+
+    if modal.is_open():
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Manutenção", value=datetime.today())
+            if st.button("Salvar"):
+                save_website_maintenance_date(cliente_id, selected_date)
+                modal.close()
+                st.success("Data de manutenção adicionada com sucesso!")
+                st.rerun()
+
+def save_website_maintenance_date(cliente_id, selected_date):
+    try:
+        with Session(bind=engine) as session:
+            new_entry = WebsiteMaintenance(
+                client_id=cliente_id,
+                date=selected_date
+            )
+            session.add(new_entry)
+            session.commit()
+            logging.info(f"Data de manutenção para o cliente ID {cliente_id} adicionada com sucesso.")
+    except Exception as e:
+        st.error(f"Erro ao salvar a data de manutenção: {e}")
+        logging.error(f"Erro ao salvar a data de manutenção: {e}")
+
+
+# utils - mandalecas.py
+
+from datetime import datetime
+from common.models import JobCategoryEnum, DeliveryCategoryEnum, Client
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+
+# Função para calcular as mandalecas contratadas, usadas e acumuladas
+def calcular_mandalecas(cliente_id: int):
+    """
+    Função para calcular mandalecas contratadas, usadas e acumuladas para um cliente específico.
+    
+    Parâmetros:
+    cliente_id (int): ID do cliente para o qual as mandalecas serão calculadas.
+
+    Retorna:
+    mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
+    mandalecas_usadas (dict): Mandalecas usadas por categoria.
+    mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
+    """
+    # Dicionários para armazenar as mandalecas por categoria
+    mandalecas_contratadas = {
+        JobCategoryEnum.CRIACAO: 100,   # Exemplo: valor contratado
+        JobCategoryEnum.ADAPTACAO: 50,
+        JobCategoryEnum.CONTENT_PRODUCTION: 40,
+        JobCategoryEnum.STATIC_TRAFEGO_PAGO: 30,
+        JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 20,
+        JobCategoryEnum.FEED_INSTAGRAM: 70,
+        JobCategoryEnum.FEED_LINKEDIN: 50,
+        JobCategoryEnum.FEED_TIKTOK: 30,
+    }
+
+    mandalecas_usadas = {
+        JobCategoryEnum.CRIACAO: 60,    # Exemplo: valor usado
+        JobCategoryEnum.ADAPTACAO: 40,
+        JobCategoryEnum.CONTENT_PRODUCTION: 30,
+        JobCategoryEnum.STATIC_TRAFEGO_PAGO: 20,
+        JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 10,
+        JobCategoryEnum.FEED_INSTAGRAM: 50,
+        JobCategoryEnum.FEED_LINKEDIN: 40,
+        JobCategoryEnum.FEED_TIKTOK: 20,
+    }
+
+    # Acumulação: diferença entre contratadas e usadas
+    mandalecas_acumuladas = {
+        categoria: mandalecas_contratadas[categoria] - mandalecas_usadas.get(categoria, 0)
+        for categoria in mandalecas_contratadas
+    }
+
+    return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+
+
+
+# utils - chat_gpt.py
+
+import os
+
+# Caminho da pasta que você quer percorrer
+caminho_projeto = '/home/debrito/Documentos/central/page_entregas'
+
+# Arquivo de saída onde será salvo o conteúdo
+arquivo_saida = 'resumo_projeto.txt'
+
+def gerar_resumo(caminho, arquivo_saida):
+    with open(arquivo_saida, 'w') as f_out:
+        # Percorre todas as subpastas e arquivos
+        for pasta_atual, subpastas, arquivos in os.walk(caminho):
+            for arquivo in arquivos:
+                # Caminho completo do arquivo
+                caminho_arquivo = os.path.join(pasta_atual, arquivo)
+                
+                # Somente arquivos com extensão .py
+                if arquivo.endswith('.py'):
+                    # Escreve o caminho do arquivo no formato desejado
+                    f_out.write(f"# {os.path.relpath(pasta_atual, caminho)} - {arquivo}\n\n")
+
+                    # Abre o arquivo e lê o conteúdo
+                    with open(caminho_arquivo, 'r') as f_in:
+                        conteudo = f_in.read()
+                        f_out.write(conteudo)
+                    
+                    # Adiciona uma quebra de linha entre os arquivos
+                    f_out.write("\n\n")
+
+    print(f"Resumo gerado em {arquivo_saida}")
+
+# Executa a função para gerar o resumo
+gerar_resumo(caminho_projeto, arquivo_saida)
+
+
+# utils - __init__.py
+
+
+
+# utils - assessoria_plan_utils.py
+
+import logging
+from datetime import datetime, timedelta
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+from common.models import Client, RedesSociaisPlan, RedesSociaisGuidance, RedesSociaisPlanStatusEnum
+from common.database import engine
+import streamlit as st
+
+# Função para salvar a data de envio de um plano ou direcionamento
+def salvar_data_envio(cliente_id, data_envio, model_class, status_function):
+    logging.info(f"Salvando data de envio para cliente ID {cliente_id} com data {data_envio}")
+    with Session(bind=engine) as session:
+        try:
+            if isinstance(data_envio, datetime):
+                data_envio = data_envio.date()
+
+            mes_inicio = data_envio.replace(day=1)
+            logging.debug(f"Buscando registro existente para cliente ID {cliente_id} no mês {mes_inicio.strftime('%Y-%m')}")
+            record = session.query(model_class).filter(
+                model_class.client_id == cliente_id,
+                func.strftime('%Y-%m', model_class.send_date) == mes_inicio.strftime('%Y-%m')
+            ).first()
+
+            client = session.query(Client).filter(Client.id == cliente_id).first()
+            logging.debug(f"Cliente encontrado: {client}")
+
+            # Obter o deadline_day do cliente
+            if model_class == RedesSociaisPlan:
+                deadline_day = client.monthly_plan_deadline_day
+            elif model_class == RedesSociaisGuidance:
+                deadline_day = client.monthly_redes_guidance_deadline_day
+            else:
+                raise ValueError("Classe de modelo desconhecida para determinação do deadline_day")
+
+            if record:
+                logging.debug(f"Registro encontrado, atualizando data de envio e status")
+                record.send_date = data_envio
+                record.updated_at = datetime.now()
+                record.status = status_function(client, record, deadline_day)
+            else:
+                logging.debug(f"Nenhum registro existente encontrado, criando novo registro")
+                record = model_class(
+                    client_id=cliente_id,
+                    send_date=data_envio,
+                    updated_at=datetime.now(),
+                    status=status_function(client, None, deadline_day),
+                    plan_status=RedesSociaisPlanStatusEnum.AWAITING
+                )
+                session.add(record)
+
+            logging.info(f"Commitando a transação no banco de dados")
+            session.commit()
+            st.success(f"Data de envio atualizada com sucesso.")
+            st.session_state['send_date'] = data_envio
+
+        except Exception as e:
+            session.rollback()
+            st.error(f"Erro ao atualizar a data de envio: {e}")
+            logging.error(f"Erro ao atualizar a data de envio: {e}")
+
+# Função para determinar o status do plano ou direcionamento
+def determinar_status(cliente, record, deadline_day):
+    hoje = datetime.today().date()
+    prazo = datetime(hoje.year, hoje.month, deadline_day).date()
+    
+    if record is None or record.send_date is None:
+        if hoje > prazo:
+            return RedesSociaisPlanStatusEnum.DELAYED
+        else:
+            return RedesSociaisPlanStatusEnum.AWAITING
+    else:
+        send_date = record.send_date
+        if isinstance(send_date, datetime):
+            send_date = send_date.date()
+        if send_date <= prazo:
+            return RedesSociaisPlanStatusEnum.ON_TIME
+        else:
+            return RedesSociaisPlanStatusEnum.DELAYED
+
+# Função utilitária para obter o range de datas do mês anterior
+def get_last_month_date_range():
+    today = datetime.today()
+    first_day_of_current_month = datetime(today.year, today.month, 1)
+    last_day_of_last_month = first_day_of_current_month - timedelta(days=1)
+    first_day_of_last_month = datetime(last_day_of_last_month.year, last_day_of_last_month.month, 1)
+    return first_day_of_last_month, last_day_of_last_month
+
+
+# utils - gauge.py
+
+import plotly.graph_objects as go
+import streamlit as st
+
+def display_gauge_chart(title, contracted, used, accumulated=0):
+    """
+    Função para exibir um gráfico de medidor (gauge) que mostra os valores contratados, usados e acumulados.
+
+    :param title: Título do medidor.
+    :param contracted: Valor contratado.
+    :param used: Valor usado até o momento.
+    :param accumulated: Valor acumulado (positivo ou negativo).
+    """
+    if accumulated < 0:
+        # Quando o acumulado é negativo, considera um déficit
+        max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
+        deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
+        steps = [
+            {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
+            {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
+        ]
+        accumulated_color = 'red'
+    else:
+        # Caso contrário, o acumulado é positivo
+        max_value = contracted + accumulated
+        steps = [
+            {'range': [0, contracted], 'color': "lightgray"},
+            {'range': [contracted, max_value], 'color': "orange"}
+        ]
+        accumulated_color = 'orange'
+
+    # Cria o gráfico de medidor (gauge)
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=used,
+        title={'text': title, 'font': {'size': 20}},
+        number={'font': {'size': 40}},
+        gauge={
+            'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "green"},
+            'steps': steps,
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': contracted
+            }
+        }
+    ))
+
+    # Configura o layout e estilo do gráfico
+    fig.update_layout(
+        autosize=False,
+        width=350,
+        height=250,
+        margin=dict(l=20, r=20, t=50, b=100),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        annotations=[
+            dict(
+                x=0.15, y=-0.05, xref='paper', yref='paper',
+                text=f"Contratado: {contracted}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor='green',
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            ),
+            dict(
+                x=0.8, y=-0.05, xref='paper', yref='paper',
+                text=f"<b>Acumulado:</b> {accumulated}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            )
+        ]
+    )
+
+    # Renderiza o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
+# utils - timeline.py
+
+import plotly.graph_objects as go
+import streamlit as st
+import pandas as pd
+
+def create_timeline_chart(today, deadline_date, event_date=None, event_name="Enviado"):
+    """
+    Cria um gráfico de linha do tempo para exibir prazos e datas de envio.
+    
+    :param today: Data atual (datetime object).
+    :param deadline_date: Data do prazo (datetime object).
+    :param event_date: Data do evento, como a data de envio (datetime object), opcional.
+    :param event_name: Nome do evento (ex.: "Enviado"), opcional, padrão é "Enviado".
+    :return: Objeto Plotly figure representando a linha do tempo.
+    """
+    # Gera uma lista com os dias do mês
+    days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=today.replace(day=28) + pd.offsets.MonthEnd(1))]
+    x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
+
+    # Inicializa as listas de eventos
+    event_dates = [deadline_date.strftime('%Y-%m-%d')]
+    event_colors = ["red"]
+    event_texts = ["Deadline"]
+
+    if event_date:
+        event_dates.append(event_date.strftime('%Y-%m-%d'))
+        event_colors.append("green")
+        event_texts.append(event_name)
+
+    fig = go.Figure()
+
+    # Adiciona a linha do tempo com os dias do mês
+    fig.add_trace(go.Scatter(
+        x=x_values,
+        y=[1] * len(x_values),
+        mode='lines+markers',
+        line=dict(color='lightgrey', width=2),
+        marker=dict(color='lightgrey', size=6),
+        hoverinfo='x',
+        showlegend=False
+    ))
+
+    # Adiciona os eventos (prazos, envio, etc.) com as legendas
+    for date, color, text in zip(event_dates, event_colors, event_texts):
+        text_position = "top center" if text == event_name else "bottom center"
+        fig.add_trace(go.Scatter(
+            x=[date],
+            y=[1],
+            mode='markers+text',
+            marker=dict(color=color, size=12),
+            text=[text],
+            textposition=text_position,
+            showlegend=False,
+            hoverinfo='none'
+        ))
+
+    # Configuração do layout do gráfico
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='array',
+            tickvals=x_values,
+            ticktext=[day.strftime('%d') for day in days_in_month],
+            showline=False,
+            showgrid=False,
+            zeroline=False,
+            tickfont=dict(size=10),
+            tickangle=0,
+            ticks='outside',
+            ticklen=4,
+            tickwidth=1,
+        ),
+        yaxis=dict(visible=False),
+        height=95,
+        margin=dict(l=20, r=20, t=10, b=10),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+
+    return fig
+
+def render_timeline_chart(today, deadline_date, event_date=None, event_name="Enviado"):
+    """
+    Renderiza o gráfico de linha do tempo no Streamlit.
+    
+    :param today: Data atual (datetime object).
+    :param deadline_date: Data do prazo (datetime object).
+    :param event_date: Data do evento, como a data de envio (datetime object), opcional.
+    :param event_name: Nome do evento (ex.: "Enviado"), opcional, padrão é "Enviado".
+    """
+    fig = create_timeline_chart(today, deadline_date, event_date, event_name)
+    st.plotly_chart(fig, use_container_width=True)
+
+def render_timeline_chart_with_multiple_events(today, deadline_date, event_dates):
+    """
+    Renderiza um gráfico de linha do tempo com múltiplos eventos, como manutenção de websites.
+    
+    :param today: Data atual (datetime object).
+    :param deadline_date: Data do prazo (datetime object).
+    :param event_dates: Lista de datas de eventos.
+    """
+    days_in_month = [date for date in pd.date_range(start=today.replace(day=1), end=deadline_date)]
+    x_values = [day.strftime('%Y-%m-%d') for day in days_in_month]
+
+    fig = go.Figure()
+
+    # Adicionando a linha do tempo com os dias do mês
+    fig.add_trace(go.Scatter(
+        x=x_values,
+        y=[1] * len(x_values),
+        mode='lines+markers',
+        line=dict(color='lightgrey', width=2),
+        marker=dict(color='lightgrey', size=6),
+        hoverinfo='x',
+        showlegend=False
+    ))
+
+    # Adicionando os eventos de manutenção
+    for date in event_dates:
+        fig.add_trace(go.Scatter(
+            x=[date.strftime('%Y-%m-%d')],
+            y=[1],
+            mode='markers+text',
+            marker=dict(color='green', size=12),
+            text=["Manutenção"],
+            textposition="top center",
+            showlegend=False,
+            hoverinfo='none'
+        ))
+
+    # Configura o layout do gráfico
+    fig.update_layout(
+        xaxis=dict(
+            tickmode='array',
+            tickvals=x_values,
+            ticktext=[day.strftime('%d') for day in days_in_month],
+            showline=False,
+            showgrid=False,
+            zeroline=False,
+            tickfont=dict(size=10),
+            tickangle=0,
+            ticks='outside',
+            ticklen=4,
+            tickwidth=1,
+        ),
+        yaxis=dict(visible=False),
+        height=150,
+        margin=dict(l=20, r=20, t=10, b=10),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+    )
+
+    # Renderiza o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+# plan_status - plan_timeline.py
+
+import streamlit as st
+from common.models import Client, RedesSociaisPlan
+from page_entregas.utils.assessoria_plan_utils import determinar_status
+from page_entregas.utils.timeline import render_timeline_chart
+
+
+from sqlalchemy.orm import Session
+from datetime import datetime
+
+# Função para exibir a linha do tempo do plano de redes sociais
+def display_plan_timeline(cliente_id):
+    with Session(bind=st.session_state["engine"]) as session:
+        # Busca os dados do cliente e o plano de redes sociais
+        client = session.query(Client).filter(Client.id == cliente_id).first()
+        redes_sociais_plan = session.query(RedesSociaisPlan).filter(RedesSociaisPlan.client_id == cliente_id).first()
+
+        # Determina o status do plano e a data de envio do plano
+        if redes_sociais_plan:
+            plan_status = determinar_status(client, redes_sociais_plan, client.monthly_plan_deadline_day)
+            if 'plan_sent_date' not in st.session_state or not st.session_state['plan_sent_date']:
+                st.session_state['plan_sent_date'] = redes_sociais_plan.send_date
+        else:
+            plan_status = "Plano não encontrado"
+            st.session_state['plan_sent_date'] = None
+
+        # Gera o título para a linha do tempo com base no próximo mês
+        next_month = (datetime.now().replace(day=28) + timedelta(days=4)).strftime('%B')
+        title = f"Planejamento Redes Sociais: {next_month.capitalize()}"
+
+        # Exibe o título
+        st.write(f"**{title}**")
+
+        # Define a data de hoje e a data do deadline
+        today = datetime.today()
+        deadline_date = datetime(today.year, today.month, client.monthly_plan_deadline_day)
+
+        # Renderiza a linha do tempo do plano
+        render_timeline_chart(today, deadline_date, st.session_state['plan_sent_date'])
+
+
+# plan_status - __init__.py
+
+
+
+# plan_status - plan_modal.py
+
+import streamlit as st
+from page_entregas.utils.assessoria_plan_utils import salvar_data_envio, determinar_status
+from common.models import RedesSociaisPlan
+from streamlit_modal import Modal
+from datetime import datetime
+import logging
+
+# Função para exibir o modal de envio do plano
+def display_plan_modal(cliente_id):
+    # Inicializa o modal fora dos containers estilizados
+    modal = Modal("Data de Envio do Plano", key="enviar-plano-modal", max_width=800)
+
+    if st.button("Enviar Plano"):
+        logging.info(f"Usuário clicou no botão 'Enviar Plano' para o cliente ID {cliente_id}")
+        modal.open()
+
+    # Verifica e abre o modal fora do container
+    if modal.is_open():
+        logging.info(f"Modal 'Data de Envio do Plano' foi aberto para o cliente ID {cliente_id}")
+        with modal.container():
+            selected_date = st.date_input("Selecione a Data de Envio", value=datetime.today())
+            if st.button("Confirmar"):
+                logging.info(f"Tentando salvar a data de envio para o cliente ID {cliente_id}")
+                salvar_data_envio(cliente_id, selected_date, RedesSociaisPlan, determinar_status)
+                st.session_state['plan_sent_date'] = selected_date
+                modal.close()  # Fecha o modal
+                st.success("Data de envio do plano atualizada com sucesso!")
+                st.rerun()  # Recarrega a página para refletir as mudanças
+
+
+# guidance_status - guidance_timeline.py
+
+import streamlit as st
+from datetime import datetime, timedelta
+from common.models import Client, RedesSociaisGuidance
+from page_entregas.utils.assessoria_plan_utils import determinar_status
+from page_entregas.utils.timeline import render_timeline_chart
+from sqlalchemy.orm import Session
+from common.database import engine
+
+# Função para exibir a linha do tempo do direcionamento
+def display_guidance_timeline(cliente_id):
+    # Abrindo uma sessão com o banco de dados
+    with Session(bind=engine) as session:
+        # Consultando o cliente e o status do direcionamento
+        client = session.query(Client).filter(Client.id == cliente_id).first()
+        redes_sociais_guidance = session.query(RedesSociaisGuidance).filter(RedesSociaisGuidance.client_id == cliente_id).first()
+
+        # Verificando se o direcionamento existe
+        if redes_sociais_guidance:
+            # Determina o status do direcionamento e recupera a data de envio
+            guidance_status = determinar_status(client, redes_sociais_guidance, client.monthly_redes_guidance_deadline_day)
+            if 'guidance_send_date' not in st.session_state or not st.session_state['guidance_send_date']:
+                st.session_state['guidance_send_date'] = redes_sociais_guidance.send_date
+        else:
+            guidance_status = "Direcionamento não encontrado"
+            st.session_state['guidance_send_date'] = None
+
+        # Exibir o título da linha do tempo
+        next_month = (datetime.now().replace(day=28) + timedelta(days=4)).strftime('%B')
+        title = f"Direcionamento Redes Sociais: {next_month.capitalize()}"
+        st.write(f"**{title}**")
+
+        # Definir datas importantes
+        today = datetime.today()
+        deadline_date = datetime(today.year, today.month, client.monthly_redes_guidance_deadline_day)
+
+        # Renderizar a linha do tempo
+        render_timeline_chart(today, deadline_date, st.session_state['guidance_send_date'])
+
+
+# guidance_status - __init__.py
+
+
+
+# guidance_status - guidance_modal.py
+
+import streamlit as st
+from datetime import datetime
+from streamlit_modal import Modal
+from common.models import RedesSociaisGuidance
+from page_entregas.utils.assessoria_plan_utils import salvar_data_envio, determinar_status
+import logging
+
+
+
+# Função para exibir o modal de envio do direcionamento
+def display_guidance_modal(cliente_id):
+    # Inicializa o modal com título
+    modal = Modal("Data de Envio do Direcionamento", key="enviar-direcionamento-modal", max_width=800)
+
+    # Verifica se o modal foi solicitado (se o botão foi clicado)
+    if st.button("Enviar Direcionamento"):
+        logging.info(f"Usuário clicou no botão 'Enviar Direcionamento' para o cliente ID {cliente_id}")
+        modal.open()
+
+    # Verifica se o modal está aberto
+    if modal.is_open():
+        logging.info(f"Modal 'Data de Envio do Direcionamento' foi aberto para o cliente ID {cliente_id}")
+        
+        # Conteúdo do modal
+        with modal.container():
+            # Input para seleção da data de envio
+            selected_date = st.date_input("Selecione a Data de Envio", value=datetime.today())
+            
+            # Botão para confirmar a data selecionada
+            if st.button("Confirmar"):
+                logging.info(f"Tentando salvar a data de envio do direcionamento para o cliente ID {cliente_id}")
+                
+                # Salvar a data de envio no banco de dados
+                salvar_data_envio(cliente_id, selected_date, RedesSociaisGuidance, determinar_status)
+                
+                # Atualiza a sessão com a nova data
+                st.session_state['guidance_send_date'] = selected_date
+                modal.close()  # Fecha o modal
+                st.success("Data de envio do direcionamento atualizada com sucesso!")
+                st.rerun()  # Recarrega a página para refletir as mudanças
+
+
+# content_production - content_production_modal.py
+
+import logging
+import streamlit as st
+from datetime import datetime
+from sqlalchemy.orm import Session
+from common.models import ContentProduction
+from common.database import engine
+from streamlit_modal import Modal
+
+# Função que abre o modal para adicionar uma nova reunião de Produção de Conteúdo
+def modal_content_production_open(cliente_id):
+    logging.debug(f"modal_content_production_open() chamado para o cliente ID {cliente_id}")
+
+    # Inicializa o modal para a reunião de Produção de Conteúdo com uma chave única
+    modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar-reuniao-content-modal", max_width=800)
+    logging.debug("Modal criado com sucesso.")
+
+    # Verifica se o modal está aberto e apresenta o formulário
+    if modal.is_open():
+        logging.info(f"Modal 'Adicionar Reunião de Produção de Conteúdo' está aberto para o cliente ID {cliente_id}.")
+        with modal.container():
+            # Campos de entrada para a nova reunião de Produção de Conteúdo
+            meeting_date = st.date_input("Data da Reunião", value=datetime.today())
+            meeting_subject = st.text_input("Assunto")
+            notes = st.text_area("Notas")
+            logging.debug("Campos de entrada exibidos.")
+
+            # Botão para salvar a reunião de Produção de Conteúdo
+            if st.button("Salvar"):
+                logging.info("Botão 'Salvar' foi clicado.")
+                if meeting_subject:  # Verifica se o campo assunto não está vazio
+                    save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
+                    modal.close()  # Fecha o modal após salvar
+                    logging.info(f"Reunião de Produção de Conteúdo salva com sucesso para o cliente ID {cliente_id}.")
+                    st.rerun()  # Recarrega a página para refletir as mudanças
+                else:
+                    st.error("O campo Assunto não pode estar vazio.")
+                    logging.warning("Tentativa de salvar reunião de Produção de Conteúdo sem o assunto preenchido.")
+    else:
+        logging.debug("Modal 'Adicionar Reunião de Produção de Conteúdo' não foi aberto.")
+
+# Função para salvar a nova reunião de Produção de Conteúdo no banco de dados
+def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
+    try:
+        with Session(bind=engine) as session:
+            new_entry = ContentProduction(
+                client_id=cliente_id,
+                meeting_date=meeting_date,
+                meeting_subject=meeting_subject,
+                notes=notes
+            )
+            session.add(new_entry)
+            session.commit()
+            st.success("Reunião de Produção de Conteúdo adicionada com sucesso!")
+            logging.info(f"Nova reunião de Produção de Conteúdo salva no banco de dados para o cliente ID {cliente_id}.")
+    except Exception as e:
+        logging.error(f"Erro ao salvar a reunião de Produção de Conteúdo: {e}")
+        st.error(f"Erro ao salvar a reunião de Produção de Conteúdo: {e}")
+
+
+# content_production - __init__.py
+
+
+
+# content_production - content_production_gauge.py
+
+import streamlit as st
+from plotly.graph_objects import Figure
+from streamlit_extras.stylable_container import stylable_container
+from page_entregas.utils.gauge import display_gauge_chart
+
+# ===========================================================
+# Funções para Exibição do Gauge de Produção de Conteúdo
+# ===========================================================
+
+def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    """
+    Exibe o gauge (gráfico de medidor) para produção de conteúdo.
+    """
+    st.write("**Produção de Conteúdo**")
+    
+    with stylable_container(key="content_production_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        # Exibir o gráfico de gauge para produção de conteúdo
+        gauge_chart = display_gauge_chart(
+            title="Produção de Conteúdo",
+            contracted=mandalecas_contratadas.get('ContentProduction', 0),
+            used=mandalecas_usadas.get('ContentProduction', 0),
+            accumulated=mandalecas_acumuladas.get('ContentProduction', 0)
+        )
+        st.plotly_chart(gauge_chart)
+
+
+# content_production - content_production_table.py
+
+import streamlit as st
+import pandas as pd
+from sqlalchemy.orm import Session
+from common.database import engine
+from page_entregas.content_production.content_production_modal import modal_content_production_open
+from common.models import ContentProduction
+
+def display_content_production_table(cliente_id):
+    modal = modal_content_production_open()  # Corrigida a importação do modal
+
+    with st.container():
+        st.write("**Histórico de Reuniões de Produção de Conteúdo**")
+        with st.container():
+            with Session(bind=engine) as session:
+                content_production_data = session.query(ContentProduction).filter(ContentProduction.client_id == cliente_id).all()
+
+                if not content_production_data:
+                    content_production_df = pd.DataFrame(columns=['Data da Reunião', 'Assunto', 'Notas'])
+                else:
+                    content_production_df = pd.DataFrame([{
+                        'Data da Reunião': row.meeting_date.strftime('%Y-%m-%d') if row.meeting_date else '',
+                        'Assunto': row.meeting_subject,
+                        'Notas': row.notes
+                    } for row in content_production_data])
+
+                st.table(content_production_df)
+
+        if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
+            modal.open()
+
+
