@@ -6,39 +6,41 @@ from common.models import ContentProduction
 from common.database import engine
 from streamlit_modal import Modal
 
-# Função que abre o modal para adicionar uma nova reunião de Produção de Conteúdo
+# Function to open the content production modal
 def modal_content_production_open(cliente_id):
-    logging.debug(f"modal_content_production_open() chamado para o cliente ID {cliente_id}")
+    logging.debug(f"modal_content_production_open() called for client ID {cliente_id}")
 
-    # Inicializa o modal para a reunião de Produção de Conteúdo com uma chave única
-    modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar-reuniao-content-modal", max_width=800)
-    logging.debug("Modal criado com sucesso.")
+    # Initialize the modal
+    modal = Modal("Add New Content Production Meeting", key="add-content-production-modal", max_width=800)
 
-    # Verifica se o modal está aberto e apresenta o formulário
-    if modal.is_open():
-        logging.info(f"Modal 'Adicionar Reunião de Produção de Conteúdo' está aberto para o cliente ID {cliente_id}.")
+    # Check if the modal should be open
+    if st.session_state.get("open_content_modal", False):
+        modal.open()
+        logging.debug("Content Production Modal opened.")
+
         with modal.container():
-            # Campos de entrada para a nova reunião de Produção de Conteúdo
-            meeting_date = st.date_input("Data da Reunião", value=datetime.today())
-            meeting_subject = st.text_input("Assunto")
-            notes = st.text_area("Notas")
-            logging.debug("Campos de entrada exibidos.")
+            with st.form(key='content_production_form'):
+                meeting_date = st.date_input("Meeting Date", value=datetime.today())
+                meeting_subject = st.text_input("Subject")
+                notes = st.text_area("Notes")
+                submit_button = st.form_submit_button(label='Save')
 
-            # Botão para salvar a reunião de Produção de Conteúdo
-            if st.button("Salvar"):
-                logging.info("Botão 'Salvar' foi clicado.")
-                if meeting_subject:  # Verifica se o campo assunto não está vazio
-                    save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
-                    modal.close()  # Fecha o modal após salvar
-                    logging.info(f"Reunião de Produção de Conteúdo salva com sucesso para o cliente ID {cliente_id}.")
-                    st.rerun()  # Recarrega a página para refletir as mudanças
-                else:
-                    st.error("O campo Assunto não pode estar vazio.")
-                    logging.warning("Tentativa de salvar reunião de Produção de Conteúdo sem o assunto preenchido.")
+                if submit_button:
+                    if meeting_subject:  # Ensure the subject is not empty
+                        save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
+                        logging.info(f"Content Production meeting saved for client ID {cliente_id}")
+
+                        st.success("Content Production meeting added successfully!")
+                        # Update the state and close the modal
+                        st.session_state["open_content_modal"] = False
+                        # No need to call st.experimental_rerun()
+                    else:
+                        st.error("The Subject field cannot be empty.")
     else:
-        logging.debug("Modal 'Adicionar Reunião de Produção de Conteúdo' não foi aberto.")
+        # Do not execute the modal content if it's not open
+        pass
 
-# Função para salvar a nova reunião de Produção de Conteúdo no banco de dados
+# Function to save the new content production meeting to the database
 def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
     try:
         with Session(bind=engine) as session:
@@ -50,8 +52,7 @@ def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes
             )
             session.add(new_entry)
             session.commit()
-            st.success("Reunião de Produção de Conteúdo adicionada com sucesso!")
-            logging.info(f"Nova reunião de Produção de Conteúdo salva no banco de dados para o cliente ID {cliente_id}.")
+            logging.info(f"New Content Production meeting saved to the database for client ID {cliente_id}.")
     except Exception as e:
-        logging.error(f"Erro ao salvar a reunião de Produção de Conteúdo: {e}")
-        st.error(f"Erro ao salvar a reunião de Produção de Conteúdo: {e}")
+        logging.error(f"Error saving the Content Production meeting: {e}")
+        st.error(f"Error saving the Content Production meeting: {e}")

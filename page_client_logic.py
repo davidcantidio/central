@@ -66,17 +66,28 @@ def update_cliente(cliente_id, updated_data):
         conn.commit()
 
 def get_used_mandalecas(cliente_id, start_date, end_date):
-    with sqlite3.connect('common/db_mandala.sqlite') as conn:
-        query = """
-            SELECT 
-                job_category,
-                SUM(used_mandalecas) as total_used_mandalecas
-            FROM delivery_control
-            WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
-            GROUP BY job_category
-        """
-        df = pd.read_sql_query(query, conn, params=(cliente_id, start_date, end_date))
-    return df
+    # Converter as datas para o formato string 'YYYY-MM-DD'
+    start_date_str = start_date.strftime('%Y-%m-%d')
+    end_date_str = end_date.strftime('%Y-%m-%d')
+
+    query = """
+        SELECT job_category, SUM(used_mandalecas) as total_used_mandalecas
+        FROM delivery_control
+        WHERE client_id = ? AND job_creation_date BETWEEN ? AND ?
+        GROUP BY job_category
+    """
+
+    try:
+        # Conectando ao banco de dados SQLite
+        with sqlite3.connect('common/db_mandala.sqlite') as conn:
+            # Executa a consulta SQL com as datas convertidas para string
+            df = pd.read_sql_query(query, conn, params=(cliente_id, start_date_str, end_date_str))
+        return df
+
+    except Exception as e:
+        # Log do erro (pode usar um logger no lugar de print)
+        print(f"Erro ao obter mandalecas usadas: {e}")
+        return None
 
 # Função para obter perfil do Instagram
 def get_instagram_profile(client_id):
@@ -107,121 +118,16 @@ def update_instagram_profile(client_id, user_name, official_hashtags, insights):
 
 # Função para exibir os detalhes do cliente
 def show_cliente(cliente_id, start_date, end_date):
-    df = get_clientes()
-    cliente = df[df["id"] == cliente_id].iloc[0]
+    st.write(f"Exibindo dados do cliente {cliente_id} de {start_date} a {end_date}")
+    
+    # Obter dados das mandalecas usadas
     used_mandalecas_df = get_used_mandalecas(cliente_id, start_date, end_date)
-
-    # Agrupa as mandalecas usadas por categoria
-    used_mandalecas = used_mandalecas_df.set_index('job_category').to_dict()['total_used_mandalecas']
-
-    instagram_profile = get_instagram_profile(cliente_id)
     
-    st.title(f"Cliente: {cliente['name']}")
-    
-    with st.sidebar:
-        menu = option_menu(
-            menu_title="Menu do Cliente",
-            options=["Início", "Briefings", "Planos", "Campanhas"],
-            icons=["house", "file-text", "map", "bullhorn"],
-            menu_icon="cast",
-            default_index=0,
-            orientation="vertical"
-        )
-
-    if menu == "Início":
-        st.header("Informações do Cliente")
-        name = st.text_input("Nome", cliente['name'])
-        n_monthly_contracted_creative_mandalecas = st.number_input("Mandalecas Criativas Mensais Contratadas", value=cliente['n_monthly_contracted_creative_mandalecas'])
-        n_monthly_contracted_format_adaptation_mandalecas = st.number_input("Mandalecas de Adaptação de Formato Mensais Contratadas", value=cliente['n_monthly_contracted_format_adaptation_mandalecas'])
-        n_monthly_contracted_content_production_mandalecas = st.number_input("Mandalecas de Produção de Conteúdo Mensais Contratadas", value=cliente['n_monthly_contracted_content_production_mandalecas'])
-        n_monthly_contracted_stories_instagram_mandalecas = st.number_input("Mandalecas de Stories Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_instagram_mandalecas'])
-        n_monthly_contracted_feed_linkedin_mandalecas = st.number_input("Mandalecas de Feed LinkedIn Mensais Contratadas", value=cliente['n_monthly_contracted_feed_linkedin_mandalecas'])
-        n_monthly_contracted_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Mensais Contratadas", value=cliente['n_monthly_contracted_feed_tiktok_mandalecas'])
-        n_monthly_contracted_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_stories_repost_instagram_mandalecas'])
-        n_monthly_contracted_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Mensais Contratadas", value=cliente['n_monthly_contracted_feed_instagram_mandalecas'])
-        n_monthly_contracted_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_static'])
-        n_monthly_contracted_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Mensais Contratadas", value=cliente['n_monthly_contracted_trafego_pago_animated'])
-
-        # Novos campos adicionados aqui
-        n_monthly_contracted_blog_text_mandalecas = st.number_input("Mandalecas de Texto de Blog Mensais Contratadas", value=cliente['n_monthly_contracted_blog_text_mandalecas'])
-        n_monthly_contracted_website_maintenance_mandalecas = st.number_input("Mandalecas de Manutenção de Website Mensais Contratadas", value=cliente['n_monthly_contracted_website_maintenance_mandalecas'])
-
-        accumulated_creative_mandalecas = st.number_input("Mandalecas Criativas Acumuladas", value=cliente['accumulated_creative_mandalecas'])
-        accumulated_format_adaptation_mandalecas = st.number_input("Mandalecas de Adaptação de Formato Acumuladas", value=cliente['accumulated_format_adaptation_mandalecas'])
-        accumulated_content_production_mandalecas = st.number_input("Mandalecas de Produção de Conteúdo Acumuladas", value=cliente['accumulated_content_production_mandalecas'])
-        accumulated_stories_instagram_mandalecas = st.number_input("Mandalecas de Stories Instagram Acumuladas", value=cliente['accumulated_stories_instagram_mandalecas'])
-        accumulated_feed_linkedin_mandalecas = st.number_input("Mandalecas de Feed LinkedIn Acumuladas", value=cliente['accumulated_feed_linkedin_mandalecas'])
-        accumulated_feed_tiktok_mandalecas = st.number_input("Mandalecas de Feed TikTok Acumuladas", value=cliente['accumulated_feed_tiktok_mandalecas'])
-        accumulated_stories_repost_instagram_mandalecas = st.number_input("Mandalecas de Stories Repost Instagram Acumuladas", value=cliente['accumulated_stories_repost_instagram_mandalecas'])
-        accumulated_feed_instagram_mandalecas = st.number_input("Mandalecas de Feed Instagram Acumuladas", value=cliente['accumulated_feed_instagram_mandalecas'])
-        accumulated_trafego_pago_static = st.number_input("Mandalecas de Tráfego Pago Estático Acumuladas", value=cliente['accumulated_trafego_pago_static'])
-        accumulated_trafego_pago_animated = st.number_input("Mandalecas de Tráfego Pago Animado Acumuladas", value=cliente['accumulated_trafego_pago_animated'])
-
-        # Novos campos adicionados aqui
-        accumulated_blog_text_mandalecas = st.number_input("Mandalecas de Texto de Blog Acumuladas", value=cliente['accumulated_blog_text_mandalecas'])
-        accumulated_website_maintenance_mandalecas = st.number_input("Mandalecas de Manutenção de Website Acumuladas", value=cliente['accumulated_website_maintenance_mandalecas'])
-
-        if st.button("Atualizar"):
-            if not name:
-                st.error("O campo 'Nome' não pode ficar em branco.")
-            else:
-                updated_data = {
-                    'name': name,
-                    'n_monthly_contracted_creative_mandalecas': n_monthly_contracted_creative_mandalecas,
-                    'n_monthly_contracted_format_adaptation_mandalecas': n_monthly_contracted_format_adaptation_mandalecas,
-                    'n_monthly_contracted_content_production_mandalecas': n_monthly_contracted_content_production_mandalecas,
-                    'n_monthly_contracted_stories_instagram_mandalecas': n_monthly_contracted_stories_instagram_mandalecas,
-                    'n_monthly_contracted_feed_linkedin_mandalecas': n_monthly_contracted_feed_linkedin_mandalecas,
-                    'n_monthly_contracted_feed_tiktok_mandalecas': n_monthly_contracted_feed_tiktok_mandalecas,
-                    'n_monthly_contracted_stories_repost_instagram_mandalecas': n_monthly_contracted_stories_repost_instagram_mandalecas,
-                    'n_monthly_contracted_feed_instagram_mandalecas': n_monthly_contracted_feed_instagram_mandalecas,
-                    'n_monthly_contracted_trafego_pago_static': n_monthly_contracted_trafego_pago_static,
-                    'n_monthly_contracted_trafego_pago_animated': n_monthly_contracted_trafego_pago_animated,
-                    'n_monthly_contracted_blog_text_mandalecas': n_monthly_contracted_blog_text_mandalecas,
-                    'n_monthly_contracted_website_maintenance_mandalecas': n_monthly_contracted_website_maintenance_mandalecas,
-                    'accumulated_creative_mandalecas': accumulated_creative_mandalecas,
-                    'accumulated_format_adaptation_mandalecas': accumulated_format_adaptation_mandalecas,
-                    'accumulated_content_production_mandalecas': accumulated_content_production_mandalecas,
-                    'accumulated_stories_instagram_mandalecas': accumulated_stories_instagram_mandalecas,
-                    'accumulated_feed_linkedin_mandalecas': accumulated_feed_linkedin_mandalecas,
-                    'accumulated_feed_tiktok_mandalecas': accumulated_feed_tiktok_mandalecas,
-                    'accumulated_stories_repost_instagram_mandalecas': accumulated_stories_repost_instagram_mandalecas,
-                    'accumulated_feed_instagram_mandalecas': accumulated_feed_instagram_mandalecas,
-                    'accumulated_trafego_pago_static': accumulated_trafego_pago_static,
-                    'accumulated_trafego_pago_animated': accumulated_trafego_pago_animated,
-                    'accumulated_blog_text_mandalecas': accumulated_blog_text_mandalecas,
-                    'accumulated_website_maintenance_mandalecas': accumulated_website_maintenance_mandalecas
-                }
-
-                update_cliente(cliente_id, updated_data)
-                st.success("Dados do cliente atualizados com sucesso!")
-        
-        st.header("Perfil do Instagram")
-        user_name = st.text_input("Nome de Usuário", instagram_profile['user_name'] if instagram_profile else "")
-        official_hashtags = st.text_area("Hashtags Oficiais", ", ".join(instagram_profile['official_hashtags']) if instagram_profile else "")
-        
-        if st.button("Atualizar Perfil do Instagram"):
-            update_instagram_profile(cliente_id, user_name, official_hashtags.split(", "))
-            st.success("Perfil do Instagram atualizado com sucesso!")
-        
-        # Exibir tabela de dados
-        st.subheader("Detalhes das Mandalecas")
-        dados = {
-            "Cliente": [cliente['name']],
-            "Mandalecas Contratadas Criação": [cliente['n_monthly_contracted_creative_mandalecas']],
-            "Mandalecas Usadas Criação": [used_mandalecas.get(JobCategoryEnum.CRIACAO.value, 0)]
-        }
-        df_tabela = pd.DataFrame(dados)
-        st.table(df_tabela)
-    elif menu == "Briefings":
-        st.header("Briefings")
-        st.write("Conteúdo para Briefings")
-    elif menu == "Planos":
-        st.header("Planos")
-        st.write("Conteúdo para Planos")
-    elif menu == "Campanhas":
-        st.header("Campanhas")
-        st.write("Conteúdo para Campanhas")
+    if used_mandalecas_df is not None and not used_mandalecas_df.empty:
+        st.write("Mandalecas usadas:")
+        st.dataframe(used_mandalecas_df)
+    else:
+        st.write("Nenhum dado de mandalecas encontrado para o período selecionado.")
 
 # Código principal para executar a função show_cliente com exemplo de dados
 if __name__ == "__main__":
