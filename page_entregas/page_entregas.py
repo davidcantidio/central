@@ -2,22 +2,10 @@ import streamlit as st
 import pandas as pd
 import logging
 from streamlit_modal import Modal
-
-# Importações das funções dentro da pasta page_entregas
+from streamlit_extras.stylable_container import stylable_container  # Importe o stylable_container
 from page_entregas.attention_points.attention_points_table import display_attention_points_table
 from page_entregas.attention_points.attention_points_modal import modal_attention_point_open
-# from page_entregas.content_production.content_production_table import display_content_production_table
-# from page_entregas.content_production.content_production_modal import modal_content_production_open
-# from page_entregas.creation_and_adaptation.creation_gauge import display_creation_gauge
-# from page_entregas.creation_and_adaptation.adaptation_gauge import display_adaptation_gauge
-# from page_entregas.guidance_status.guidance_modal import display_guidance_modal
-# from page_entregas.guidance_status.guidance_timeline import display_guidance_timeline
-# from page_entregas.paid_traffic.traffic_gauge import display_traffic_gauge
-# from page_entregas.plan_status.plan_modal import display_plan_modal
-# from page_entregas.plan_status.plan_timeline import display_plan_timeline
-# from page_entregas.social_media.social_media_gauges import display_other_networks_gauge
-# from page_entregas.website_maintenance.website_gauge_timeline import display_website_maintenance_gauge_and_timeline
-# from page_entregas.utils.mandalecas import calcular_mandalecas
+from page_client_logic import get_clientes
 
 # Configuração de logging
 logging.basicConfig(filename='debug_log.log', level=logging.DEBUG,
@@ -26,107 +14,112 @@ logging.basicConfig(filename='debug_log.log', level=logging.DEBUG,
 # Configurações iniciais do Streamlit
 st.set_page_config(layout="wide")
 
-# Função para organizar e exibir a página de entregas
 def page_entregas(engine):
     logging.debug("Entrando na função page_entregas()")
 
-    if "cliente_id" not in st.session_state or st.session_state["cliente_id"] is None:
-        logging.warning("Nenhum cliente selecionado. Exibindo mensagem de erro.")
-        st.error("Selecione um cliente para visualizar as entregas.")
+    # ===========================================================
+    # Seção de Seletores de Cliente e Intervalo de Datas
+    # ===========================================================
+
+    # Obter a lista de clientes
+    clientes_df = get_clientes()
+
+    # Verificar se há clientes disponíveis
+    if clientes_df.empty:
+        st.error("Nenhum cliente disponível.")
         return
 
-    cliente_id = st.session_state["cliente_id"]
-    logging.debug(f"Cliente selecionado: {cliente_id}")
+    # Inicializar o st.session_state para data_inicio e data_fim, se necessário
+    if "data_inicio" not in st.session_state:
+        st.session_state["data_inicio"] = pd.to_datetime("2023-01-01")
+    if "data_fim" not in st.session_state:
+        st.session_state["data_fim"] = pd.to_datetime("2023-12-31")
+    if "cliente_id" not in st.session_state:
+        st.session_state["cliente_id"] = clientes_df["id"].iloc[0]
 
-    # Definir data de início e fim
-    data_inicio = st.session_state.get("data_inicio", pd.to_datetime("2023-01-01"))
-    data_fim = st.session_state.get("data_fim", pd.to_datetime("2023-12-31"))
-    logging.debug(f"Data início: {data_inicio}, Data fim: {data_fim}")
+    # Criar um formulário para os seletores
+    with st.form(key='filters_form'):
+        col1, col2 = st.columns([2, 2])
+
+        with col1:
+            # Seletor de Cliente
+            options = clientes_df["id"].tolist()
+            selected_index = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]].index[0]
+            selected_index = int(selected_index)  # Garantir que seja um int nativo
+
+            cliente_id = st.selectbox(
+                "Selecione o Cliente",
+                options=options,
+                index=selected_index,
+                format_func=lambda x: clientes_df[clientes_df["id"] == x]["name"].values[0],
+                key="cliente_id"
+            )
+
+        with col2:
+            # Seletor de Intervalo de Datas
+            date_range = st.date_input(
+                "Selecione o Intervalo de Datas",
+                value=(st.session_state["data_inicio"], st.session_state["data_fim"]),
+                key="date_range"
+            )
+
+        # Botão para aplicar os filtros
+        submit_button = st.form_submit_button(label='Aplicar Filtros')
+
+    # Verifica se o botão foi clicado
+    if submit_button:
+        # Validar o intervalo de datas
+        if isinstance(date_range, tuple) and len(date_range) == 2:
+            data_inicio, data_fim = date_range
+            # Atualizar o st.session_state com os valores selecionados
+            st.session_state["data_inicio"] = data_inicio
+            st.session_state["data_fim"] = data_fim
+            logging.debug("Filtros aplicados. Reexecutando a página.")
+            # Reexecuta a página para atualizar os dados
+            st.experimental_rerun()
+        else:
+            st.error("Por favor, selecione um intervalo de datas válido.")
+
+    # Log dos valores selecionados
+    logging.debug(f"Cliente selecionado: {st.session_state['cliente_id']}")
+    logging.debug(f"Data início: {st.session_state['data_inicio']}, Data fim: {st.session_state['data_fim']}")
 
     # ===========================================================
-    # Seção de Pontos de Atenção
+    # Seção de Pontos de Atenção com Contêiner Estilizado
     # ===========================================================
-    # Exibir tabela de pontos de atenção
-    logging.debug("Exibindo tabela de pontos de atenção")
-    display_attention_points_table(cliente_id, data_inicio, data_fim, engine)
+    # Definir o estilo CSS do contêiner
+    container_style = """
+    {
+        background-color: #FFFFFF;
+        border-radius: 10px;
+        border: 1px dashed gray;
+        padding: 15px;
+        margin-top: 15px;
+        margin-bottom: 45px;
+        margin-right: 15px;
+    }
+    """
 
-    # Inicializar o modal para adicionar ponto de atenção
-    modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
+    with stylable_container(key="attention_points_container", css_styles=container_style):
+        st.write("### Pontos de Atenção")
+        # Exibir tabela de pontos de atenção
+        logging.debug("Exibindo tabela de pontos de atenção")
+        display_attention_points_table(
+            st.session_state["cliente_id"],
+            st.session_state["data_inicio"],
+            st.session_state["data_fim"],
+            engine
+        )
 
-    # Botão para abrir o modal
-    if st.button("Adicionar Ponto de Atenção"):
-        modal.open()
-        logging.debug("Botão 'Adicionar Ponto de Atenção' clicado. Modal aberto.")
+        # Inicializar o modal para adicionar ponto de atenção
+        modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
 
-    # Verifica se o modal está aberto
-    if modal.is_open():
-        # Chamar a função que exibe o conteúdo do modal
-        modal_attention_point_open(engine, modal)
+        # Botão para abrir o modal
+        if st.button("Adicionar Ponto de Atenção"):
+            modal.open()
+            logging.debug("Botão 'Adicionar Ponto de Atenção' clicado. Modal aberto.")
 
-    # ===========================================================
-    # As seguintes seções estão comentadas para isolar o problema
-    # ===========================================================
-
-    # # ===========================================================
-    # # Seção de Produção de Conteúdo
-    # # ===========================================================
-    # # Exibir tabela de produção de conteúdo
-    # logging.debug("Exibindo tabela de produção de conteúdo")
-    # display_content_production_table(cliente_id)
-
-    # # Inicializar o modal para adicionar produção de conteúdo
-    # content_modal = Modal("Adicionar Produção de Conteúdo", key="adicionar-producao-modal", max_width=800)
-
-    # # Botão para abrir o modal de produção de conteúdo
-    # if st.button("Adicionar Produção de Conteúdo"):
-    #     content_modal.open()
-    #     logging.debug("Botão 'Adicionar Produção de Conteúdo' clicado. Modal aberto.")
-
-    # # Verifica se o modal está aberto
-    # if content_modal.is_open():
-    #     # Chamar a função que exibe o conteúdo do modal
-    #     modal_content_production_open(cliente_id, content_modal)
-
-    # # ===========================================================
-    # # Cálculo de Mandalecas
-    # # ===========================================================
-    # logging.debug("Calculando mandalecas")
-    # mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
-
-    # # ===========================================================
-    # # Seção de Criação e Adaptação
-    # # ===========================================================
-    # logging.debug("Exibindo gauges de criação e adaptação")
-    # display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    # display_adaptation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-
-    # # ===========================================================
-    # # Seção de Tráfego Pago
-    # # ===========================================================
-    # logging.debug("Exibindo gauge de tráfego pago")
-    # display_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-
-    # # ===========================================================
-    # # Seção de Plano e Direcionamento
-    # # ===========================================================
-    # logging.debug("Exibindo timeline de plano e modal")
-    # display_plan_timeline(cliente_id)
-    # display_plan_modal(cliente_id)
-    # display_guidance_timeline(cliente_id)
-    # display_guidance_modal(cliente_id)
-
-    # # ===========================================================
-    # # Seção de Redes Sociais
-    # # ===========================================================
-    # logging.debug("Exibindo gauges de redes sociais")
-    # display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-
-    # # ===========================================================
-    # # Seção de Manutenção de Website
-    # # ===========================================================
-    # logging.debug("Exibindo gauge e timeline de manutenção de website")
-    # # Você deve obter as datas de manutenção necessárias
-    # maintenance_dates = []  # Substitua por suas datas reais
-    # display_website_maintenance_gauge_and_timeline(
-    #     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, maintenance_dates
-    # )
+        # Verifica se o modal está aberto
+        if modal.is_open():
+            # Chamar a função que exibe o conteúdo do modal
+            modal_attention_point_open(engine, modal)
