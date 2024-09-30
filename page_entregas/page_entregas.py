@@ -95,6 +95,22 @@ def page_entregas(engine):
     # Botão para adicionar ponto de atenção
     # ===========================================================
 
+    add_attention_point(engine)
+
+    # ===========================================================
+    # Exibir Pontos de Atenção
+    # ===========================================================
+
+    st.write("### Pontos de Atenção")
+    display_attention_points_table(
+        st.session_state["cliente_id"],
+        st.session_state["data_inicio"],
+        st.session_state["data_fim"],
+        engine
+    )
+
+
+def add_attention_point(engine):
     if "add_new" not in st.session_state:
         st.session_state["add_new"] = False
 
@@ -117,18 +133,6 @@ def page_entregas(engine):
                     st.rerun()
                 else:
                     st.error("A descrição do ponto de atenção não pode estar vazia.")
-
-    # ===========================================================
-    # Exibir Pontos de Atenção
-    # ===========================================================
-
-    st.write("### Pontos de Atenção")
-    display_attention_points_table(
-        st.session_state["cliente_id"],
-        st.session_state["data_inicio"],
-        st.session_state["data_fim"],
-        engine
-    )
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
