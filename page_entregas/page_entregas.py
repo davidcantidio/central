@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from common.models import AttentionPoints, Client
 from datetime import datetime
 import locale
+from streamlit_modal import Modal
 
 # Configurar a localidade para português do Brasil
 try:
@@ -95,8 +96,7 @@ def page_entregas(engine):
     # Botão para adicionar ponto de atenção
     # ===========================================================
 
-    add_attention_point(engine)
-
+    add_attention_point_modal(engine)
     # ===========================================================
     # Exibir Pontos de Atenção
     # ===========================================================
@@ -109,30 +109,49 @@ def page_entregas(engine):
         engine
     )
 
+# Função para adicionar um novo ponto de atenção utilizando streamlit-modal
+def add_attention_point_modal(engine):
+    # Passo 3: Definir o modal
+    modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar_ponto_modal", padding=20, max_width=744)
 
-def add_attention_point(engine):
-    if "add_new" not in st.session_state:
-        st.session_state["add_new"] = False
-
+    # Passo 4: Botão para abrir o modal
     if st.button("Adicionar Ponto de Atenção"):
-        st.session_state["add_new"] = True
+        modal.open()
 
-    if st.session_state["add_new"]:
-        # Exibe o formulário para adicionar novo ponto de atenção
-        st.write("### Novo Ponto de Atenção")
-        with st.form(key='new_attention_point_form'):
-            selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
-            attention_description = st.text_area("Descrição do Ponto de Atenção")
-            submit_new = st.form_submit_button(label='Salvar')
+    # Passo 5: Exibir o modal se estiver aberto
+    if modal.is_open():
+        with modal.container():
+            st.write("### Novo Ponto de Atenção")
+            # Passo 6: Exibir o formulário dentro do modal
+            with st.form(key='new_attention_point_form'):
+                selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
+                attention_description = st.text_area("Descrição do Ponto de Atenção")
+                submit_new = st.form_submit_button(label='Salvar')
 
-            if submit_new:
-                if attention_description:  # Verifica se a descrição não está vazia
-                    save_new_attention_point(st.session_state["cliente_id"], selected_date, attention_description, engine)
-                    st.success("Ponto de atenção adicionado com sucesso!")
-                    st.session_state["add_new"] = False
-                    st.rerun()
-                else:
-                    st.error("A descrição do ponto de atenção não pode estar vazia.")
+                # Manipulação da submissão
+                if submit_new:
+                    if attention_description:  # Verifica se a descrição não está vazia
+                        save_new_attention_point(st.session_state["cliente_id"], selected_date, attention_description, engine)
+                        st.success("Ponto de atenção adicionado com sucesso!")
+                        modal.close()  # Fechar o modal
+                        st.rerun()  # Recarregar a página
+                    else:
+                        st.error("A descrição do ponto de atenção não pode estar vazia.")
+
+# Função para salvar o novo ponto de atenção no banco de dados
+def save_new_attention_point(cliente_id, attention_date, attention_point, engine):
+    try:
+        with Session(bind=engine) as session:
+            new_entry = AttentionPoints(
+                client_id=cliente_id,
+                date=attention_date,
+                attention_point=attention_point
+            )
+            session.add(new_entry)
+            session.commit()  # Commit da nova entrada
+            st.success("Ponto de atenção salvo com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao salvar o ponto de atenção: {e}")
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
