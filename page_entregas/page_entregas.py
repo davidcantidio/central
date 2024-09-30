@@ -192,6 +192,8 @@ def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
                 st.session_state['edit_modal_open'] = False
             if 'delete_item_id' not in st.session_state:
                 st.session_state['delete_item_id'] = None
+            if 'delete_modal_open' not in st.session_state:
+                st.session_state['delete_modal_open'] = False
 
             # Exibir a tabela com botões de ação
             for index, row in attention_points_df.iterrows():
@@ -200,23 +202,22 @@ def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
                 col2.write(row['Ponto de Atenção'])
                 if col3.button('✏️', key=f'edit_{row["ID"]}', help='Editar'):
                     st.session_state['edit_item_id'] = row['ID']
-                    st.session_state['edit_modal_open'] = True  # Abrir modal
-
+                    st.session_state['edit_modal_open'] = True  # Abrir modal de edição
                 if col4.button('🗑️', key=f'delete_{row["ID"]}', help='Excluir'):
                     st.session_state['delete_item_id'] = row['ID']
+                    st.session_state['delete_modal_open'] = True  # Abrir modal de exclusão
 
-            # Processar edição
+            # Processar edição - abrir o modal ao clicar no botão de editar
             if st.session_state['edit_modal_open']:
                 edit_modal(engine, st.session_state['edit_item_id'])
 
-            # Processar exclusão
-            if st.session_state['delete_item_id'] is not None:
-                delete_item(engine, st.session_state['delete_item_id'])
+            # Processar exclusão - abrir o modal ao clicar no botão de excluir
+            if st.session_state['delete_modal_open']:
+                delete_modal(engine, st.session_state['delete_item_id'])
 
     except Exception as e:
         st.error(f"Erro ao carregar pontos de atenção: {e}")
         logging.error(f"Erro ao carregar pontos de atenção: {e}")
-
 
 def edit_modal(engine, item_id):
     # Criar e configurar o modal
@@ -258,33 +259,48 @@ def edit_modal(engine, item_id):
                         else:
                             st.error("A descrição do ponto de atenção não pode estar vazia.")
 
-def delete_item(engine, item_id):
-    st.write("### Excluir Ponto de Atenção")
-    st.warning("Tem certeza que deseja excluir este ponto de atenção? Esta ação não pode ser desfeita.")
-    col1, col2 = st.columns(2)
-    with col1:
-        confirm_delete = st.button("Excluir", key=f'confirm_delete_{item_id}')
-    with col2:
-        cancel_delete = st.button("Cancelar", key=f'cancel_delete_{item_id}')
+def delete_modal(engine, item_id):
+    """
+    Exibe o modal de confirmação de exclusão do ponto de atenção.
+    """
+    modal = Modal("Excluir Ponto de Atenção", key=f'delete_modal_{item_id}', padding=20, max_width=744)
 
-    if confirm_delete:
-        try:
-            with Session(bind=engine) as session:
-                attention_point = session.query(AttentionPoints).get(item_id)
-                if attention_point:
-                    session.delete(attention_point)  # Deletar o ponto
-                    session.commit()  # Commit da exclusão
-                    st.success("Ponto de atenção excluído com sucesso!")
-                    st.session_state['delete_item_id'] = None  # Reseta o estado após exclusão
-                    st.rerun()
-                else:
-                    st.error("Ponto de atenção não encontrado.")
-        except Exception as e:
-            st.error(f"Erro ao excluir o ponto de atenção: {e}")
-    elif cancel_delete:
-        st.info("Operação de exclusão cancelada.")
-        st.session_state['delete_item_id'] = None  # Reseta o estado se o usuário cancelar
+    # Abrir o modal se o botão de exclusão foi clicado
+    if st.session_state['delete_modal_open']:
+        with Session(bind=engine) as session:
+            attention_point = session.query(AttentionPoints).get(item_id)
 
+            if attention_point is None:
+                st.error("Ponto de atenção não encontrado.")
+                st.session_state['delete_modal_open'] = False  # Fechar o modal se o item não for encontrado
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Excluir Ponto de Atenção")
+                st.warning(f"Tem certeza que deseja excluir o ponto de atenção do dia {attention_point.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
+
+                # Botões de confirmação e cancelamento
+                col1, col2 = st.columns(2)
+                with col1:
+                    confirm_delete = st.button("Excluir", key=f'confirm_delete_{item_id}')
+                with col2:
+                    cancel_delete = st.button("Cancelar", key=f'cancel_delete_{item_id}')
+
+                # Processar exclusão
+                if confirm_delete:
+                    try:
+                        session.delete(attention_point)  # Deletar o ponto
+                        session.commit()  # Commit da exclusão
+                        st.success("Ponto de atenção excluído com sucesso!")
+                        st.session_state['delete_item_id'] = None  # Resetar o estado após exclusão
+                        st.session_state['delete_modal_open'] = False  # Fechar o modal
+                        st.rerun()  # Recarregar a página
+                    except Exception as e:
+                        st.error(f"Erro ao excluir o ponto de atenção: {e}")
+                elif cancel_delete:
+                    st.info("Operação de exclusão cancelada.")
+                    st.session_state['delete_modal_open'] = False  # Fechar o modal se o usuário cancelar
 # Função para salvar um novo ponto de atenção
 def save_new_attention_point(cliente_id, attention_date, attention_point, engine):
     """
