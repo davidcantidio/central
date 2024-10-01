@@ -1,7 +1,8 @@
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 import pandas as pd
 from sqlalchemy.orm import Session
-from common.models import AttentionPoints  # Assumindo que o modelo AttentionPoints está neste caminho
+from common.models import AttentionPoints  # Verifique se o caminho está correto
 import logging
 from page_entregas.attention_points.attention_points_modal import edit_modal, delete_modal
 
@@ -9,7 +10,7 @@ from page_entregas.attention_points.attention_points_modal import edit_modal, de
 def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
     """
     Exibe a tabela de pontos de atenção para um cliente, em um intervalo de datas,
-    com botões de Editar e Excluir.
+    com botões de Editar e Excluir, encapsulada em um container estilizado.
     """
     try:
         with Session(bind=engine) as session:
@@ -31,35 +32,41 @@ def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
 
             attention_points_df = pd.DataFrame(data)
 
-            # Inicializar variáveis de estado para edição e exclusão
-            if 'edit_item_id' not in st.session_state:
-                st.session_state['edit_item_id'] = None
-            if 'edit_modal_open' not in st.session_state:
-                st.session_state['edit_modal_open'] = False
-            if 'delete_item_id' not in st.session_state:
-                st.session_state['delete_item_id'] = None
-            if 'delete_modal_open' not in st.session_state:
-                st.session_state['delete_modal_open'] = False
+            # Definir o CSS para o container apenas da tabela
+            css_tabela = """
+            {
+                border: 1px dashed lightgray;
+                border-radius: 10px;
+                padding: 15px;
+                margin-top: 10px;
+                background-color: white;
+            }
+            """
 
-            # Exibir a tabela com botões de ação
-            for index, row in attention_points_df.iterrows():
-                col1, col2, col3, col4 = st.columns([2, 7, 1, 1])
-                col1.write(row['Data'])
-                col2.write(row['Ponto de Atenção'])
-                if col3.button('✏️', key=f'edit_{row["ID"]}', help='Editar'):
-                    st.session_state['edit_item_id'] = row['ID']
-                    st.session_state['edit_modal_open'] = True  # Abrir modal de edição
-                if col4.button('🗑️', key=f'delete_{row["ID"]}', help='Excluir'):
-                    st.session_state['delete_item_id'] = row['ID']
-                    st.session_state['delete_modal_open'] = True  # Abrir modal de exclusão
+            # Encapsular a tabela e os botões de ação no container estilizado
+            with stylable_container(
+                key="tabela_attention_points",
+                css_styles=css_tabela
+            ):
+                # Exibir a tabela com botões de ação
+                for index, row in attention_points_df.iterrows():
+                    col1, col2, col3, col4 = st.columns([2, 7, 1, 1])
+                    col1.write(row['Data'])
+                    col2.write(row['Ponto de Atenção'])
+                    if col3.button('✏️', key=f'edit_{row["ID"]}', help='Editar'):
+                        st.session_state['edit_item_id'] = row['ID']
+                        st.session_state['edit_modal_open'] = True  # Abrir modal de edição
+                    if col4.button('🗑️', key=f'delete_{row["ID"]}', help='Excluir'):
+                        st.session_state['delete_item_id'] = row['ID']
+                        st.session_state['delete_modal_open'] = True  # Abrir modal de exclusão
 
-            # Processar edição - abrir o modal ao clicar no botão de editar
-            if st.session_state['edit_modal_open']:
-                edit_modal(engine, st.session_state['edit_item_id'])
+        # Processar edição - abrir o modal ao clicar no botão de editar
+        if st.session_state.get('edit_modal_open'):
+            edit_modal(engine, st.session_state['edit_item_id'])
 
-            # Processar exclusão - abrir o modal ao clicar no botão de excluir
-            if st.session_state['delete_modal_open']:
-                delete_modal(engine, st.session_state['delete_item_id'])
+        # Processar exclusão - abrir o modal ao clicar no botão de excluir
+        if st.session_state.get('delete_modal_open'):
+            delete_modal(engine, st.session_state['delete_item_id'])
 
     except Exception as e:
         st.error(f"Erro ao carregar pontos de atenção: {e}")
