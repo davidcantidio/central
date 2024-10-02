@@ -6,7 +6,6 @@ from common.models import AttentionPoints, Client
 from datetime import datetime
 import locale
 from streamlit_modal import Modal
-from page_entregas.attention_points.attention_points_modal import add_attention_point_modal
 from page_entregas.attention_points.attention_points_table import display_attention_points_table
 # Configurar a localidade para português do Brasil
 try:
@@ -97,12 +96,11 @@ def page_entregas(engine):
     # Botão para adicionar ponto de atenção
     # ===========================================================
 
-    add_attention_point_modal(engine)
     # ===========================================================
     # Exibir Pontos de Atenção
     # ===========================================================
 
-    st.write("### Pontos de Atenção")
+    
     display_attention_points_table(
         st.session_state["cliente_id"],
         st.session_state["data_inicio"],
