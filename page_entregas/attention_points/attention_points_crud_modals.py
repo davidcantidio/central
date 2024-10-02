@@ -5,18 +5,18 @@ import logging
 from common.models import AttentionPoints
 from datetime import datetime
 
-def edit_attention_point_modal(engine, item_id):
+def edit_modal(engine, item_id):
     # Criar e configurar o modal
-    modal = Modal("Editar Ponto de Atenção", key=f'edit_attention_point_modal_{item_id}', padding=20, max_width=744)
+    modal = Modal("Editar Ponto de Atenção", key=f'edit_modal_{item_id}', padding=20, max_width=744)
 
     # Exibir modal se o botão de edição foi clicado
-    if st.session_state['edit_attention_point_modal_open']:
+    if st.session_state['edit_modal_open']:
         with Session(bind=engine) as session:
             attention_point = session.query(AttentionPoints).get(item_id)
 
             if attention_point is None:
                 st.error("Ponto de atenção não encontrado.")
-                st.session_state['edit_attention_point_modal_open'] = False  # Fechar o modal
+                st.session_state['edit_modal_open'] = False  # Fechar o modal
                 return
 
             # Exibir o conteúdo do modal
@@ -38,27 +38,27 @@ def edit_attention_point_modal(engine, item_id):
                                 session.commit()  # Commit da alteração
                                 st.success("Ponto de atenção atualizado com sucesso!")
                                 st.session_state['edit_item_id'] = None  # Resetar o estado após a edição
-                                st.session_state['edit_attention_point_modal_open'] = False  # Fechar modal
+                                st.session_state['edit_modal_open'] = False  # Fechar modal
                                 st.rerun()  # Recarregar a página para refletir a edição
                             except Exception as e:
                                 st.error(f"Erro ao atualizar o ponto de atenção: {e}")
                         else:
                             st.error("A descrição do ponto de atenção não pode estar vazia.")
 
-def delete_attention_point_modal(engine, item_id):
+def delete_modal(engine, item_id):
     """
     Exibe o modal de confirmação de exclusão do ponto de atenção.
     """
-    modal = Modal("Excluir Ponto de Atenção", key=f'delete_attention_point_modal_{item_id}', padding=20, max_width=744)
+    modal = Modal("Excluir Ponto de Atenção", key=f'delete_modal_{item_id}', padding=20, max_width=744)
 
     # Abrir o modal se o botão de exclusão foi clicado
-    if st.session_state['delete_attention_point_modal_open']:
+    if st.session_state['delete_modal_open']:
         with Session(bind=engine) as session:
             attention_point = session.query(AttentionPoints).get(item_id)
 
             if attention_point is None:
                 st.error("Ponto de atenção não encontrado.")
-                st.session_state['delete_attention_point_modal_open'] = False  # Fechar o modal se o item não for encontrado
+                st.session_state['delete_modal_open'] = False  # Fechar o modal se o item não for encontrado
                 return
 
             # Exibir o conteúdo do modal
@@ -80,13 +80,13 @@ def delete_attention_point_modal(engine, item_id):
                         session.commit()  # Commit da exclusão
                         st.success("Ponto de atenção excluído com sucesso!")
                         st.session_state['delete_item_id'] = None  # Resetar o estado após exclusão
-                        st.session_state['delete_attention_point_modal_open'] = False  # Fechar o modal
+                        st.session_state['delete_modal_open'] = False  # Fechar o modal
                         st.rerun()  # Recarregar a página
                     except Exception as e:
                         st.error(f"Erro ao excluir o ponto de atenção: {e}")
                 elif cancel_delete:
                     st.info("Operação de exclusão cancelada.")
-                    st.session_state['delete_attention_point_modal_open'] = False  # Fechar o modal se o usuário cancelar
+                    st.session_state['delete_modal_open'] = False  # Fechar o modal se o usuário cancelar
 
 # Função para adicionar um novo ponto de atenção utilizando streamlit-modal
 def add_attention_point_modal(engine):
