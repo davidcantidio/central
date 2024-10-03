@@ -48,15 +48,14 @@ def page_entregas(engine):
     with st.sidebar.form(key='filters_form'):
         # Seletor de Cliente
         options = clientes_df["id"].tolist()
-        selected_index = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]].index[0]
-        selected_index = int(selected_index)  # Garantir que seja um int nativo
 
+        # Usar st.session_state["cliente_id"] como valor inicial para manter a seleção atual
         cliente_id = st.selectbox(
             "Selecione o Cliente",
             options=options,
-            index=selected_index,
+            index=options.index(st.session_state["cliente_id"]),
             format_func=lambda x: clientes_df[clientes_df["id"] == x]["name"].values[0],
-            key="cliente_id"
+            key="cliente_id_temp"  # Usar uma chave temporária para o seletor
         )
 
         # Seletor de Intervalo de Datas
@@ -68,9 +67,12 @@ def page_entregas(engine):
 
         # Botão para aplicar os filtros
         submit_button = st.form_submit_button(label='Aplicar Filtros')
+    
 
     # Verifica se o botão foi clicado
     if submit_button:
+        # Atualizar o cliente selecionado no session_state
+        st.session_state["cliente_id"] = cliente_id
         # Validar o intervalo de datas
         if isinstance(date_range, tuple) and len(date_range) == 2:
             data_inicio, data_fim = date_range
@@ -88,9 +90,19 @@ def page_entregas(engine):
 
     # Obter o nome do cliente selecionado
     cliente_nome = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["name"].values[0]
+    cliente_logo_url = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["logo_url"].values[0]
 
     # Exibir o nome do cliente selecionado na página principal
-    st.write(f"## Cliente Selecionado: {cliente_nome}")
+    if cliente_logo_url:
+        col1, col2 = st.columns([1, 5])  # Ajuste as proporções das colunas conforme necessário
+
+        with col1:
+            st.image(cliente_logo_url, width=50)  # Exibe a logo do cliente com uma largura ajustada
+        with col2:
+            st.write(f"## {cliente_nome}")
+    else:
+        st.write(f"## {cliente_nome}")
+
 
     # ===========================================================
     # Botão para adicionar ponto de atenção
@@ -112,7 +124,7 @@ def page_entregas(engine):
 def get_clientes(engine):
     with Session(bind=engine) as session:
         clientes = session.query(Client).all()
-        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name} for c in clientes])
+        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url':c.logo_url} for c in clientes])
     return clientes_df
 
 

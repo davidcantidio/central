@@ -5,12 +5,14 @@ import logging
 from common.models import AttentionPoints
 from datetime import datetime
 
-def edit_modal(engine, item_id):
+def edit_attention_point_modal(engine, item_id):
     # Criar e configurar o modal
     modal = Modal("Editar Ponto de Atenção", key=f'edit_modal_{item_id}', padding=20, max_width=744)
 
-    # Exibir modal se o botão de edição foi clicado
-    if st.session_state['edit_modal_open']:
+    # Verificar se o modal está aberto
+    st.write(f"Modal aberto: {st.session_state.get('edit_modal_open', False)}")
+
+    if st.session_state.get('edit_modal_open', False):
         with Session(bind=engine) as session:
             attention_point = session.query(AttentionPoints).get(item_id)
 
@@ -19,40 +21,39 @@ def edit_modal(engine, item_id):
                 st.session_state['edit_modal_open'] = False  # Fechar o modal
                 return
 
-            # Exibir o conteúdo do modal
-            with modal.container():
-                st.write("### Editar Ponto de Atenção")
+            # Exibir o formulário para depuração (fora do modal temporariamente)
+            with st.form(key=f'edit_form_{item_id}'):
+                selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=attention_point.date)
+                attention_description = st.text_area("Descrição do Ponto de Atenção", value=attention_point.attention_point)
+                submit_edit = st.form_submit_button(label='Salvar Alterações')
 
-                # Exibir o formulário para edição
-                with st.form(key=f'edit_form_{item_id}'):
-                    selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=attention_point.date)
-                    attention_description = st.text_area("Descrição do Ponto de Atenção", value=attention_point.attention_point)
-                    submit_edit = st.form_submit_button(label='Salvar Alterações')
+                # Verificar se o botão foi clicado
+                if submit_edit:
+                    st.write('Detectei o clique no botão')
 
-                    # Processar a edição após a submissão
-                    if submit_edit:
-                        if attention_description:
-                            try:
-                                attention_point.date = selected_date
-                                attention_point.attention_point = attention_description
-                                session.commit()  # Commit da alteração
-                                st.success("Ponto de atenção atualizado com sucesso!")
-                                st.session_state['edit_item_id'] = None  # Resetar o estado após a edição
-                                st.session_state['edit_modal_open'] = False  # Fechar modal
-                                st.rerun()  # Recarregar a página para refletir a edição
-                            except Exception as e:
-                                st.error(f"Erro ao atualizar o ponto de atenção: {e}")
-                        else:
-                            st.error("A descrição do ponto de atenção não pode estar vazia.")
+                    if attention_description:
+                        try:
+                            attention_point.date = selected_date
+                            attention_point.attention_point = attention_description
+                            session.commit()
+                            st.success("Ponto de atenção atualizado com sucesso!")
+                            st.session_state['edit_item_id'] = None
+                            st.session_state['edit_modal_open'] = False
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao atualizar o ponto de atenção: {e}")
+                    else:
+                        st.error("A descrição do ponto de atenção não pode estar vazia.")
 
-def delete_modal(engine, item_id):
+
+def delete_attention_point_modal(engine, item_id):
     """
     Exibe o modal de confirmação de exclusão do ponto de atenção.
     """
     modal = Modal("Excluir Ponto de Atenção", key=f'delete_modal_{item_id}', padding=20, max_width=744)
 
     # Abrir o modal se o botão de exclusão foi clicado
-    if st.session_state['delete_modal_open']:
+    if st.session_state.get('delete_modal_open', False):
         with Session(bind=engine) as session:
             attention_point = session.query(AttentionPoints).get(item_id)
 
@@ -85,8 +86,8 @@ def delete_modal(engine, item_id):
                     except Exception as e:
                         st.error(f"Erro ao excluir o ponto de atenção: {e}")
                 elif cancel_delete:
-                    st.info("Operação de exclusão cancelada.")
                     st.session_state['delete_modal_open'] = False  # Fechar o modal se o usuário cancelar
+                    st.rerun()
 
 # Função para adicionar um novo ponto de atenção utilizando streamlit-modal
 def add_attention_point_modal(engine):

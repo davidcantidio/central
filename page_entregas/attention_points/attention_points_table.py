@@ -4,7 +4,7 @@ import pandas as pd
 from sqlalchemy.orm import Session
 from common.models import AttentionPoints  # Verifique se o caminho está correto
 import logging
-from page_entregas.attention_points.attention_points_modal import edit_modal, delete_modal, add_attention_point_modal
+from page_entregas.attention_points.attention_points_crud_modals import edit_attention_point_modal, delete_attention_point_modal, add_attention_point_modal
 
 
 def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
@@ -60,15 +60,15 @@ def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
                     if col4.button('🗑️', key=f'delete_{row["ID"]}', help='Excluir'):
                         st.session_state['delete_item_id'] = row['ID']
                         st.session_state['delete_modal_open'] = True  # Abrir modal de exclusão
-                add_attention_point_modal(engine)
+        add_attention_point_modal(engine)
 
         # Processar edição - abrir o modal ao clicar no botão de editar
         if st.session_state.get('edit_modal_open'):
-            edit_modal(engine, st.session_state['edit_item_id'])
+            edit_attention_point_modal(engine, st.session_state['edit_item_id'])
 
         # Processar exclusão - abrir o modal ao clicar no botão de excluir
         if st.session_state.get('delete_modal_open'):
-            delete_modal(engine, st.session_state['delete_item_id'])
+            delete_attention_point_modal(engine, st.session_state['delete_item_id'])
 
     except Exception as e:
         st.error(f"Erro ao carregar pontos de atenção: {e}")

@@ -27,4 +27,4 @@ def home():
                 st.write(f"Email: {cliente['email']}")
                 if st.button("Ver detalhes", key=cliente["id"]):
                     st.session_state["cliente_id"] = cliente["id"]
-                    st.experimental_rerun()
+                    st.rerun()
