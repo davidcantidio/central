@@ -619,8 +619,8 @@ class ContentProduction(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)  # Chave primária
     client_id = Column(Integer, ForeignKey('clients.id'))
     author_id = Column(Integer, ForeignKey('users.id'))
-    meeting_date = Column(TIMESTAMP)
-    meeting_subject = Column(Text)
+    date = Column(TIMESTAMP)
+    subject = Column(Text)
     notes = Column(Text)
 
     client = relationship("Client", back_populates="content_productions")

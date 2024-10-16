@@ -98,3 +98,4 @@ def display_content_production_table(cliente_id, data_inicio, data_fim, engine):
     except Exception as e:
         st.error(f"Erro ao carregar reuniões: {e}")
         logging.error(f"Erro ao carregar reuniões: {e}")
+
