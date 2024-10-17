@@ -108,3 +108,24 @@ def add_content_production_meeting_modal(engine):
                         st.rerun()
                     else:
                         st.error("A descrição da Reunião de Produção de Conteúdo não pode estar vazia.")
+
+def save_new_content_production_meeting(cliente_id, production_date, subject, notes, engine):
+    try:
+        if engine is None:
+            raise ValueError("Engine não foi fornecido")
+        with Session(bind=engine) as session:
+            new_entry = ContentProduction(
+                client_id=cliente_id,
+                date=production_date,
+                subject=subject,
+                notes=notes
+            )
+            session.add(new_entry)
+            session.commit()  # Commit da nova entrada
+            st.success("Reunião de produção de conteúdo salva com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+
+        # Log de erro detalhado
+        logging.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")

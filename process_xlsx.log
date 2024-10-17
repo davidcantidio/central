@@ -1,2 +1,13 @@
 2024-09-30 14:25:48,516 - ERROR - Erro ao carregar pontos de atenção: name 'delete_item' is not defined
 2024-09-30 23:01:40,845 - ERROR - Erro ao carregar pontos de atenção: name 'plt' is not defined
+2024-10-16 11:00:21,716 - ERROR - Erro ao exibir a tabela de produção de conteúdo: name 'save_new_content_production_meeting' is not defined
+2024-10-16 11:08:03,159 - ERROR - Erro ao exibir a tabela de produção de conteúdo: name 'save_new_content_production_meeting' is not defined
+2024-10-16 11:08:29,702 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-16 11:20:45,796 - ERROR - Erro ao salvar a reunião de produção de conteúdo: Engine não foi fornecido
+2024-10-17 09:17:34,573 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:18:53,801 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:21:05,047 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:25:00,815 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:25:54,670 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:34:00,472 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
+2024-10-17 09:36:40,009 - ERROR - Erro ao exibir a tabela de produção de conteúdo: save_new_content_production_meeting() missing 1 required positional argument: 'engine'
