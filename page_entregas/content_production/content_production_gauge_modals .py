@@ -2,15 +2,15 @@ import streamlit as st
 from streamlit_modal import Modal
 from sqlalchemy.orm import Session
 import logging
-from common.models import ContentProduction
+from common.models import  DeliveryControl
 from datetime import datetime
 
-def edit_content_production_meeting_modal(engine, item_id, modal):
+def edit_content_production_meeting(engine, item_id, modal):
     if modal.is_open():
         with Session(bind=engine) as session:
-            content_production = session.query(ContentProduction).get(item_id)
+            content_production_meeting = session.query(DeliveryControl).get(item_id)
 
-            if content_production is None:
+            if content_production_meeting is None:
                 st.error("Reunião de Produção de Conteúdo não encontrada.")
                 modal.close()
                 return
@@ -21,17 +21,17 @@ def edit_content_production_meeting_modal(engine, item_id, modal):
 
                 # Exibir o formulário dentro do modal
                 with st.form(key=f'edit_form_{item_id}'):
-                    selected_date = st.date_input("Selecione a Data da Reunião", value=content_production.date)
-                    subject = st.text_area("Tema da Reunião", value=content_production.subject)
-                    meeting_notes = st.text_area("Notas", value=content_production.notes)
+                    selected_date = st.date_input("Selecione a Data da Reunião", value=content_production_meeting.date)
+                    subject = st.text_area("Tema da Reunião", value=content_production_meeting.subject)
+                    meeting_notes = st.text_area("Notas", value=content_production_meeting.notes)
                     submit_edit = st.form_submit_button(label='Salvar Alterações')
 
                     if submit_edit:
                         if subject:
                             try:
-                                content_production.date = selected_date
-                                content_production.subject = subject
-                                content_production.notes = meeting_notes
+                                content_production_meeting.date = selected_date
+                                content_production_meeting.subject = subject
+                                content_production_meeting.notes = meeting_notes
                                 session.commit()
                                 st.success("Reunião atualizada com sucesso!")
                                 modal.close()  # Fechar o modal
@@ -44,12 +44,12 @@ def edit_content_production_meeting_modal(engine, item_id, modal):
     else:
         modal.close()
 
-def delete_content_production_meeting_modal(engine, item_id, modal):
+def delete_content_production_meeting_meeting_modal(engine, item_id, modal):
     if modal.is_open():
         with Session(bind=engine) as session:
-            content_production = session.query(ContentProduction).get(item_id)
+            content_production_meeting = session.query(DeliveryControl).get(item_id)
 
-            if content_production is None:
+            if content_production_meeting is None:
                 st.error("Reunião não encontrada.")
                 modal.close()
                 return
@@ -57,7 +57,7 @@ def delete_content_production_meeting_modal(engine, item_id, modal):
             # Exibir o conteúdo do modal
             with modal.container():
                 st.write("### Excluir Reunião de Produção de Conteúdo")
-                st.warning(f"Tem certeza que deseja excluir a Reunião de Produção de Conteúdo do dia {content_production.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
+                st.warning(f"Tem certeza que deseja excluir a Reunião de Produção de Conteúdo do dia {content_production_meeting.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
 
                 # Botões de confirmação e cancelamento
                 col1, col2 = st.columns(2)
@@ -68,7 +68,7 @@ def delete_content_production_meeting_modal(engine, item_id, modal):
 
                 if confirm_delete:
                     try:
-                        session.delete(content_production)
+                        session.delete(content_production_meeting)
                         session.commit()
                         st.success("Reunião excluída com sucesso!")
                         modal.close()
@@ -82,7 +82,7 @@ def delete_content_production_meeting_modal(engine, item_id, modal):
     else:
         modal.close()
 
-def add_content_production_meeting_modal(engine):
+def add_content_production_meeting_meeting_modal(engine):
     # Inicializa o modal para adicionar Reunião de Produção de Conteúdo
     modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar_reunião_conteudo", padding=20, max_width=744)
 
@@ -94,7 +94,7 @@ def add_content_production_meeting_modal(engine):
     if modal.is_open():
         with modal.container():
             st.write("### Nova Reunião de Produção de Conteúdo")
-            with st.form(key='new_content_production_form'):
+            with st.form(key='new_content_production_meeting_form'):
                 selected_date = st.date_input("Selecione a Data do Reunião de Produção de Conteúdo", value=datetime.today())
                 subject = st.text_area("Assunto da Reunião de Produção de Conteúdo")
                 meeting_notes = st.text_area("Notas da Reunião")
@@ -102,10 +102,30 @@ def add_content_production_meeting_modal(engine):
 
                 if submit_new:
                     if subject:
-                        save_new_content_production_meeting(st.session_state["cliente_id"], selected_date, subject, meeting_notes, engine)
+                        save_new_content_production_meeting_meeting(st.session_state["cliente_id"], selected_date, subject, meeting_notes, engine)
                         st.success("Reunião adicionada com sucesso!")
                         modal.close()
                         st.rerun()
                     else:
                         st.error("A descrição da Reunião de Produção de Conteúdo não pode estar vazia.")
 
+def save_new_content_production_meeting_meeting(cliente_id, production_date, subject, notes, engine):
+    try:
+        if engine is None:
+            raise ValueError("Engine não foi fornecido")
+        with Session(bind=engine) as session:
+            new_entry = DeliveryControl(
+                client_id=cliente_id,
+                date=production_date,
+                subject=subject,
+                notes=notes
+            )
+            session.add(new_entry)
+            session.commit()  # Commit da nova entrada
+            st.success("Reunião de produção de conteúdo salva com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+
+        # Log de erro detalhado
+        logging.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")

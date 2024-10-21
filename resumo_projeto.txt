@@ -1,131 +1,302 @@
+# . - mandalecas bkp.py
+
+from datetime import datetime
+from common.models import DeliveryCategoryEnum, Client, DeliveryControl
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+import streamlit as st  
+
+def calcular_mandalecas(cliente_id: int, data_inicio: datetime, data_fim: datetime, session: Session):
+    """
+    Calcula as mandalecas contratadas, usadas e acumuladas para um cliente específico.
+
+    Parâmetros:
+    - cliente_id (int): ID do cliente.
+    - data_inicio (datetime): Data de início do período.
+    - data_fim (datetime): Data de fim do período.
+    - session (Session): Sessão do SQLAlchemy.
+
+    Retorna:
+    - mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
+    - mandalecas_usadas (dict): Mandalecas usadas por categoria.
+    - mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
+    """
+
+    # Obter o cliente
+    cliente = session.query(Client).filter(Client.id == cliente_id).first()
+    if not cliente:
+        st.error(f"Cliente com ID {cliente_id} não encontrado.")
+        return None, None, None
+
+    # Mandalecas Contratadas
+    mandalecas_contratadas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.n_monthly_contracted_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
+
+    # Mandalecas Acumuladas
+    mandalecas_acumuladas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.accumulated_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
+
+    # Mandalecas Usadas no período atual
+    mandalecas_usadas = {}
+
+    # Calcular mandalecas usadas para 'Produção de Conteúdo'
+    total_usadas = session.query(func.sum(DeliveryControl.used_mandalecas)).filter(
+        DeliveryControl.client_id == cliente_id,
+        DeliveryControl.delivery_category == DeliveryCategoryEnum.CONTENT_PRODUCTION,
+        DeliveryControl.job_creation_date.between(data_inicio, data_fim)
+    ).scalar() or 0
+
+    mandalecas_usadas[DeliveryCategoryEnum.CONTENT_PRODUCTION] = total_usadas
+
+    return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+
+
+# . - gauge bkp.py
+
+import plotly.graph_objects as go
+import streamlit as st
+
+def display_gauge_chart(title, contracted, used, accumulated=0):
+    """
+    Função para exibir um gráfico de medidor (gauge) que mostra os valores contratados, usados e acumulados.
+
+    :param title: Título do medidor.
+    :param contracted: Valor contratado.
+    :param used: Valor usado até o momento.
+    :param accumulated: Valor acumulado (positivo ou negativo).
+    """
+    if accumulated < 0:
+        # Quando o acumulado é negativo, considera um déficit
+        max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
+        deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
+        steps = [
+            {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
+            {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
+        ]
+        accumulated_color = 'red'
+    else:
+        # Caso contrário, o acumulado é positivo
+        max_value = contracted + accumulated
+        steps = [
+            {'range': [0, contracted], 'color': "lightgray"},
+            {'range': [contracted, max_value], 'color': "orange"}
+        ]
+        accumulated_color = 'orange'
+
+    # Cria o gráfico de medidor (gauge)
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=used,
+        title={'text': title, 'font': {'size': 20}},
+        number={'font': {'size': 40}},
+        gauge={
+            'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "green"},
+            'steps': steps,
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': contracted
+            }
+        }
+    ))
+
+    # Configura o layout e estilo do gráfico
+    fig.update_layout(
+        autosize=False,
+        width=350,
+        height=250,
+        margin=dict(l=20, r=20, t=50, b=100),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        annotations=[
+            dict(
+                x=0.15, y=-0.05, xref='paper', yref='paper',
+                text=f"Contratado: {contracted}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor='green',
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            ),
+            dict(
+                x=0.8, y=-0.05, xref='paper', yref='paper',
+                text=f"<b>Acumulado:</b> {accumulated}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            )
+        ]
+    )
+
+    # Renderiza o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+
+
+
 # . - page_entregas.py
 
 import streamlit as st
 import pandas as pd
 import logging
-
-# Importações das funções dentro da pasta page_entregas
+from sqlalchemy.orm import Session
+from common.models import AttentionPoints, Client
+from datetime import datetime
+import locale
+from streamlit_modal import Modal
 from page_entregas.attention_points.attention_points_table import display_attention_points_table
-from page_entregas.attention_points.attention_points_modal import modal_attention_point_open
-# from page_entregas.content_production.content_production_table import display_content_production_table
-# from page_entregas.content_production.content_production_modal import modal_content_production_open
-# from page_entregas.creation_and_adaptation.creation_gauge import display_creation_gauge
-# from page_entregas.creation_and_adaptation.adaptation_gauge import display_adaptation_gauge
-# from page_entregas.guidance_status.guidance_modal import display_guidance_modal
-# from page_entregas.guidance_status.guidance_timeline import display_guidance_timeline
-# from page_entregas.paid_traffic.traffic_gauge import display_traffic_gauge
-# from page_entregas.plan_status.plan_modal import display_plan_modal
-# from page_entregas.plan_status.plan_timeline import display_plan_timeline
-# from page_entregas.social_media.social_media_gauges import display_other_networks_gauge
-# from page_entregas.website_maintenance.website_gauge_timeline import display_website_maintenance_gauge_and_timeline
-# from page_entregas.utils.mandalecas import calcular_mandalecas
+from page_entregas.content_production.content_production_table import display_content_production_table
+# Configurar a localidade para português do Brasil
+try:
+    locale.setlocale(locale.LC_TIME, 'pt_BR.utf8')
+except locale.Error:
+    locale.setlocale(locale.LC_TIME, 'Portuguese_Brazil.1252')  # Para Windows
 
 # Configuração de logging
-logging.basicConfig(filename='debug_log.log', level=logging.DEBUG,
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename='debug_log.log', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 # Configurações iniciais do Streamlit
 st.set_page_config(layout="wide")
 
-# Função para organizar e exibir a página de entregas
 def page_entregas(engine):
     logging.debug("Entrando na função page_entregas()")
 
-    if "cliente_id" not in st.session_state or st.session_state["cliente_id"] is None:
-        logging.warning("Nenhum cliente selecionado. Exibindo mensagem de erro.")
-        st.error("Selecione um cliente para visualizar as entregas.")
+    # ===========================================================
+    # Seção de Seletores de Cliente e Intervalo de Datas na Barra Lateral
+    # ===========================================================
+
+    st.sidebar.title("Filtros")
+
+    # Obter a lista de clientes
+    clientes_df = get_clientes(engine)
+
+    # Verificar se há clientes disponíveis
+    if clientes_df.empty:
+        st.error("Nenhum cliente disponível.")
         return
 
-    cliente_id = st.session_state["cliente_id"]
-    logging.debug(f"Cliente selecionado: {cliente_id}")
+    # Inicializar o st.session_state para data_inicio e data_fim, se necessário
+    if "data_inicio" not in st.session_state:
+        st.session_state["data_inicio"] = datetime.today() - pd.Timedelta(days=30)
+    if "data_fim" not in st.session_state:
+        st.session_state["data_fim"] = datetime.today()
+    if "cliente_id" not in st.session_state:
+        st.session_state["cliente_id"] = clientes_df["id"].iloc[0]
 
-    # Definir data de início e fim
-    data_inicio = st.session_state.get("data_inicio", pd.to_datetime("2023-01-01"))
-    data_fim = st.session_state.get("data_fim", pd.to_datetime("2023-12-31"))
-    logging.debug(f"Data início: {data_inicio}, Data fim: {data_fim}")
+    # Criar um formulário na barra lateral para os seletores
+    with st.sidebar.form(key='filters_form'):
+        # Seletor de Cliente
+        options = clientes_df["id"].tolist()
 
-    # Inicializa o estado dos modais se não existir
-    if "open_attention_modal" not in st.session_state:
-        st.session_state["open_attention_modal"] = False
-    # if "open_content_modal" not in st.session_state:
-    #     st.session_state["open_content_modal"] = False
+        # Usar st.session_state["cliente_id"] como valor inicial para manter a seleção atual
+        cliente_id = st.selectbox(
+            "Selecione o Cliente",
+            options=options,
+            index=options.index(st.session_state["cliente_id"]),
+            format_func=lambda x: clientes_df[clientes_df["id"] == x]["name"].values[0],
+            key="cliente_id_temp"  # Usar uma chave temporária para o seletor
+        )
+
+        # Seletor de Intervalo de Datas
+        date_range = st.date_input(
+            "Selecione o Intervalo de Datas",
+            value=(st.session_state["data_inicio"], st.session_state["data_fim"]),
+            key="date_range"
+        )
+
+        # Botão para aplicar os filtros
+        submit_button = st.form_submit_button(label='Aplicar Filtros')
+    
+
+    # Verifica se o botão foi clicado
+    if submit_button:
+        # Atualizar o cliente selecionado no session_state
+        st.session_state["cliente_id"] = cliente_id
+        # Validar o intervalo de datas
+        if isinstance(date_range, tuple) and len(date_range) == 2:
+            data_inicio, data_fim = date_range
+            # Atualizar o st.session_state com os valores selecionados
+            st.session_state["data_inicio"] = data_inicio
+            st.session_state["data_fim"] = data_fim
+            logging.debug("Filtros aplicados. Reexecutando a página.")
+            st.rerun()
+        else:
+            st.error("Por favor, selecione um intervalo de datas válido.")
+
+    # Log dos valores selecionados
+    logging.debug(f"Cliente selecionado: {st.session_state['cliente_id']}")
+    logging.debug(f"Data início: {st.session_state['data_inicio']}, Data fim: {st.session_state['data_fim']}")
+
+    # Obter o nome do cliente selecionado
+    cliente_nome = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["name"].values[0]
+    cliente_logo_url = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["logo_url"].values[0]
+
+    # Exibir o nome do cliente selecionado na página principal
+    if cliente_logo_url:
+        col1, col2 = st.columns([1, 5])  # Ajuste as proporções das colunas conforme necessário
+
+        with col1:
+            st.image(cliente_logo_url, width=50)  # Exibe a logo do cliente com uma largura ajustada
+        with col2:
+            st.write(f"## {cliente_nome}")
+    else:
+        st.write(f"## {cliente_nome}")
+
 
     # ===========================================================
-    # Seção de Pontos de Atenção
-    # ===========================================================
-    # Exibir tabela de pontos de atenção
-    logging.debug("Exibindo tabela de pontos de atenção")
-    display_attention_points_table(cliente_id, data_inicio, data_fim, engine)
-
-    # Renderizar o botão para abrir o modal de pontos de atenção
-    if st.button("Adicionar Ponto de Atenção"):
-        st.session_state["open_attention_modal"] = True
-
-    # Chamar o modal de pontos de atenção
-    modal_attention_point_open(engine)
-
-    # ===========================================================
-    # As seguintes seções foram comentadas para isolar o problema
+    # Botão para adicionar ponto de atenção
     # ===========================================================
 
-    # # ===========================================================
-    # # Seção de Produção de Conteúdo
-    # # ===========================================================
-    # # Exibir produção de conteúdo
-    # logging.debug("Exibindo tabela de produção de conteúdo")
-    # display_content_production_table(cliente_id)
+    # ===========================================================
+    # Exibir Pontos de Atenção
+    # ===========================================================
 
-    # # Renderizar o botão para abrir o modal de produção de conteúdo
-    # if st.button("Adicionar Produção de Conteúdo"):
-    #     st.session_state["open_content_modal"] = True
+    
+    display_attention_points_table(
+        st.session_state["cliente_id"],
+        st.session_state["data_inicio"],
+        st.session_state["data_fim"],
+        engine
+    )
 
-    # # Chamar o modal de produção de conteúdo
-    # modal_content_production_open(cliente_id)
+    display_content_production_table(
+        st.session_state["cliente_id"],
+        st.session_state["data_inicio"],
+        st.session_state["data_fim"],
+        engine
+    )
 
-    # # ===========================================================
-    # # Cálculo de Mandalecas
-    # # ===========================================================
-    # logging.debug("Calculando mandalecas")
-    # mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(cliente_id)
+# Função para obter a lista de clientes do banco de dados
+def get_clientes(engine):
+    with Session(bind=engine) as session:
+        clientes = session.query(Client).all()
+        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url':c.logo_url} for c in clientes])
+    return clientes_df
 
-    # # ===========================================================
-    # # Seção de Criação e Adaptação
-    # # ===========================================================
-    # logging.debug("Exibindo gauges de criação e adaptação")
-    # display_creation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-    # display_adaptation_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
 
-    # # ===========================================================
-    # # Seção de Tráfego Pago
-    # # ===========================================================
-    # logging.debug("Exibindo gauge de tráfego pago")
-    # display_traffic_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
+# ===========================================================
+# Função principal para executar a página
+# ===========================================================
+if __name__ == "__main__":
+    from common.database import create_engine_and_session
+    engine = create_engine_and_session()
 
-    # # ===========================================================
-    # # Seção de Plano e Direcionamento
-    # # ===========================================================
-    # logging.debug("Exibindo timeline de plano e modal")
-    # display_plan_timeline(cliente_id)
-    # display_plan_modal(cliente_id)
-    # display_guidance_timeline(cliente_id)
-    # display_guidance_modal(cliente_id)
-
-    # # ===========================================================
-    # # Seção de Redes Sociais
-    # # ===========================================================
-    # logging.debug("Exibindo gauges de redes sociais")
-    # display_other_networks_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas)
-
-    # # ===========================================================
-    # # Seção de Manutenção de Website
-    # # ===========================================================
-    # logging.debug("Exibindo gauge e timeline de manutenção de website")
-    # # Você deve obter as datas de manutenção necessárias
-    # maintenance_dates = []  # Substitua por suas datas reais
-    # display_website_maintenance_gauge_and_timeline(
-    #     mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, maintenance_dates
-    # )
-
+    # Executar a função principal
+    page_entregas(engine)
 
 
 # blog_text - blog_gauge.py
@@ -172,84 +343,211 @@ def display_blog_text_gauge(mandalecas_contratadas, mandalecas_usadas, mandaleca
 # attention_points - attention_points_table.py
 
 import streamlit as st
+from streamlit_extras.stylable_container import stylable_container
 import pandas as pd
+from sqlalchemy.orm import Session
+from common.models import AttentionPoints  # Verifique se o caminho está correto
 import logging
+from page_entregas.attention_points.attention_points_crud_modals import edit_attention_point_modal, delete_attention_point_modal, add_attention_point_modal
+
 
 def display_attention_points_table(cliente_id, data_inicio, data_fim, engine):
     """
-    Exibe a tabela de pontos de atenção para um cliente, em um intervalo de datas.
+    Exibe a tabela de pontos de atenção para um cliente, em um intervalo de datas,
+    com botões de Editar e Excluir, encapsulada em um container estilizado.
     """
     try:
-        with engine.connect() as conn:
-            query = f"""
-                SELECT * FROM pontos_de_atencao 
-                WHERE client_id = {cliente_id} 
-                AND date BETWEEN '{data_inicio}' AND '{data_fim}'
-            """
-            attention_points_df = pd.read_sql_query(query, conn)
-            st.table(attention_points_df)
-            logging.info("Tabela de pontos de atenção exibida corretamente.")
+        with Session(bind=engine) as session:
+            attention_points = session.query(AttentionPoints).filter(
+                AttentionPoints.client_id == cliente_id,
+                AttentionPoints.date.between(data_inicio, data_fim)
+            ).order_by(AttentionPoints.date.desc()).all()
 
-        # O botão de "Adicionar Ponto de Atenção" foi removido daqui para evitar duplicação
-        # O modal será aberto via `attention_points_modal.py`
+        if not attention_points:
+            st.info("Nenhum ponto de atenção encontrado para o período selecionado.")
+        else:
+            data = []
+            for ap in attention_points:
+                data.append({
+                    'Data': ap.date.strftime('%d %b. %Y'),
+                    'Ponto de Atenção': ap.attention_point,
+                    'ID': ap.id
+                })
+
+            attention_points_df = pd.DataFrame(data)
+
+            # Definir o CSS para o container apenas da tabela
+            css_tabela = """
+            {
+                border: 1px dashed lightgray;
+                border-radius: 10px;
+                padding: 15px;
+                margin-top: 10px;
+                background-color: white;
+            }
+            """
+
+            # Encapsular a tabela e os botões de ação no container estilizado
+            with stylable_container(
+                key="tabela_attention_points",
+                css_styles=css_tabela
+            ):
+                st.write("**Pontos de Atenção**")
+                # Exibir a tabela com botões de ação
+                for index, row in attention_points_df.iterrows():
+                    col1, col2, col3, col4 = st.columns([2, 7, 1, 1])
+                    col1.write(row['Data'])
+                    col2.write(row['Ponto de Atenção'])
+                    if col3.button('✏️', key=f'edit_{row["ID"]}', help='Editar'):
+                        st.session_state['edit_item_id'] = row['ID']
+                        st.session_state['edit_modal_open'] = True  # Abrir modal de edição
+                    if col4.button('🗑️', key=f'delete_{row["ID"]}', help='Excluir'):
+                        st.session_state['delete_item_id'] = row['ID']
+                        st.session_state['delete_modal_open'] = True  # Abrir modal de exclusão
+        add_attention_point_modal(engine)
+
+        # Processar edição - abrir o modal ao clicar no botão de editar
+        if st.session_state.get('edit_modal_open'):
+            edit_attention_point_modal(engine, st.session_state['edit_item_id'])
+
+        # Processar exclusão - abrir o modal ao clicar no botão de excluir
+        if st.session_state.get('delete_modal_open'):
+            delete_attention_point_modal(engine, st.session_state['delete_item_id'])
 
     except Exception as e:
         st.error(f"Erro ao carregar pontos de atenção: {e}")
         logging.error(f"Erro ao carregar pontos de atenção: {e}")
+    
 
 
 # attention_points - __init__.py
 
 
 
-# attention_points - attention_points_modal.py
+# attention_points - attention_points_crud_modals.py
 
 import streamlit as st
-from datetime import datetime
-from sqlalchemy.orm import Session
-from common.models import AttentionPoints
 from streamlit_modal import Modal
+from sqlalchemy.orm import Session
 import logging
+from common.models import AttentionPoints
+from datetime import datetime
 
-def modal_attention_point_open(engine):
-    """
-    Abre o modal para adicionar um novo ponto de atenção.
-    """
-    cliente_id = st.session_state.get("cliente_id")
-    logging.debug(f"modal_attention_point_open() chamado para o cliente ID {cliente_id}")
+def edit_attention_point_modal(engine, item_id):
+    # Criar e configurar o modal
+    modal = Modal("Editar Ponto de Atenção", key=f'edit_modal_{item_id}', padding=20, max_width=744)
 
-    # Inicializa o modal
-    modal = Modal("Adicionar Ponto de Atenção", key="adicionar-ponto-modal", max_width=800)
+    # Verificar se o modal está aberto
+    st.write(f"Modal aberto: {st.session_state.get('edit_modal_open', False)}")
 
-    # Verifica se o modal deve estar aberto
-    if st.session_state["open_attention_modal"]:
-        modal.open()
-        logging.debug("Modal aberto.")
+    if st.session_state.get('edit_modal_open', False):
+        with Session(bind=engine) as session:
+            attention_point = session.query(AttentionPoints).get(item_id)
 
-        with modal.container():
-            with st.form(key='attention_point_form'):
-                selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
-                attention_description = st.text_area("Descrição do Ponto de Atenção")
-                submit_button = st.form_submit_button(label='Salvar')
+            if attention_point is None:
+                st.error("Ponto de atenção não encontrado.")
+                st.session_state['edit_modal_open'] = False  # Fechar o modal
+                return
 
-                if submit_button:
-                    if attention_description:  # Verifica se a descrição não está vazia
-                        save_new_attention_point(cliente_id, selected_date, attention_description, engine)
-                        logging.info(f"Salvando novo ponto de atenção para o cliente ID {cliente_id} com data {selected_date}")
+            # Exibir o formulário para depuração (fora do modal temporariamente)
+            with st.form(key=f'edit_form_{item_id}'):
+                selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=attention_point.date)
+                attention_description = st.text_area("Descrição do Ponto de Atenção", value=attention_point.attention_point)
+                submit_edit = st.form_submit_button(label='Salvar Alterações')
 
-                        st.success("Ponto de atenção adicionado com sucesso!")
-                        # Atualiza o estado e fecha o modal
-                        st.session_state["open_attention_modal"] = False
+                # Verificar se o botão foi clicado
+                if submit_edit:
+                    st.write('Detectei o clique no botão')
+
+                    if attention_description:
+                        try:
+                            attention_point.date = selected_date
+                            attention_point.attention_point = attention_description
+                            session.commit()
+                            st.success("Ponto de atenção atualizado com sucesso!")
+                            st.session_state['edit_item_id'] = None
+                            st.session_state['edit_modal_open'] = False
+                            st.rerun()
+                        except Exception as e:
+                            st.error(f"Erro ao atualizar o ponto de atenção: {e}")
                     else:
                         st.error("A descrição do ponto de atenção não pode estar vazia.")
-    else:
-        # Não executa o conteúdo do modal se ele não estiver aberto
-        pass
 
+
+def delete_attention_point_modal(engine, item_id):
+    """
+    Exibe o modal de confirmação de exclusão do ponto de atenção.
+    """
+    modal = Modal("Excluir Ponto de Atenção", key=f'delete_modal_{item_id}', padding=20, max_width=744)
+
+    # Abrir o modal se o botão de exclusão foi clicado
+    if st.session_state.get('delete_modal_open', False):
+        with Session(bind=engine) as session:
+            attention_point = session.query(AttentionPoints).get(item_id)
+
+            if attention_point is None:
+                st.error("Ponto de atenção não encontrado.")
+                st.session_state['delete_modal_open'] = False  # Fechar o modal se o item não for encontrado
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Excluir Ponto de Atenção")
+                st.warning(f"Tem certeza que deseja excluir o ponto de atenção do dia {attention_point.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
+
+                # Botões de confirmação e cancelamento
+                col1, col2 = st.columns(2)
+                with col1:
+                    confirm_delete = st.button("Excluir", key=f'confirm_delete_{item_id}')
+                with col2:
+                    cancel_delete = st.button("Cancelar", key=f'cancel_delete_{item_id}')
+
+                # Processar exclusão
+                if confirm_delete:
+                    try:
+                        session.delete(attention_point)  # Deletar o ponto
+                        session.commit()  # Commit da exclusão
+                        st.success("Ponto de atenção excluído com sucesso!")
+                        st.session_state['delete_item_id'] = None  # Resetar o estado após exclusão
+                        st.session_state['delete_modal_open'] = False  # Fechar o modal
+                        st.rerun()  # Recarregar a página
+                    except Exception as e:
+                        st.error(f"Erro ao excluir o ponto de atenção: {e}")
+                elif cancel_delete:
+                    st.session_state['delete_modal_open'] = False  # Fechar o modal se o usuário cancelar
+                    st.rerun()
+
+# Função para adicionar um novo ponto de atenção utilizando streamlit-modal
+def add_attention_point_modal(engine):
+    # Passo 3: Definir o modal
+    modal = Modal("Adicionar Novo Ponto de Atenção", key="adicionar_ponto_modal", padding=20, max_width=744)
+
+    # Passo 4: Botão para abrir o modal
+    if st.button("Adicionar Ponto de Atenção"):
+        modal.open()
+
+    # Passo 5: Exibir o modal se estiver aberto
+    if modal.is_open():
+        with modal.container():
+            st.write("### Novo Ponto de Atenção")
+            # Passo 6: Exibir o formulário dentro do modal
+            with st.form(key='new_attention_point_form'):
+                selected_date = st.date_input("Selecione a Data do Ponto de Atenção", value=datetime.today())
+                attention_description = st.text_area("Descrição do Ponto de Atenção")
+                submit_new = st.form_submit_button(label='Salvar')
+
+                # Manipulação da submissão
+                if submit_new:
+                    if attention_description:  # Verifica se a descrição não está vazia
+                        save_new_attention_point(st.session_state["cliente_id"], selected_date, attention_description, engine)
+                        st.success("Ponto de atenção adicionado com sucesso!")
+                        modal.close()  # Fechar o modal
+                        st.rerun()  # Recarregar a página
+                    else:
+                        st.error("A descrição do ponto de atenção não pode estar vazia.")
+
+# Função para salvar o novo ponto de atenção no banco de dados
 def save_new_attention_point(cliente_id, attention_date, attention_point, engine):
-    """
-    Salva um novo ponto de atenção no banco de dados.
-    """
     try:
         with Session(bind=engine) as session:
             new_entry = AttentionPoints(
@@ -258,10 +556,9 @@ def save_new_attention_point(cliente_id, attention_date, attention_point, engine
                 attention_point=attention_point
             )
             session.add(new_entry)
-            session.commit()
-            logging.info(f"Novo ponto de atenção salvo no banco de dados para o cliente ID {cliente_id}.")
+            session.commit()  # Commit da nova entrada
+            st.success("Ponto de atenção salvo com sucesso!")
     except Exception as e:
-        logging.error(f"Erro ao salvar o ponto de atenção: {e}")
         st.error(f"Erro ao salvar o ponto de atenção: {e}")
 
 
@@ -625,6 +922,47 @@ gerar_resumo(caminho_projeto, arquivo_saida)
 
 
 
+# utils - cruzamento leads.py
+
+import pandas as pd
+
+# Função para carregar arquivos TSV codificados em UTF-16
+def read_tsv_utf16(filepath):
+    try:
+        return pd.read_csv(filepath, encoding='utf-16', delimiter='\t')
+    except Exception as e:
+        print(f"Error loading {filepath}: {e}")
+        return pd.DataFrame()
+
+# Caminhos dos arquivos CSV (TSV)
+csv_file_paths_september = [
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_1v4DubD66G7YYil4Y1OYlybPEsVr_Syp5_Leads_2024-08-08_2024-09-29.csv',
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_1hInB0tW3O1P5GaIhf3D4w9HbKWV-nB-r _ CARD 5_Leads_2024-07-31_2024-09-29.csv',
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_1myUh2JRRD0Bu9pCqEnsugy3h23BIzBZl_Leads_2024-08-19_2024-09-29.csv',
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_1o0QgalnZd2PlTUhDN4feHgT4w3FaHfBI_Leads_2024-07-31_2024-09-29.csv',
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_15gcvkHd-POyc9sS9kbUJkXIWd1-TbmUY_Leads_2024-07-31_2024-09-29.csv',
+    '/home/debrito/Documentos/cruzamento leads/setembro/IG _ dp_1BGLLvPG8Kfv2ZryJ8yL1KPkiSgjH6UQN_Leads_2024-08-27_2024-09-29.csv'
+]
+
+# Carregar o relatório de leads de setembro
+september_report_path = '/home/debrito/Documentos/cruzamento leads/setembro/Relatorio mês de Setembro.xlsx'
+september_data = pd.read_excel(september_report_path)
+
+# Carregar e combinar os dados CSV
+tsv_dataframes_september = [read_tsv_utf16(path) for path in csv_file_paths_september]
+tsv_dataframes_september = [df for df in tsv_dataframes_september if not df.empty]  # Remover dataframes vazios
+combined_tsv_data_september = pd.concat(tsv_dataframes_september, ignore_index=True)
+
+# Cruzar os dados usando o campo 'email' tanto no Excel quanto nos CSVs
+merged_september_data = pd.merge(september_data, combined_tsv_data_september[['email', 'ad_name']], how='left', on='email')
+
+# Exportar o resultado para um arquivo Excel
+output_september_file_path = '/home/debrito/Documentos/cruzamento leads/setembro/Merged_Leads_September_Data.xlsx'
+merged_september_data.to_excel(output_september_file_path, index=False)
+
+print(f"Arquivo final salvo em: {output_september_file_path}")
+
+
 # utils - assessoria_plan_utils.py
 
 import logging
@@ -715,96 +1053,122 @@ def get_last_month_date_range():
     return first_day_of_last_month, last_day_of_last_month
 
 
+# utils - styles.py
+
+  # Definir o CSS para o container apenas da tabela
+def css_tabela ():
+    
+    style = """
+    {
+        border: 1px dashed lightgray;
+        border-radius: 10px;
+        padding: 15px;
+        margin-top: 10px;
+        background-color: white;
+    }
+    """
+    return style 
+
+def css_gauge():
+    style = """"
+    {   border: 1px solid #d3d3d3;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 45px;
+      }
+      """
+    return style 
+
 # utils - gauge.py
 
-# import plotly.graph_objects as go
-# import streamlit as st
+import plotly.graph_objects as go
+import streamlit as st
 
-# def display_gauge_chart(title, contracted, used, accumulated=0):
-#     """
-#     Função para exibir um gráfico de medidor (gauge) que mostra os valores contratados, usados e acumulados.
+def display_gauge_chart(title, contracted, used, accumulated=0):
+    """
+    Função para exibir um gráfico de medidor (gauge) que mostra os valores contratados, usados e acumulados.
 
-#     :param title: Título do medidor.
-#     :param contracted: Valor contratado.
-#     :param used: Valor usado até o momento.
-#     :param accumulated: Valor acumulado (positivo ou negativo).
-#     """
-#     if accumulated < 0:
-#         # Quando o acumulado é negativo, considera um déficit
-#         max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
-#         deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
-#         steps = [
-#             {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
-#             {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
-#         ]
-#         accumulated_color = 'red'
-#     else:
-#         # Caso contrário, o acumulado é positivo
-#         max_value = contracted + accumulated
-#         steps = [
-#             {'range': [0, contracted], 'color': "lightgray"},
-#             {'range': [contracted, max_value], 'color': "orange"}
-#         ]
-#         accumulated_color = 'orange'
+    :param title: Título do medidor.
+    :param contracted: Valor contratado.
+    :param used: Valor usado até o momento.
+    :param accumulated: Valor acumulado (positivo ou negativo).
+    """
+    if accumulated < 0:
+        # Quando o acumulado é negativo, considera um déficit
+        max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
+        deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
+        steps = [
+            {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
+            {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
+        ]
+        accumulated_color = 'red'
+    else:
+        # Caso contrário, o acumulado é positivo
+        max_value = contracted + accumulated
+        steps = [
+            {'range': [0, contracted], 'color': "lightgray"},
+            {'range': [contracted, max_value], 'color': "orange"}
+        ]
+        accumulated_color = 'orange'
 
-#     # Cria o gráfico de medidor (gauge)
-#     fig = go.Figure(go.Indicator(
-#         mode="gauge+number",
-#         value=used,
-#         title={'text': title, 'font': {'size': 20}},
-#         number={'font': {'size': 40}},
-#         gauge={
-#             'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
-#             'bar': {'color': "green"},
-#             'steps': steps,
-#             'threshold': {
-#                 'line': {'color': "red", 'width': 4},
-#                 'thickness': 0.75,
-#                 'value': contracted
-#             }
-#         }
-#     ))
+    # Cria o gráfico de medidor (gauge)
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=used,
+        title={'text': title, 'font': {'size': 20}},
+        number={'font': {'size': 40}},
+        gauge={
+            'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
+            'bar': {'color': "green"},
+            'steps': steps,
+            'threshold': {
+                'line': {'color': "red", 'width': 4},
+                'thickness': 0.75,
+                'value': contracted
+            }
+        }
+    ))
 
-#     # Configura o layout e estilo do gráfico
-#     fig.update_layout(
-#         autosize=False,
-#         width=350,
-#         height=250,
-#         margin=dict(l=20, r=20, t=50, b=100),
-#         paper_bgcolor='rgba(0,0,0,0)',
-#         plot_bgcolor='rgba(0,0,0,0)',
-#         annotations=[
-#             dict(
-#                 x=0.15, y=-0.05, xref='paper', yref='paper',
-#                 text=f"Contratado: {contracted}",
-#                 showarrow=False,
-#                 font=dict(color="white", size=12),
-#                 xanchor='center',
-#                 yanchor='top',
-#                 bgcolor='green',
-#                 borderpad=5,
-#                 borderwidth=2,
-#                 bordercolor='rgba(0,0,0,0)',
-#                 opacity=1
-#             ),
-#             dict(
-#                 x=0.8, y=-0.05, xref='paper', yref='paper',
-#                 text=f"<b>Acumulado:</b> {accumulated}",
-#                 showarrow=False,
-#                 font=dict(color="white", size=12),
-#                 xanchor='center',
-#                 yanchor='top',
-#                 bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
-#                 borderpad=5,
-#                 borderwidth=2,
-#                 bordercolor='rgba(0,0,0,0)',
-#                 opacity=1
-#             )
-#         ]
-#     )
+    # Configura o layout e estilo do gráfico
+    fig.update_layout(
+        autosize=False,
+        width=350,
+        height=250,
+        margin=dict(l=20, r=20, t=50, b=100),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        annotations=[
+            dict(
+                x=0.15, y=-0.05, xref='paper', yref='paper',
+                text=f"Contratado: {contracted}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor='green',
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            ),
+            dict(
+                x=0.8, y=-0.05, xref='paper', yref='paper',
+                text=f"<b>Acumulado:</b> {accumulated}",
+                showarrow=False,
+                font=dict(color="white", size=12),
+                xanchor='center',
+                yanchor='top',
+                bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
+                borderpad=5,
+                borderwidth=2,
+                bordercolor='rgba(0,0,0,0)',
+                opacity=1
+            )
+        ]
+    )
 
-#     # Renderiza o gráfico no Streamlit
-#     st.plotly_chart(fig, use_container_width=True)
+    # Renderiza o gráfico no Streamlit
+    st.plotly_chart(fig, use_container_width=True)
 
 
 
@@ -1131,67 +1495,273 @@ def get_last_month_date_range():
 #                 st.rerun()  # Recarrega a página para refletir as mudanças
 
 
-# content_production - content_production_modal.py
+# content_production - content_production_gauge_modals .py
 
-import logging
 import streamlit as st
-from datetime import datetime
-from sqlalchemy.orm import Session
-from common.models import ContentProduction
-from common.database import engine
 from streamlit_modal import Modal
+from sqlalchemy.orm import Session
+import logging
+from common.models import  DeliveryControl
+from datetime import datetime
 
-# Function to open the content production modal
-def modal_content_production_open(cliente_id):
-    logging.debug(f"modal_content_production_open() called for client ID {cliente_id}")
-
-    # Initialize the modal
-    modal = Modal("Add New Content Production Meeting", key="add-content-production-modal", max_width=800)
-
-    # Check if the modal should be open
-    if st.session_state.get("open_content_modal", False):
-        modal.open()
-        logging.debug("Content Production Modal opened.")
-
-        with modal.container():
-            with st.form(key='content_production_form'):
-                meeting_date = st.date_input("Meeting Date", value=datetime.today())
-                meeting_subject = st.text_input("Subject")
-                notes = st.text_area("Notes")
-                submit_button = st.form_submit_button(label='Save')
-
-                if submit_button:
-                    if meeting_subject:  # Ensure the subject is not empty
-                        save_new_content_production(cliente_id, meeting_date, meeting_subject, notes)
-                        logging.info(f"Content Production meeting saved for client ID {cliente_id}")
-
-                        st.success("Content Production meeting added successfully!")
-                        # Update the state and close the modal
-                        st.session_state["open_content_modal"] = False
-                        # No need to call st.experimental_rerun()
-                    else:
-                        st.error("The Subject field cannot be empty.")
-    else:
-        # Do not execute the modal content if it's not open
-        pass
-
-# Function to save the new content production meeting to the database
-def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes):
-    try:
+def edit_content_production_meeting_meeting_modal(engine, item_id, modal):
+    if modal.is_open():
         with Session(bind=engine) as session:
-            new_entry = ContentProduction(
+            content_production_meeting = session.query(DeliveryControl).get(item_id)
+
+            if content_production_meeting is None:
+                st.error("Reunião de Produção de Conteúdo não encontrada.")
+                modal.close()
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Editar Reunião de Produção de Conteúdo")
+
+                # Exibir o formulário dentro do modal
+                with st.form(key=f'edit_form_{item_id}'):
+                    selected_date = st.date_input("Selecione a Data da Reunião", value=content_production_meeting.date)
+                    subject = st.text_area("Tema da Reunião", value=content_production_meeting.subject)
+                    meeting_notes = st.text_area("Notas", value=content_production_meeting.notes)
+                    submit_edit = st.form_submit_button(label='Salvar Alterações')
+
+                    if submit_edit:
+                        if subject:
+                            try:
+                                content_production_meeting.date = selected_date
+                                content_production_meeting.subject = subject
+                                content_production_meeting.notes = meeting_notes
+                                session.commit()
+                                st.success("Reunião atualizada com sucesso!")
+                                modal.close()  # Fechar o modal
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao atualizar a Reunião de Produção de Conteúdo: {e}")
+                                logging.error(f"Erro ao atualizar reunião de produção de conteúdo: {e}")
+                        else:
+                            st.error("A descrição da reunião não pode estar vazia.")
+    else:
+        modal.close()
+
+def delete_content_production_meeting_meeting_modal(engine, item_id, modal):
+    if modal.is_open():
+        with Session(bind=engine) as session:
+            content_production_meeting = session.query(DeliveryControl).get(item_id)
+
+            if content_production_meeting is None:
+                st.error("Reunião não encontrada.")
+                modal.close()
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Excluir Reunião de Produção de Conteúdo")
+                st.warning(f"Tem certeza que deseja excluir a Reunião de Produção de Conteúdo do dia {content_production_meeting.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
+
+                # Botões de confirmação e cancelamento
+                col1, col2 = st.columns(2)
+                with col1:
+                    confirm_delete = st.button("Excluir", key=f'confirm_delete_meeting{item_id}')
+                with col2:
+                    cancel_delete = st.button("Cancelar", key=f'cancel_delete_meeting{item_id}')
+
+                if confirm_delete:
+                    try:
+                        session.delete(content_production_meeting)
+                        session.commit()
+                        st.success("Reunião excluída com sucesso!")
+                        modal.close()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
+                        logging.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
+                elif cancel_delete:
+                    modal.close()
+                    st.rerun()
+    else:
+        modal.close()
+
+def add_content_production_meeting_meeting_modal(engine):
+    # Inicializa o modal para adicionar Reunião de Produção de Conteúdo
+    modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar_reunião_conteudo", padding=20, max_width=744)
+
+    # Botão para abrir o modal
+    if st.button("Adicionar Reunião de Conteúdo"):
+        modal.open()
+
+    # Exibir o modal se estiver aberto
+    if modal.is_open():
+        with modal.container():
+            st.write("### Nova Reunião de Produção de Conteúdo")
+            with st.form(key='new_content_production_meeting_form'):
+                selected_date = st.date_input("Selecione a Data do Reunião de Produção de Conteúdo", value=datetime.today())
+                subject = st.text_area("Assunto da Reunião de Produção de Conteúdo")
+                meeting_notes = st.text_area("Notas da Reunião")
+                submit_new = st.form_submit_button(label='Salvar')
+
+                if submit_new:
+                    if subject:
+                        save_new_content_production_meeting_meeting(st.session_state["cliente_id"], selected_date, subject, meeting_notes, engine)
+                        st.success("Reunião adicionada com sucesso!")
+                        modal.close()
+                        st.rerun()
+                    else:
+                        st.error("A descrição da Reunião de Produção de Conteúdo não pode estar vazia.")
+
+def save_new_content_production_meeting_meeting(cliente_id, production_date, subject, notes, engine):
+    try:
+        if engine is None:
+            raise ValueError("Engine não foi fornecido")
+        with Session(bind=engine) as session:
+            new_entry = DeliveryControl(
                 client_id=cliente_id,
-                meeting_date=meeting_date,
-                meeting_subject=meeting_subject,
+                date=production_date,
+                subject=subject,
                 notes=notes
             )
             session.add(new_entry)
-            session.commit()
-            logging.info(f"New Content Production meeting saved to the database for client ID {cliente_id}.")
+            session.commit()  # Commit da nova entrada
+            st.success("Reunião de produção de conteúdo salva com sucesso!")
     except Exception as e:
-        logging.error(f"Error saving the Content Production meeting: {e}")
-        st.error(f"Error saving the Content Production meeting: {e}")
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
 
+        # Log de erro detalhado
+        logging.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+
+# content_production - content_production_table_modals.py
+
+import streamlit as st
+from streamlit_modal import Modal
+from sqlalchemy.orm import Session
+import logging
+from common.models import ContentProduction
+from datetime import datetime
+
+def edit_content_production_meeting_modal(engine, item_id, modal):
+    if modal.is_open():
+        with Session(bind=engine) as session:
+            content_production = session.query(ContentProduction).get(item_id)
+
+            if content_production is None:
+                st.error("Reunião de Produção de Conteúdo não encontrada.")
+                modal.close()
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Editar Reunião de Produção de Conteúdo")
+
+                # Exibir o formulário dentro do modal
+                with st.form(key=f'edit_form_{item_id}'):
+                    selected_date = st.date_input("Selecione a Data da Reunião", value=content_production.date)
+                    subject = st.text_area("Tema da Reunião", value=content_production.subject)
+                    meeting_notes = st.text_area("Notas", value=content_production.notes)
+                    submit_edit = st.form_submit_button(label='Salvar Alterações')
+
+                    if submit_edit:
+                        if subject:
+                            try:
+                                content_production.date = selected_date
+                                content_production.subject = subject
+                                content_production.notes = meeting_notes
+                                session.commit()
+                                st.success("Reunião atualizada com sucesso!")
+                                modal.close()  # Fechar o modal
+                                st.rerun()
+                            except Exception as e:
+                                st.error(f"Erro ao atualizar a Reunião de Produção de Conteúdo: {e}")
+                                logging.error(f"Erro ao atualizar reunião de produção de conteúdo: {e}")
+                        else:
+                            st.error("A descrição da reunião não pode estar vazia.")
+    else:
+        modal.close()
+
+def delete_content_production_meeting_modal(engine, item_id, modal):
+    if modal.is_open():
+        with Session(bind=engine) as session:
+            content_production = session.query(ContentProduction).get(item_id)
+
+            if content_production is None:
+                st.error("Reunião não encontrada.")
+                modal.close()
+                return
+
+            # Exibir o conteúdo do modal
+            with modal.container():
+                st.write("### Excluir Reunião de Produção de Conteúdo")
+                st.warning(f"Tem certeza que deseja excluir a Reunião de Produção de Conteúdo do dia {content_production.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
+
+                # Botões de confirmação e cancelamento
+                col1, col2 = st.columns(2)
+                with col1:
+                    confirm_delete = st.button("Excluir", key=f'confirm_delete_meeting{item_id}')
+                with col2:
+                    cancel_delete = st.button("Cancelar", key=f'cancel_delete_meeting{item_id}')
+
+                if confirm_delete:
+                    try:
+                        session.delete(content_production)
+                        session.commit()
+                        st.success("Reunião excluída com sucesso!")
+                        modal.close()
+                        st.rerun()
+                    except Exception as e:
+                        st.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
+                        logging.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
+                elif cancel_delete:
+                    modal.close()
+                    st.rerun()
+    else:
+        modal.close()
+
+def add_content_production_meeting_modal(engine):
+    # Inicializa o modal para adicionar Reunião de Produção de Conteúdo
+    modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar_reunião_conteudo", padding=20, max_width=744)
+
+    # Botão para abrir o modal
+    if st.button("Adicionar Reunião de Conteúdo"):
+        modal.open()
+
+    # Exibir o modal se estiver aberto
+    if modal.is_open():
+        with modal.container():
+            st.write("### Nova Reunião de Produção de Conteúdo")
+            with st.form(key='new_content_production_form'):
+                selected_date = st.date_input("Selecione a Data do Reunião de Produção de Conteúdo", value=datetime.today())
+                subject = st.text_area("Assunto da Reunião de Produção de Conteúdo")
+                meeting_notes = st.text_area("Notas da Reunião")
+                submit_new = st.form_submit_button(label='Salvar')
+
+                if submit_new:
+                    if subject:
+                        save_new_content_production_meeting(st.session_state["cliente_id"], selected_date, subject, meeting_notes, engine)
+                        st.success("Reunião adicionada com sucesso!")
+                        modal.close()
+                        st.rerun()
+                    else:
+                        st.error("A descrição da Reunião de Produção de Conteúdo não pode estar vazia.")
+
+def save_new_content_production_meeting(cliente_id, production_date, subject, notes, engine):
+    try:
+        if engine is None:
+            raise ValueError("Engine não foi fornecido")
+        with Session(bind=engine) as session:
+            new_entry = ContentProduction(
+                client_id=cliente_id,
+                date=production_date,
+                subject=subject,
+                notes=notes
+            )
+            session.add(new_entry)
+            session.commit()  # Commit da nova entrada
+            st.success("Reunião de produção de conteúdo salva com sucesso!")
+    except Exception as e:
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+
+        # Log de erro detalhado
+        logging.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
+        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
 
 # content_production - __init__.py
 
@@ -1199,70 +1769,154 @@ def save_new_content_production(cliente_id, meeting_date, meeting_subject, notes
 
 # content_production - content_production_gauge.py
 
-# import streamlit as st
-# from plotly.graph_objects import Figure
-# from streamlit_extras.stylable_container import stylable_container
-# from page_entregas.utils.gauge import display_gauge_chart
+import streamlit as st
+from plotly.graph_objects import Figure
+from streamlit_extras.stylable_container import stylable_container
+from page_entregas.utils.gauge import display_gauge_chart
 
-# # ===========================================================
-# # Funções para Exibição do Gauge de Produção de Conteúdo
-# # ===========================================================
+# ===========================================================
+# Funções para Exibição do Gauge de Produção de Conteúdo
+# ===========================================================
 
-# def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
-#     """
-#     Exibe o gauge (gráfico de medidor) para produção de conteúdo.
-#     """
-#     st.write("**Produção de Conteúdo**")
+def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+    """
+    Exibe o gauge (gráfico de medidor) para produção de conteúdo.
+    """
+    st.write("**Produção de Conteúdo**")
     
-#     with stylable_container(key="content_production_gauge", 
-#                             css_styles="""
-#                             {
-#                                 border: 1px solid #d3d3d3;
-#                                 border-radius: 10px;
-#                                 padding: 15px;
-#                                 margin-bottom: 45px;
-#                             }
-#                             """):
-#         # Exibir o gráfico de gauge para produção de conteúdo
-#         gauge_chart = display_gauge_chart(
-#             title="Produção de Conteúdo",
-#             contracted=mandalecas_contratadas.get('ContentProduction', 0),
-#             used=mandalecas_usadas.get('ContentProduction', 0),
-#             accumulated=mandalecas_acumuladas.get('ContentProduction', 0)
-#         )
-#         st.plotly_chart(gauge_chart)
+    with stylable_container(key="content_production_gauge", 
+                            css_styles="""
+                            {
+                                border: 1px solid #d3d3d3;
+                                border-radius: 10px;
+                                padding: 15px;
+                                margin-bottom: 45px;
+                            }
+                            """):
+        # Exibir o gráfico de gauge para produção de conteúdo
+        gauge_chart = display_gauge_chart(
+            title="Produção de Conteúdo",
+            contracted=mandalecas_contratadas.get('ContentProduction', 0),
+            used=mandalecas_usadas.get('ContentProduction', 0),
+            accumulated=mandalecas_acumuladas.get('ContentProduction', 0)
+        )
+        st.plotly_chart(gauge_chart)
 
 
 # content_production - content_production_table.py
 
 import streamlit as st
-import pandas as pd
 from sqlalchemy.orm import Session
-from common.database import engine
-from page_entregas.content_production.content_production_modal import modal_content_production_open
+import pandas as pd
 from common.models import ContentProduction
+import logging
+from page_entregas.utils.styles import css_tabela
+from page_entregas.content_production.content_production_table_modals import (
+    edit_content_production_meeting_modal,
+    delete_content_production_meeting_modal,
+    add_content_production_meeting_modal
+)
+from streamlit_modal import Modal
+from streamlit_extras.stylable_container import stylable_container
 
-def display_content_production_table(cliente_id):
-    modal = modal_content_production_open()  # Corrigida a importação do modal
+# Configuração do logging
+logging.basicConfig(
+    filename='logs/content_production.log',  # Nome do arquivo onde os logs serão salvos
+    level=logging.ERROR,  # Nível do log (ERROR para registrar erros)
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 
-    with st.container():
-        st.write("**Histórico de Reuniões de Produção de Conteúdo**")
-        with st.container():
-            with Session(bind=engine) as session:
-                content_production_data = session.query(ContentProduction).filter(ContentProduction.client_id == cliente_id).all()
 
-                if not content_production_data:
-                    content_production_df = pd.DataFrame(columns=['Data da Reunião', 'Assunto', 'Notas'])
-                else:
-                    content_production_df = pd.DataFrame([{
-                        'Data da Reunião': row.meeting_date.strftime('%Y-%m-%d') if row.meeting_date else '',
-                        'Assunto': row.meeting_subject,
-                        'Notas': row.notes
-                    } for row in content_production_data])
+def display_content_production_table(cliente_id, data_inicio, data_fim, engine):
+    """
+    Exibe a tabela de reuniões de produção de conteúdo para um cliente, em um intervalo de datas,
+    com botões de Editar e Excluir, encapsulada em um container estilizado.
+    """
+    try:
+        # Iniciar uma sessão do SQLAlchemy para buscar as reuniões de produção de conteúdo
+        with Session(bind=engine) as session:
+            content_production = session.query(ContentProduction).filter(
+                ContentProduction.client_id == cliente_id,
+                ContentProduction.date.between(data_inicio, data_fim)
+            ).order_by(ContentProduction.date.desc()).all()
 
-                st.table(content_production_df)
+        # Verificar se há reuniões de produção de conteúdo
+        if not content_production:
+            st.info("Nenhuma reunião de produção de conteúdo encontrada para o período selecionado.")
+        else:
+            # Criar uma lista de dicionários para armazenar as reuniões
+            data = []
+            for cp in content_production:
+                data.append({
+                    'Data': cp.date.strftime('%d %b. %Y') if cp.date else '',
+                    'Tema da Reunião': cp.subject,
+                    'Notas': cp.notes if cp.notes else '-',
+                    'ID': cp.id
+                })
 
-        if st.button("Adicionar Nova Reunião de Produção de Conteúdo"):
-            modal.open()
+            # Converter os dados em DataFrame para facilitar a exibição
+            content_production_df = pd.DataFrame(data)
+
+            st.write("**Reuniões de Produção de Conteúdo**")
+
+            # Inicializar os modais fora de qualquer container ou loop
+            edit_modal = Modal("Editar Reunião", key="edit_modal_cp", max_width=800)
+            delete_modal = Modal("Excluir Reunião", key="delete_modal_cp", max_width=800)
+
+            # Exibir a tabela dentro do container estilizado
+            with stylable_container(
+                key="tabela_content_production",
+                css_styles=css_tabela()
+            ):
+                # Criar cabeçalho da tabela
+                header_cols = st.columns([2, 5, 5, 1, 1])
+                header_cols[0].write("**Data**")
+                header_cols[1].write("**Tema da Reunião**")
+                header_cols[2].write("**Notas**")
+                header_cols[3].write("**Editar**")
+                header_cols[4].write("**Excluir**")
+
+                # Exibir os dados com botões de ação
+                for index, row in content_production_df.iterrows():
+                    # Definir a cor de fundo com base na paridade do índice
+                    row_bg_color = '#FFFFFF' if index % 2 == 0 else '#F0F0F0'
+
+                    # Aplicar o estilo à linha usando stylable_container
+                    with stylable_container(
+                        key=f'row_{row["ID"]}_{index}',
+                        css_styles=f'''
+                        background-color: {row_bg_color};
+                        padding: 5px;
+                        border-radius: 5px;
+                        '''
+                    ):
+                        cols = st.columns([2, 5, 5, 1, 1])
+                        cols[0].write(row['Data'])
+                        cols[1].write(row['Tema da Reunião'])
+                        cols[2].write(row['Notas'])
+                        if cols[3].button('✏️', key=f'edit_{row["ID"]}_{index}', help='Editar'):
+                            st.session_state['edit_item_id'] = row['ID']
+                            edit_modal.open()
+                        if cols[4].button('🗑️', key=f'delete_{row["ID"]}_{index}', help='Excluir'):
+                            st.session_state['delete_item_id'] = row['ID']
+                            delete_modal.open()
+
+            # Chamar as funções dos modais fora do container e de qualquer loop
+            if edit_modal.is_open():
+                edit_content_production_meeting_modal(engine, st.session_state['edit_item_id'], edit_modal)
+
+            if delete_modal.is_open():
+                delete_content_production_meeting_modal(engine, st.session_state['delete_item_id'], delete_modal)
+
+        # Botão para adicionar nova reunião
+        add_content_production_meeting_modal(engine)
+
+    except Exception as e:
+        # Adicionar logging para erros inesperados
+        logging.error(f"Erro ao exibir a tabela de produção de conteúdo: {e}")
+        st.error("Ocorreu um erro ao carregar os dados de produção de conteúdo. Por favor, tente novamente mais tarde.")
+
+
 
 

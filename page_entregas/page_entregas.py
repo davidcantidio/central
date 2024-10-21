@@ -3,11 +3,14 @@ import pandas as pd
 import logging
 from sqlalchemy.orm import Session
 from common.models import AttentionPoints, Client
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import locale
-from streamlit_modal import Modal
 from page_entregas.attention_points.attention_points_table import display_attention_points_table
 from page_entregas.content_production.content_production_table import display_content_production_table
+from page_entregas.content_production.content_production_gauge import display_content_production_gauge
+from page_entregas.utils.mandalecas import calcular_mandalecas
+from streamlit_extras.stylable_container import stylable_container
+
 # Configurar a localidade para português do Brasil
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.utf8')
@@ -39,9 +42,9 @@ def page_entregas(engine):
 
     # Inicializar o st.session_state para data_inicio e data_fim, se necessário
     if "data_inicio" not in st.session_state:
-        st.session_state["data_inicio"] = datetime.today() - pd.Timedelta(days=30)
+        st.session_state["data_inicio"] = date.today() - timedelta(days=30)
     if "data_fim" not in st.session_state:
-        st.session_state["data_fim"] = datetime.today()
+        st.session_state["data_fim"] = date.today()
     if "cliente_id" not in st.session_state:
         st.session_state["cliente_id"] = clientes_df["id"].iloc[0]
 
@@ -68,7 +71,6 @@ def page_entregas(engine):
 
         # Botão para aplicar os filtros
         submit_button = st.form_submit_button(label='Aplicar Filtros')
-    
 
     # Verifica se o botão foi clicado
     if submit_button:
@@ -89,9 +91,18 @@ def page_entregas(engine):
     logging.debug(f"Cliente selecionado: {st.session_state['cliente_id']}")
     logging.debug(f"Data início: {st.session_state['data_inicio']}, Data fim: {st.session_state['data_fim']}")
 
+    # Obter o cliente selecionado e armazenar no st.session_state
+    with Session(bind=engine) as session:
+        cliente_selecionado = session.query(Client).filter(Client.id == st.session_state["cliente_id"]).first()
+        if cliente_selecionado:
+            st.session_state["cliente_obj"] = cliente_selecionado
+        else:
+            st.error("Cliente não encontrado.")
+            return
+
     # Obter o nome do cliente selecionado
-    cliente_nome = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["name"].values[0]
-    cliente_logo_url = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["logo_url"].values[0]
+    cliente_nome = cliente_selecionado.name
+    cliente_logo_url = cliente_selecionado.logo_url
 
     # Exibir o nome do cliente selecionado na página principal
     if cliente_logo_url:
@@ -104,16 +115,10 @@ def page_entregas(engine):
     else:
         st.write(f"## {cliente_nome}")
 
-
-    # ===========================================================
-    # Botão para adicionar ponto de atenção
-    # ===========================================================
-
     # ===========================================================
     # Exibir Pontos de Atenção
     # ===========================================================
 
-    
     display_attention_points_table(
         st.session_state["cliente_id"],
         st.session_state["data_inicio"],
@@ -121,20 +126,45 @@ def page_entregas(engine):
         engine
     )
 
-    display_content_production_table(
-        st.session_state["cliente_id"],
-        st.session_state["data_inicio"],
-        st.session_state["data_fim"],
-        engine
-    )
+    # ===========================================================
+    # Exibir Produção de Conteúdo
+    # ===========================================================
+
+    # Calcular mandalecas para o gauge de produção de conteúdo
+    with Session(bind=engine) as session:
+        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
+            st.session_state["cliente_obj"],
+            st.session_state["data_inicio"],
+            st.session_state["data_fim"],
+            session
+        )
+
+    # Criar colunas para o gauge e a tabela
+    col_gauge, col_table = st.columns([0.3, 0.7])
+
+    with col_gauge:
+        # Exibir o gauge de Produção de Conteúdo
+        display_content_production_gauge(
+            mandalecas_contratadas,
+            mandalecas_usadas,
+            mandalecas_acumuladas
+        )
+
+    with col_table:
+        # Exibir a tabela de Produção de Conteúdo
+        display_content_production_table(
+            st.session_state["cliente_id"],
+            st.session_state["data_inicio"],
+            st.session_state["data_fim"],
+            engine
+        )
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
     with Session(bind=engine) as session:
         clientes = session.query(Client).all()
-        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url':c.logo_url} for c in clientes])
+        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url': c.logo_url} for c in clientes])
     return clientes_df
-
 
 # ===========================================================
 # Função principal para executar a página

@@ -1,49 +1,51 @@
-# from datetime import datetime
-# from common.models import JobCategoryEnum, DeliveryCategoryEnum, Client
-# from sqlalchemy.orm import Session
-# from sqlalchemy.sql import func
+from datetime import datetime
+from common.models import DeliveryCategoryEnum, Client, DeliveryControl
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+import streamlit as st  
 
-# # Função para calcular as mandalecas contratadas, usadas e acumuladas
-# def calcular_mandalecas(cliente_id: int):
-#     """
-#     Função para calcular mandalecas contratadas, usadas e acumuladas para um cliente específico.
-    
-#     Parâmetros:
-#     cliente_id (int): ID do cliente para o qual as mandalecas serão calculadas.
+def calcular_mandalecas(cliente: Client, data_inicio: datetime, data_fim: datetime, session: Session):
+    """
+    Calcula as mandalecas contratadas, usadas e acumuladas para um cliente específico.
 
-#     Retorna:
-#     mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
-#     mandalecas_usadas (dict): Mandalecas usadas por categoria.
-#     mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
-#     """
-#     # Dicionários para armazenar as mandalecas por categoria
-#     mandalecas_contratadas = {
-#         JobCategoryEnum.CRIACAO: 100,   # Exemplo: valor contratado
-#         JobCategoryEnum.ADAPTACAO: 50,
-#         JobCategoryEnum.CONTENT_PRODUCTION: 40,
-#         JobCategoryEnum.STATIC_TRAFEGO_PAGO: 30,
-#         JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 20,
-#         JobCategoryEnum.FEED_INSTAGRAM: 70,
-#         JobCategoryEnum.FEED_LINKEDIN: 50,
-#         JobCategoryEnum.FEED_TIKTOK: 30,
-#     }
+    Parâmetros:
+    - cliente (Client): Objeto do cliente.
+    - data_inicio (datetime): Data de início do período.
+    - data_fim (datetime): Data de fim do período.
+    - session (Session): Sessão do SQLAlchemy.
 
-#     mandalecas_usadas = {
-#         JobCategoryEnum.CRIACAO: 60,    # Exemplo: valor usado
-#         JobCategoryEnum.ADAPTACAO: 40,
-#         JobCategoryEnum.CONTENT_PRODUCTION: 30,
-#         JobCategoryEnum.STATIC_TRAFEGO_PAGO: 20,
-#         JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 10,
-#         JobCategoryEnum.FEED_INSTAGRAM: 50,
-#         JobCategoryEnum.FEED_LINKEDIN: 40,
-#         JobCategoryEnum.FEED_TIKTOK: 20,
-#     }
+    Retorna:
+    - mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
+    - mandalecas_usadas (dict): Mandalecas usadas por categoria.
+    - mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
+    """
+    # Verificar se o cliente foi fornecido
+    if not cliente:
+        st.error("Cliente não fornecido.")
+        return None, None, None
 
-#     # Acumulação: diferença entre contratadas e usadas
-#     mandalecas_acumuladas = {
-#         categoria: mandalecas_contratadas[categoria] - mandalecas_usadas.get(categoria, 0)
-#         for categoria in mandalecas_contratadas
-#     }
+    # Mandalecas Contratadas
+    mandalecas_contratadas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.n_monthly_contracted_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
 
-#     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+    # Mandalecas Acumuladas
+    mandalecas_acumuladas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.accumulated_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
 
+    # Mandalecas Usadas no período atual
+    mandalecas_usadas = {}
+
+    # Calcular mandalecas usadas para 'Produção de Conteúdo'
+    total_usadas = session.query(func.sum(DeliveryControl.used_mandalecas)).filter(
+        DeliveryControl.client_id == cliente.id,
+        DeliveryControl.delivery_category == DeliveryCategoryEnum.CONTENT_PRODUCTION,
+        DeliveryControl.job_creation_date.between(data_inicio, data_fim)
+    ).scalar() or 0
+
+    mandalecas_usadas[DeliveryCategoryEnum.CONTENT_PRODUCTION] = total_usadas
+
+    return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
