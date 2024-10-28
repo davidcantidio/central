@@ -1,7 +1,7 @@
   # Definir o CSS para o container apenas da tabela
 def css_tabela ():
     
-    style = """
+    return """
     {
         border: 1px dashed lightgray;
         border-radius: 10px;
@@ -10,14 +10,24 @@ def css_tabela ():
         background-color: white;
     }
     """
-    return style 
+      
 
 def css_gauge():
-    style = """"
+    return """"
     {   border: 1px solid #d3d3d3;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 45px;
       }
       """
-    return style 
+      
+
+def section_container_css():
+    return """
+    {
+        margin-bottom: 45px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 10px;
+    }
+    """

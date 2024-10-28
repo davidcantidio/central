@@ -155,11 +155,14 @@ import pandas as pd
 import logging
 from sqlalchemy.orm import Session
 from common.models import AttentionPoints, Client
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import locale
-from streamlit_modal import Modal
 from page_entregas.attention_points.attention_points_table import display_attention_points_table
 from page_entregas.content_production.content_production_table import display_content_production_table
+from page_entregas.content_production.content_production_gauge import display_content_production_gauge
+from page_entregas.utils.mandalecas import calcular_mandalecas
+from streamlit_extras.stylable_container import stylable_container
+
 # Configurar a localidade para português do Brasil
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.utf8')
@@ -191,9 +194,9 @@ def page_entregas(engine):
 
     # Inicializar o st.session_state para data_inicio e data_fim, se necessário
     if "data_inicio" not in st.session_state:
-        st.session_state["data_inicio"] = datetime.today() - pd.Timedelta(days=30)
+        st.session_state["data_inicio"] = date.today() - timedelta(days=30)
     if "data_fim" not in st.session_state:
-        st.session_state["data_fim"] = datetime.today()
+        st.session_state["data_fim"] = date.today()
     if "cliente_id" not in st.session_state:
         st.session_state["cliente_id"] = clientes_df["id"].iloc[0]
 
@@ -220,7 +223,6 @@ def page_entregas(engine):
 
         # Botão para aplicar os filtros
         submit_button = st.form_submit_button(label='Aplicar Filtros')
-    
 
     # Verifica se o botão foi clicado
     if submit_button:
@@ -241,9 +243,18 @@ def page_entregas(engine):
     logging.debug(f"Cliente selecionado: {st.session_state['cliente_id']}")
     logging.debug(f"Data início: {st.session_state['data_inicio']}, Data fim: {st.session_state['data_fim']}")
 
+    # Obter o cliente selecionado e armazenar no st.session_state
+    with Session(bind=engine) as session:
+        cliente_selecionado = session.query(Client).filter(Client.id == st.session_state["cliente_id"]).first()
+        if cliente_selecionado:
+            st.session_state["cliente_obj"] = cliente_selecionado
+        else:
+            st.error("Cliente não encontrado.")
+            return
+
     # Obter o nome do cliente selecionado
-    cliente_nome = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["name"].values[0]
-    cliente_logo_url = clientes_df[clientes_df["id"] == st.session_state["cliente_id"]]["logo_url"].values[0]
+    cliente_nome = cliente_selecionado.name
+    cliente_logo_url = cliente_selecionado.logo_url
 
     # Exibir o nome do cliente selecionado na página principal
     if cliente_logo_url:
@@ -256,16 +267,10 @@ def page_entregas(engine):
     else:
         st.write(f"## {cliente_nome}")
 
-
-    # ===========================================================
-    # Botão para adicionar ponto de atenção
-    # ===========================================================
-
     # ===========================================================
     # Exibir Pontos de Atenção
     # ===========================================================
 
-    
     display_attention_points_table(
         st.session_state["cliente_id"],
         st.session_state["data_inicio"],
@@ -273,20 +278,45 @@ def page_entregas(engine):
         engine
     )
 
-    display_content_production_table(
-        st.session_state["cliente_id"],
-        st.session_state["data_inicio"],
-        st.session_state["data_fim"],
-        engine
-    )
+    # ===========================================================
+    # Exibir Produção de Conteúdo
+    # ===========================================================
+
+    # Calcular mandalecas para o gauge de produção de conteúdo
+    with Session(bind=engine) as session:
+        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
+            st.session_state["cliente_obj"],
+            st.session_state["data_inicio"],
+            st.session_state["data_fim"],
+            session
+        )
+
+    # Criar colunas para o gauge e a tabela
+    col_gauge, col_table = st.columns([0.3, 0.7])
+
+    with col_gauge:
+        # Exibir o gauge de Produção de Conteúdo
+        display_content_production_gauge(
+            mandalecas_contratadas,
+            mandalecas_usadas,
+            mandalecas_acumuladas
+        )
+
+    with col_table:
+        # Exibir a tabela de Produção de Conteúdo
+        display_content_production_table(
+            st.session_state["cliente_id"],
+            st.session_state["data_inicio"],
+            st.session_state["data_fim"],
+            engine
+        )
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
     with Session(bind=engine) as session:
         clientes = session.query(Client).all()
-        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url':c.logo_url} for c in clientes])
+        clientes_df = pd.DataFrame([{'id': c.id, 'name': c.name, 'logo_url': c.logo_url} for c in clientes])
     return clientes_df
-
 
 # ===========================================================
 # Função principal para executar a página
@@ -830,55 +860,57 @@ def save_new_attention_point(cliente_id, attention_date, attention_point, engine
 
 # utils - mandalecas.py
 
-# from datetime import datetime
-# from common.models import JobCategoryEnum, DeliveryCategoryEnum, Client
-# from sqlalchemy.orm import Session
-# from sqlalchemy.sql import func
+from datetime import datetime
+from common.models import DeliveryCategoryEnum, Client, DeliveryControl
+from sqlalchemy.orm import Session
+from sqlalchemy.sql import func
+import streamlit as st  
 
-# # Função para calcular as mandalecas contratadas, usadas e acumuladas
-# def calcular_mandalecas(cliente_id: int):
-#     """
-#     Função para calcular mandalecas contratadas, usadas e acumuladas para um cliente específico.
-    
-#     Parâmetros:
-#     cliente_id (int): ID do cliente para o qual as mandalecas serão calculadas.
+def calcular_mandalecas(cliente: Client, data_inicio: datetime, data_fim: datetime, session: Session):
+    """
+    Calcula as mandalecas contratadas, usadas e acumuladas para um cliente específico.
 
-#     Retorna:
-#     mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
-#     mandalecas_usadas (dict): Mandalecas usadas por categoria.
-#     mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
-#     """
-#     # Dicionários para armazenar as mandalecas por categoria
-#     mandalecas_contratadas = {
-#         JobCategoryEnum.CRIACAO: 100,   # Exemplo: valor contratado
-#         JobCategoryEnum.ADAPTACAO: 50,
-#         JobCategoryEnum.CONTENT_PRODUCTION: 40,
-#         JobCategoryEnum.STATIC_TRAFEGO_PAGO: 30,
-#         JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 20,
-#         JobCategoryEnum.FEED_INSTAGRAM: 70,
-#         JobCategoryEnum.FEED_LINKEDIN: 50,
-#         JobCategoryEnum.FEED_TIKTOK: 30,
-#     }
+    Parâmetros:
+    - cliente (Client): Objeto do cliente.
+    - data_inicio (datetime): Data de início do período.
+    - data_fim (datetime): Data de fim do período.
+    - session (Session): Sessão do SQLAlchemy.
 
-#     mandalecas_usadas = {
-#         JobCategoryEnum.CRIACAO: 60,    # Exemplo: valor usado
-#         JobCategoryEnum.ADAPTACAO: 40,
-#         JobCategoryEnum.CONTENT_PRODUCTION: 30,
-#         JobCategoryEnum.STATIC_TRAFEGO_PAGO: 20,
-#         JobCategoryEnum.ANIMATED_TRAFEGO_PAGO: 10,
-#         JobCategoryEnum.FEED_INSTAGRAM: 50,
-#         JobCategoryEnum.FEED_LINKEDIN: 40,
-#         JobCategoryEnum.FEED_TIKTOK: 20,
-#     }
+    Retorna:
+    - mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
+    - mandalecas_usadas (dict): Mandalecas usadas por categoria.
+    - mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
+    """
+    # Verificar se o cliente foi fornecido
+    if not cliente:
+        st.error("Cliente não fornecido.")
+        return None, None, None
 
-#     # Acumulação: diferença entre contratadas e usadas
-#     mandalecas_acumuladas = {
-#         categoria: mandalecas_contratadas[categoria] - mandalecas_usadas.get(categoria, 0)
-#         for categoria in mandalecas_contratadas
-#     }
+    # Mandalecas Contratadas
+    mandalecas_contratadas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.n_monthly_contracted_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
 
-#     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+    # Mandalecas Acumuladas
+    mandalecas_acumuladas = {
+        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.accumulated_content_production_mandalecas or 0,
+        # Adicione outras categorias conforme necessário
+    }
 
+    # Mandalecas Usadas no período atual
+    mandalecas_usadas = {}
+
+    # Calcular mandalecas usadas para 'Produção de Conteúdo'
+    total_usadas = session.query(func.sum(DeliveryControl.used_mandalecas)).filter(
+        DeliveryControl.client_id == cliente.id,
+        DeliveryControl.delivery_category == DeliveryCategoryEnum.CONTENT_PRODUCTION,
+        DeliveryControl.job_creation_date.between(data_inicio, data_fim)
+    ).scalar() or 0
+
+    mandalecas_usadas[DeliveryCategoryEnum.CONTENT_PRODUCTION] = total_usadas
+
+    return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
 
 
 # utils - chat_gpt.py
@@ -1504,7 +1536,7 @@ import logging
 from common.models import  DeliveryControl
 from datetime import datetime
 
-def edit_content_production_meeting_meeting_modal(engine, item_id, modal):
+def edit_content_production_meeting(engine, item_id, modal):
     if modal.is_open():
         with Session(bind=engine) as session:
             content_production_meeting = session.query(DeliveryControl).get(item_id)
@@ -1770,13 +1802,9 @@ def save_new_content_production_meeting(cliente_id, production_date, subject, no
 # content_production - content_production_gauge.py
 
 import streamlit as st
-from plotly.graph_objects import Figure
 from streamlit_extras.stylable_container import stylable_container
 from page_entregas.utils.gauge import display_gauge_chart
-
-# ===========================================================
-# Funções para Exibição do Gauge de Produção de Conteúdo
-# ===========================================================
+from common.models import DeliveryCategoryEnum
 
 def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
     """
@@ -1793,14 +1821,18 @@ def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, 
                                 margin-bottom: 45px;
                             }
                             """):
-        # Exibir o gráfico de gauge para produção de conteúdo
-        gauge_chart = display_gauge_chart(
+        # Obter os valores específicos para a categoria de Produção de Conteúdo
+        contracted = mandalecas_contratadas.get(DeliveryCategoryEnum.CONTENT_PRODUCTION, 0)
+        used = mandalecas_usadas.get(DeliveryCategoryEnum.CONTENT_PRODUCTION, 0)
+        accumulated = mandalecas_acumuladas.get(DeliveryCategoryEnum.CONTENT_PRODUCTION, 0)
+
+        # Exibir o gráfico de gauge
+        display_gauge_chart(
             title="Produção de Conteúdo",
-            contracted=mandalecas_contratadas.get('ContentProduction', 0),
-            used=mandalecas_usadas.get('ContentProduction', 0),
-            accumulated=mandalecas_acumuladas.get('ContentProduction', 0)
+            contracted=contracted,
+            used=used,
+            accumulated=accumulated
         )
-        st.plotly_chart(gauge_chart)
 
 
 # content_production - content_production_table.py

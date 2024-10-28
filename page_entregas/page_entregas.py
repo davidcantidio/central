@@ -115,49 +115,69 @@ def page_entregas(engine):
     else:
         st.write(f"## {cliente_nome}")
 
-    # ===========================================================
-    # Exibir Pontos de Atenção
-    # ===========================================================
-
-    display_attention_points_table(
-        st.session_state["cliente_id"],
-        st.session_state["data_inicio"],
-        st.session_state["data_fim"],
-        engine
-    )
-
-    # ===========================================================
-    # Exibir Produção de Conteúdo
-    # ===========================================================
-
-    # Calcular mandalecas para o gauge de produção de conteúdo
-    with Session(bind=engine) as session:
-        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
-            st.session_state["cliente_obj"],
-            st.session_state["data_inicio"],
-            st.session_state["data_fim"],
-            session
-        )
-
-    # Criar colunas para o gauge e a tabela
-    col_gauge, col_table = st.columns([0.3, 0.7])
-
-    with col_gauge:
-        # Exibir o gauge de Produção de Conteúdo
-        display_content_production_gauge(
-            mandalecas_contratadas,
-            mandalecas_usadas,
-            mandalecas_acumuladas
-        )
-
-    with col_table:
-        # Exibir a tabela de Produção de Conteúdo
-        display_content_production_table(
+    # ============================================
+    # Exibir Pontos de Atenção (Attention Points)
+    # ============================================
+    with stylable_container(
+        key="attention_points_section",
+        css_styles="""
+        {
+            margin-bottom: 45px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        """
+    ):
+        display_attention_points_table(
             st.session_state["cliente_id"],
             st.session_state["data_inicio"],
             st.session_state["data_fim"],
             engine
         )
+
+    # ============================================
+    # Exibir Produção de Conteúdo (Content Production)
+    # ============================================
+    with stylable_container(
+        key="content_production_section",
+        css_styles="""
+        {
+            margin-bottom: 45px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        """
+    ):
+        # Calcular mandalecas para o gauge de produção de conteúdo
+        with Session(bind=engine) as session:
+            mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
+                st.session_state["cliente_obj"],
+                st.session_state["data_inicio"],
+                st.session_state["data_fim"],
+                session
+            )
+
+        # Criar colunas para o gauge e a tabela
+        col_gauge, col_table = st.columns([0.3, 0.7])
+
+        with col_gauge:
+            # Exibir o gauge de Produção de Conteúdo
+            display_content_production_gauge(
+                mandalecas_contratadas,
+                mandalecas_usadas,
+                mandalecas_acumuladas
+            )
+
+        with col_table:
+            # Exibir a tabela de Produção de Conteúdo
+            display_content_production_table(
+                st.session_state["cliente_id"],
+                st.session_state["data_inicio"],
+                st.session_state["data_fim"],
+                engine
+            )
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
