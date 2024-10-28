@@ -100,20 +100,21 @@ def page_entregas(engine):
             st.error("Cliente não encontrado.")
             return
 
-    # Obter o nome do cliente selecionado
+    # Obter o nome do cliente selecionado e formatar com mês/ano
     cliente_nome = cliente_selecionado.name
     cliente_logo_url = cliente_selecionado.logo_url
+    mes_ano = st.session_state["data_fim"].strftime('%B/%y').capitalize()
 
-    # Exibir o nome do cliente selecionado na página principal
+    # Exibir o nome do cliente seguido do mês e ano na página principal
     if cliente_logo_url:
         col1, col2 = st.columns([1, 5])  # Ajuste as proporções das colunas conforme necessário
 
         with col1:
             st.image(cliente_logo_url, width=50)  # Exibe a logo do cliente com uma largura ajustada
         with col2:
-            st.write(f"## {cliente_nome}")
+            st.write(f"## {cliente_nome} : {mes_ano}")
     else:
-        st.write(f"## {cliente_nome}")
+        st.write(f"## {cliente_nome} : {mes_ano}")
 
     # ============================================
     # Exibir Pontos de Atenção (Attention Points)
@@ -167,7 +168,8 @@ def page_entregas(engine):
             display_content_production_gauge(
                 mandalecas_contratadas,
                 mandalecas_usadas,
-                mandalecas_acumuladas
+                mandalecas_acumuladas,
+                engine
             )
 
         with col_table:

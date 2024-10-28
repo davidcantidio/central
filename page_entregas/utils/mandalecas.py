@@ -49,3 +49,38 @@ def calcular_mandalecas(cliente: Client, data_inicio: datetime, data_fim: dateti
     mandalecas_usadas[DeliveryCategoryEnum.CONTENT_PRODUCTION] = total_usadas
 
     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
+
+
+def adjust_mandaleca_usage(engine, cliente_id, adjustment, data_inicio, data_fim, delivery_category):
+    from common.models import DeliveryControl
+
+    with Session(bind=engine) as session:
+        # Usar a data de início do período selecionado para ajustar as mandalecas
+        target_date = data_inicio
+
+        delivery = session.query(DeliveryControl).filter(
+            DeliveryControl.client_id == cliente_id,
+            DeliveryControl.delivery_category == delivery_category,
+            DeliveryControl.job_creation_date == target_date  # Usando o atributo correto
+        ).first()
+
+        if adjustment > 0:
+            if not delivery:
+                delivery = DeliveryControl(
+                    client_id=cliente_id,
+                    delivery_category=delivery_category,
+                    used_mandalecas=adjustment,
+                    job_creation_date=target_date  # Usando o atributo correto
+                )
+                session.add(delivery)
+            else:
+                delivery.used_mandalecas += adjustment
+        elif adjustment < 0:
+            if delivery and delivery.used_mandalecas + adjustment >= 0:
+                delivery.used_mandalecas += adjustment
+                if delivery.used_mandalecas == 0:
+                    session.delete(delivery)
+            else:
+                st.warning("Não é possível ter mandalecas usadas negativas.")
+
+        session.commit()

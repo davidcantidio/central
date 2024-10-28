@@ -1,153 +1,3 @@
-# . - mandalecas bkp.py
-
-from datetime import datetime
-from common.models import DeliveryCategoryEnum, Client, DeliveryControl
-from sqlalchemy.orm import Session
-from sqlalchemy.sql import func
-import streamlit as st  
-
-def calcular_mandalecas(cliente_id: int, data_inicio: datetime, data_fim: datetime, session: Session):
-    """
-    Calcula as mandalecas contratadas, usadas e acumuladas para um cliente específico.
-
-    Parâmetros:
-    - cliente_id (int): ID do cliente.
-    - data_inicio (datetime): Data de início do período.
-    - data_fim (datetime): Data de fim do período.
-    - session (Session): Sessão do SQLAlchemy.
-
-    Retorna:
-    - mandalecas_contratadas (dict): Mandalecas contratadas por categoria.
-    - mandalecas_usadas (dict): Mandalecas usadas por categoria.
-    - mandalecas_acumuladas (dict): Mandalecas acumuladas por categoria.
-    """
-
-    # Obter o cliente
-    cliente = session.query(Client).filter(Client.id == cliente_id).first()
-    if not cliente:
-        st.error(f"Cliente com ID {cliente_id} não encontrado.")
-        return None, None, None
-
-    # Mandalecas Contratadas
-    mandalecas_contratadas = {
-        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.n_monthly_contracted_content_production_mandalecas or 0,
-        # Adicione outras categorias conforme necessário
-    }
-
-    # Mandalecas Acumuladas
-    mandalecas_acumuladas = {
-        DeliveryCategoryEnum.CONTENT_PRODUCTION: cliente.accumulated_content_production_mandalecas or 0,
-        # Adicione outras categorias conforme necessário
-    }
-
-    # Mandalecas Usadas no período atual
-    mandalecas_usadas = {}
-
-    # Calcular mandalecas usadas para 'Produção de Conteúdo'
-    total_usadas = session.query(func.sum(DeliveryControl.used_mandalecas)).filter(
-        DeliveryControl.client_id == cliente_id,
-        DeliveryControl.delivery_category == DeliveryCategoryEnum.CONTENT_PRODUCTION,
-        DeliveryControl.job_creation_date.between(data_inicio, data_fim)
-    ).scalar() or 0
-
-    mandalecas_usadas[DeliveryCategoryEnum.CONTENT_PRODUCTION] = total_usadas
-
-    return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
-
-
-# . - gauge bkp.py
-
-import plotly.graph_objects as go
-import streamlit as st
-
-def display_gauge_chart(title, contracted, used, accumulated=0):
-    """
-    Função para exibir um gráfico de medidor (gauge) que mostra os valores contratados, usados e acumulados.
-
-    :param title: Título do medidor.
-    :param contracted: Valor contratado.
-    :param used: Valor usado até o momento.
-    :param accumulated: Valor acumulado (positivo ou negativo).
-    """
-    if accumulated < 0:
-        # Quando o acumulado é negativo, considera um déficit
-        max_value = contracted  # Mantém o max_value como o contratado quando há um déficit
-        deficit_start = contracted + accumulated  # Início do déficit (valor menor que o contratado)
-        steps = [
-            {'range': [0, deficit_start], 'color': "lightgray"},  # Intervalo até o início do déficit
-            {'range': [deficit_start, contracted], 'color': "red"}  # Intervalo do déficit
-        ]
-        accumulated_color = 'red'
-    else:
-        # Caso contrário, o acumulado é positivo
-        max_value = contracted + accumulated
-        steps = [
-            {'range': [0, contracted], 'color': "lightgray"},
-            {'range': [contracted, max_value], 'color': "orange"}
-        ]
-        accumulated_color = 'orange'
-
-    # Cria o gráfico de medidor (gauge)
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=used,
-        title={'text': title, 'font': {'size': 20}},
-        number={'font': {'size': 40}},
-        gauge={
-            'axis': {'range': [0, max_value], 'tickwidth': 1, 'tickcolor': "darkblue"},
-            'bar': {'color': "green"},
-            'steps': steps,
-            'threshold': {
-                'line': {'color': "red", 'width': 4},
-                'thickness': 0.75,
-                'value': contracted
-            }
-        }
-    ))
-
-    # Configura o layout e estilo do gráfico
-    fig.update_layout(
-        autosize=False,
-        width=350,
-        height=250,
-        margin=dict(l=20, r=20, t=50, b=100),
-        paper_bgcolor='rgba(0,0,0,0)',
-        plot_bgcolor='rgba(0,0,0,0)',
-        annotations=[
-            dict(
-                x=0.15, y=-0.05, xref='paper', yref='paper',
-                text=f"Contratado: {contracted}",
-                showarrow=False,
-                font=dict(color="white", size=12),
-                xanchor='center',
-                yanchor='top',
-                bgcolor='green',
-                borderpad=5,
-                borderwidth=2,
-                bordercolor='rgba(0,0,0,0)',
-                opacity=1
-            ),
-            dict(
-                x=0.8, y=-0.05, xref='paper', yref='paper',
-                text=f"<b>Acumulado:</b> {accumulated}",
-                showarrow=False,
-                font=dict(color="white", size=12),
-                xanchor='center',
-                yanchor='top',
-                bgcolor=accumulated_color,  # Cor de fundo dinâmica baseada no acumulado
-                borderpad=5,
-                borderwidth=2,
-                bordercolor='rgba(0,0,0,0)',
-                opacity=1
-            )
-        ]
-    )
-
-    # Renderiza o gráfico no Streamlit
-    st.plotly_chart(fig, use_container_width=True)
-
-
-
 # . - page_entregas.py
 
 import streamlit as st
@@ -252,64 +102,85 @@ def page_entregas(engine):
             st.error("Cliente não encontrado.")
             return
 
-    # Obter o nome do cliente selecionado
+    # Obter o nome do cliente selecionado e formatar com mês/ano
     cliente_nome = cliente_selecionado.name
     cliente_logo_url = cliente_selecionado.logo_url
+    mes_ano = st.session_state["data_fim"].strftime('%B/%y').capitalize()
 
-    # Exibir o nome do cliente selecionado na página principal
+    # Exibir o nome do cliente seguido do mês e ano na página principal
     if cliente_logo_url:
         col1, col2 = st.columns([1, 5])  # Ajuste as proporções das colunas conforme necessário
 
         with col1:
             st.image(cliente_logo_url, width=50)  # Exibe a logo do cliente com uma largura ajustada
         with col2:
-            st.write(f"## {cliente_nome}")
+            st.write(f"## {cliente_nome} : {mes_ano}")
     else:
-        st.write(f"## {cliente_nome}")
+        st.write(f"## {cliente_nome} : {mes_ano}")
 
-    # ===========================================================
-    # Exibir Pontos de Atenção
-    # ===========================================================
-
-    display_attention_points_table(
-        st.session_state["cliente_id"],
-        st.session_state["data_inicio"],
-        st.session_state["data_fim"],
-        engine
-    )
-
-    # ===========================================================
-    # Exibir Produção de Conteúdo
-    # ===========================================================
-
-    # Calcular mandalecas para o gauge de produção de conteúdo
-    with Session(bind=engine) as session:
-        mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
-            st.session_state["cliente_obj"],
-            st.session_state["data_inicio"],
-            st.session_state["data_fim"],
-            session
-        )
-
-    # Criar colunas para o gauge e a tabela
-    col_gauge, col_table = st.columns([0.3, 0.7])
-
-    with col_gauge:
-        # Exibir o gauge de Produção de Conteúdo
-        display_content_production_gauge(
-            mandalecas_contratadas,
-            mandalecas_usadas,
-            mandalecas_acumuladas
-        )
-
-    with col_table:
-        # Exibir a tabela de Produção de Conteúdo
-        display_content_production_table(
+    # ============================================
+    # Exibir Pontos de Atenção (Attention Points)
+    # ============================================
+    with stylable_container(
+        key="attention_points_section",
+        css_styles="""
+        {
+            margin-bottom: 45px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        """
+    ):
+        display_attention_points_table(
             st.session_state["cliente_id"],
             st.session_state["data_inicio"],
             st.session_state["data_fim"],
             engine
         )
+
+    # ============================================
+    # Exibir Produção de Conteúdo (Content Production)
+    # ============================================
+    with stylable_container(
+        key="content_production_section",
+        css_styles="""
+        {
+            margin-bottom: 45px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 10px;
+        }
+        """
+    ):
+        # Calcular mandalecas para o gauge de produção de conteúdo
+        with Session(bind=engine) as session:
+            mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas = calcular_mandalecas(
+                st.session_state["cliente_obj"],
+                st.session_state["data_inicio"],
+                st.session_state["data_fim"],
+                session
+            )
+
+        # Criar colunas para o gauge e a tabela
+        col_gauge, col_table = st.columns([0.3, 0.7])
+
+        with col_gauge:
+            # Exibir o gauge de Produção de Conteúdo
+            display_content_production_gauge(
+                mandalecas_contratadas,
+                mandalecas_usadas,
+                mandalecas_acumuladas
+            )
+
+        with col_table:
+            # Exibir a tabela de Produção de Conteúdo
+            display_content_production_table(
+                st.session_state["cliente_id"],
+                st.session_state["data_inicio"],
+                st.session_state["data_fim"],
+                engine
+            )
 
 # Função para obter a lista de clientes do banco de dados
 def get_clientes(engine):
@@ -913,6 +784,52 @@ def calcular_mandalecas(cliente: Client, data_inicio: datetime, data_fim: dateti
     return mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas
 
 
+def adjust_mandaleca_usage(engine, cliente_id, adjustment, data_inicio, data_fim, delivery_category):
+    """
+    Ajusta o número de mandalecas usadas para uma categoria de entrega específica no período selecionado.
+
+    :param engine: Conexão com o banco de dados.
+    :param cliente_id: ID do cliente.
+    :param adjustment: Valor de ajuste (+1 ou -1).
+    :param data_inicio: Data de início do período.
+    :param data_fim: Data de fim do período.
+    :param delivery_category: Categoria de entrega (DeliveryCategoryEnum).
+    """
+    from common.models import DeliveryControl
+
+    with Session(bind=engine) as session:
+        # Usar a data de início do período selecionado para ajustar as mandalecas
+        target_date = data_inicio  # Você pode ajustar a lógica da data conforme necessário
+
+        delivery = session.query(DeliveryControl).filter(
+            DeliveryControl.client_id == cliente_id,
+            DeliveryControl.delivery_category == delivery_category,
+            DeliveryControl.date == target_date
+        ).first()
+
+        if adjustment > 0:
+            if not delivery:
+                delivery = DeliveryControl(
+                    client_id=cliente_id,
+                    delivery_category=delivery_category,
+                    used_mandalecas=adjustment,
+                    date=target_date,
+                    job_creation_date=target_date
+                )
+                session.add(delivery)
+            else:
+                delivery.used_mandalecas += adjustment
+        elif adjustment < 0:
+            if delivery and delivery.used_mandalecas + adjustment >= 0:
+                delivery.used_mandalecas += adjustment
+                if delivery.used_mandalecas == 0:
+                    session.delete(delivery)
+            else:
+                st.warning("Não é possível ter mandalecas usadas negativas.")
+
+        session.commit()
+
+
 # utils - chat_gpt.py
 
 import os
@@ -1090,7 +1007,7 @@ def get_last_month_date_range():
   # Definir o CSS para o container apenas da tabela
 def css_tabela ():
     
-    style = """
+    return """
     {
         border: 1px dashed lightgray;
         border-radius: 10px;
@@ -1099,17 +1016,27 @@ def css_tabela ():
         background-color: white;
     }
     """
-    return style 
+      
 
 def css_gauge():
-    style = """"
+    return """"
     {   border: 1px solid #d3d3d3;
         border-radius: 10px;
         padding: 15px;
         margin-bottom: 45px;
       }
       """
-    return style 
+      
+
+def section_container_css():
+    return """
+    {
+        margin-bottom: 45px;
+        background-color: #fff;
+        padding: 15px;
+        border-radius: 10px;
+    }
+    """
 
 # utils - gauge.py
 
@@ -1527,140 +1454,6 @@ def display_gauge_chart(title, contracted, used, accumulated=0):
 #                 st.rerun()  # Recarrega a página para refletir as mudanças
 
 
-# content_production - content_production_gauge_modals .py
-
-import streamlit as st
-from streamlit_modal import Modal
-from sqlalchemy.orm import Session
-import logging
-from common.models import  DeliveryControl
-from datetime import datetime
-
-def edit_content_production_meeting(engine, item_id, modal):
-    if modal.is_open():
-        with Session(bind=engine) as session:
-            content_production_meeting = session.query(DeliveryControl).get(item_id)
-
-            if content_production_meeting is None:
-                st.error("Reunião de Produção de Conteúdo não encontrada.")
-                modal.close()
-                return
-
-            # Exibir o conteúdo do modal
-            with modal.container():
-                st.write("### Editar Reunião de Produção de Conteúdo")
-
-                # Exibir o formulário dentro do modal
-                with st.form(key=f'edit_form_{item_id}'):
-                    selected_date = st.date_input("Selecione a Data da Reunião", value=content_production_meeting.date)
-                    subject = st.text_area("Tema da Reunião", value=content_production_meeting.subject)
-                    meeting_notes = st.text_area("Notas", value=content_production_meeting.notes)
-                    submit_edit = st.form_submit_button(label='Salvar Alterações')
-
-                    if submit_edit:
-                        if subject:
-                            try:
-                                content_production_meeting.date = selected_date
-                                content_production_meeting.subject = subject
-                                content_production_meeting.notes = meeting_notes
-                                session.commit()
-                                st.success("Reunião atualizada com sucesso!")
-                                modal.close()  # Fechar o modal
-                                st.rerun()
-                            except Exception as e:
-                                st.error(f"Erro ao atualizar a Reunião de Produção de Conteúdo: {e}")
-                                logging.error(f"Erro ao atualizar reunião de produção de conteúdo: {e}")
-                        else:
-                            st.error("A descrição da reunião não pode estar vazia.")
-    else:
-        modal.close()
-
-def delete_content_production_meeting_meeting_modal(engine, item_id, modal):
-    if modal.is_open():
-        with Session(bind=engine) as session:
-            content_production_meeting = session.query(DeliveryControl).get(item_id)
-
-            if content_production_meeting is None:
-                st.error("Reunião não encontrada.")
-                modal.close()
-                return
-
-            # Exibir o conteúdo do modal
-            with modal.container():
-                st.write("### Excluir Reunião de Produção de Conteúdo")
-                st.warning(f"Tem certeza que deseja excluir a Reunião de Produção de Conteúdo do dia {content_production_meeting.date.strftime('%d %b. %Y')}? Esta ação não pode ser desfeita.")
-
-                # Botões de confirmação e cancelamento
-                col1, col2 = st.columns(2)
-                with col1:
-                    confirm_delete = st.button("Excluir", key=f'confirm_delete_meeting{item_id}')
-                with col2:
-                    cancel_delete = st.button("Cancelar", key=f'cancel_delete_meeting{item_id}')
-
-                if confirm_delete:
-                    try:
-                        session.delete(content_production_meeting)
-                        session.commit()
-                        st.success("Reunião excluída com sucesso!")
-                        modal.close()
-                        st.rerun()
-                    except Exception as e:
-                        st.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
-                        logging.error(f"Erro ao excluir a Reunião de Produção de Conteúdo: {e}")
-                elif cancel_delete:
-                    modal.close()
-                    st.rerun()
-    else:
-        modal.close()
-
-def add_content_production_meeting_meeting_modal(engine):
-    # Inicializa o modal para adicionar Reunião de Produção de Conteúdo
-    modal = Modal("Adicionar Nova Reunião de Produção de Conteúdo", key="adicionar_reunião_conteudo", padding=20, max_width=744)
-
-    # Botão para abrir o modal
-    if st.button("Adicionar Reunião de Conteúdo"):
-        modal.open()
-
-    # Exibir o modal se estiver aberto
-    if modal.is_open():
-        with modal.container():
-            st.write("### Nova Reunião de Produção de Conteúdo")
-            with st.form(key='new_content_production_meeting_form'):
-                selected_date = st.date_input("Selecione a Data do Reunião de Produção de Conteúdo", value=datetime.today())
-                subject = st.text_area("Assunto da Reunião de Produção de Conteúdo")
-                meeting_notes = st.text_area("Notas da Reunião")
-                submit_new = st.form_submit_button(label='Salvar')
-
-                if submit_new:
-                    if subject:
-                        save_new_content_production_meeting_meeting(st.session_state["cliente_id"], selected_date, subject, meeting_notes, engine)
-                        st.success("Reunião adicionada com sucesso!")
-                        modal.close()
-                        st.rerun()
-                    else:
-                        st.error("A descrição da Reunião de Produção de Conteúdo não pode estar vazia.")
-
-def save_new_content_production_meeting_meeting(cliente_id, production_date, subject, notes, engine):
-    try:
-        if engine is None:
-            raise ValueError("Engine não foi fornecido")
-        with Session(bind=engine) as session:
-            new_entry = DeliveryControl(
-                client_id=cliente_id,
-                date=production_date,
-                subject=subject,
-                notes=notes
-            )
-            session.add(new_entry)
-            session.commit()  # Commit da nova entrada
-            st.success("Reunião de produção de conteúdo salva com sucesso!")
-    except Exception as e:
-        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
-
-        # Log de erro detalhado
-        logging.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
-        st.error(f"Erro ao salvar a reunião de produção de conteúdo: {e}")
-
 # content_production - content_production_table_modals.py
 
 import streamlit as st
@@ -1801,14 +1594,18 @@ def save_new_content_production_meeting(cliente_id, production_date, subject, no
 
 # content_production - content_production_gauge.py
 
+# content_production_gauge.py
+
 import streamlit as st
 from streamlit_extras.stylable_container import stylable_container
 from page_entregas.utils.gauge import display_gauge_chart
+from page_entregas.utils.mandalecas import adjust_mandaleca_usage
 from common.models import DeliveryCategoryEnum
+from datetime import datetime
 
-def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas):
+def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, mandalecas_acumuladas, engine):
     """
-    Exibe o gauge (gráfico de medidor) para produção de conteúdo.
+    Exibe o gauge (gráfico de medidor) para produção de conteúdo com botões para ajustar mandalecas.
     """
     st.write("**Produção de Conteúdo**")
     
@@ -1826,13 +1623,45 @@ def display_content_production_gauge(mandalecas_contratadas, mandalecas_usadas, 
         used = mandalecas_usadas.get(DeliveryCategoryEnum.CONTENT_PRODUCTION, 0)
         accumulated = mandalecas_acumuladas.get(DeliveryCategoryEnum.CONTENT_PRODUCTION, 0)
 
-        # Exibir o gráfico de gauge
-        display_gauge_chart(
-            title="Produção de Conteúdo",
-            contracted=contracted,
-            used=used,
-            accumulated=accumulated
-        )
+        # Criar colunas para o gauge e os botões
+        col1, col2 = st.columns([3, 1])
+
+        with col1:
+            # Exibir o gráfico de gauge
+            display_gauge_chart(
+                title="Produção de Conteúdo",
+                contracted=contracted,
+                used=used,
+                accumulated=accumulated
+            )
+
+        with col2:
+            st.write("")  # Espaçamento
+            st.write("")  # Espaçamento
+
+            # Botão para adicionar mandaleca
+            if st.button("➕", key="add_mandaleca_content", help="Adicionar Mandaleca"):
+                adjust_mandaleca_usage(
+                    engine=engine,
+                    cliente_id=st.session_state["cliente_id"],
+                    adjustment=1,  # Ajuste de +1 mandaleca
+                    data_inicio=st.session_state["data_inicio"],
+                    data_fim=st.session_state["data_fim"],
+                    delivery_category=DeliveryCategoryEnum.CONTENT_PRODUCTION
+                )
+                st.rerun()  # Recarrega a página para atualizar o gauge
+
+            # Botão para remover mandaleca
+            if st.button("➖", key="subtract_mandaleca_content", help="Remover Mandaleca"):
+                adjust_mandaleca_usage(
+                    engine=engine,
+                    cliente_id=st.session_state["cliente_id"],
+                    adjustment=-1,  # Ajuste de -1 mandaleca
+                    data_inicio=st.session_state["data_inicio"],
+                    data_fim=st.session_state["data_fim"],
+                    delivery_category=DeliveryCategoryEnum.CONTENT_PRODUCTION
+                )
+                st.rerun()  # Recarrega a página para atualizar o gauge
 
 
 # content_production - content_production_table.py
